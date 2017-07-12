@@ -14,24 +14,25 @@ void agregarInstancia(t_list * lista, t_instancia* instancia ){
    list_add(lista, instancia);
 }
 
-t_instancia* crearInstancia(char* nombre,int espacioOcupado,int* socket,
-							time_t ultimaModificacion,int primerLetra,int ultimaLetra){
+t_instancia* crearInstancia(char* nombre,int* socket){
 
    t_instancia* aux = malloc(sizeof (t_instancia));
    aux->nombre = string_duplicate(nombre);
-   aux->espacioOcupado = espacioOcupado;
+   aux->espacioOcupado = 0;
    aux->socket = socket;
    aux->disponible = true;
-   aux->ultimaModificacion = ultimaModificacion;
-   aux->primerLetra = primerLetra;
-   aux->ultimaLetra = ultimaLetra;
+   aux->ultimaModificacion = 0;
+   aux->primerLetra = 0;
+   aux->ultimaLetra = 0;
+   aux->trabajoActual = NULL;
+
 
    return aux;
 
 }
 
 void destruirInstancia(t_instancia * instancia){
-
+  free(instancia->trabajoActual);
 	free(instancia->nombre);
 	free(instancia);
 }
