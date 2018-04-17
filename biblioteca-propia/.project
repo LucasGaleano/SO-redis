@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>planificador</name>
+	<name>biblioteca-propia</name>
 	<comment></comment>
 	<projects>
-		<project>biblioteca-propia</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

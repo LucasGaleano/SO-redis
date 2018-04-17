@@ -3,6 +3,7 @@
 	<name>instancia</name>
 	<comment></comment>
 	<projects>
+		<project>biblioteca-propia</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
