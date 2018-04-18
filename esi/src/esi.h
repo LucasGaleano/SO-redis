@@ -3,5 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <commons/log.h>
+
 
 #endif /* ESI_H_ */
