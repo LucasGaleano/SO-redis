@@ -1,10 +1,17 @@
 #include "esi.h"
 
-int main(void) {
+int main(int argc, char **argv) {
 
 	//Creo archivo de log
 	logESI = log_create("log_ESI.log", "esi", true, LOG_LEVEL_TRACE);
 	log_trace(logESI, "Inicio el proceso esi \n");
+
+	//Mapeo el archivo a memoria
+	size_t tamArch;
+	FILE * archivofd;
+	char * rutaScript = argv[1];
+
+	void * archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
 
 	//Conecto esi con planificador y coordinador
 	conectarEsi();
@@ -16,8 +23,12 @@ int main(void) {
 				logESI);
 	}
 
+	//Cierro el archivo
+	munmap(archivo, tamArch);
+	fclose(archivofd);
+
 	//Termina esi
-	log_info(logESI, "Termino el proceso esi \n");
+	log_trace(logESI, "Termino el proceso esi \n");
 
 	//Destruyo archivo de log
 	log_destroy(logESI);
@@ -26,7 +37,6 @@ int main(void) {
 }
 
 /*-------------------------Conexion-------------------------*/
-
 void conectarEsi() {
 	//Leo la configuracion del esi
 	t_config* configEsi = leerConfiguracion();
@@ -69,4 +79,34 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 		break;
 	}
 	destruirPaquete(unPaquete);
+}
+
+/*-------------------------Funciones auxiliares-------------------------*/
+void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
+	//Abro el archivo
+	*archivo = fopen(rutaArchivo, "r");
+
+	if (*archivo == NULL) {
+		log_error(logESI, "%s: No existe el archivo",
+				rutaArchivo);
+		perror("Error al abrir el archivo");
+		exit(EXIT_FAILURE);
+	}
+
+	//Copio informacion del archivo
+	struct stat statArch;
+
+	stat(rutaArchivo, &statArch);
+
+	//Tamaño del archivo que voy a leer
+	*tamArc = statArch.st_size;
+
+	//Leo el total del archivo y lo asigno al buffer
+	int fd = fileno(*archivo);
+	void * dataArchivo = mmap(0, *tamArc, PROT_READ, MAP_SHARED, fd, 0);
+
+	//Confirmo la lectura del archivo
+	log_debug(logESI,"Abrio el archivo: %s",rutaArchivo);
+
+	return dataArchivo;
 }

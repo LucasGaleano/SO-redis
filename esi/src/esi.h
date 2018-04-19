@@ -24,4 +24,8 @@ t_config* 	leerConfiguracion	(void);
 /*-------------------------Procesamiento paquetes-------------------------*/
 void 		procesarPaquete		(t_paquete * unPaquete, int * client_socket);
 
+/*-------------------------Funciones auxiliares-------------------------*/
+void * 		abrirArchivo		(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
+
+
 #endif /* ESI_H_ */
