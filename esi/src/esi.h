@@ -15,8 +15,13 @@ t_log * logESI;
 int socketCoordinador;
 int socketPlanificador;
 
+bool recibirSolicitudes;
+
 /*-------------------------Conexion-------------------------*/
-void conectarEsi();
-t_config* leerConfiguracion();
+void 		conectarEsi			(void);
+t_config* 	leerConfiguracion	(void);
+
+/*-------------------------Procesamiento paquetes-------------------------*/
+void 		procesarPaquete		(t_paquete * unPaquete, int * client_socket);
 
 #endif /* ESI_H_ */
