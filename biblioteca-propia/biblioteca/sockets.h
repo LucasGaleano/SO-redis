@@ -2,8 +2,8 @@
 #define BIBLIOTECA_SOCKETS_H_
 
 #include "estructuras.h"
-#include "paquetes.h"
 #include <commons/log.h>
+#include "paquetes.h"
 
 /*------------------------------Clientes------------------------------*/
 int 				conectarCliente					(const char * ip, int puerto, int cliente);

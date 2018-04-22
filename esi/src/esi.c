@@ -11,7 +11,10 @@ int main(int argc, char **argv) {
 	FILE * archivofd;
 	char * rutaScript = argv[1];
 
-	void * archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
+	archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
+
+	//Setteo la ip para que arranque a leer desede el principio del archivo
+	ip = 0;
 
 	//Conecto esi con planificador y coordinador
 	conectarEsi();
@@ -73,12 +76,21 @@ t_config* leerConfiguracion() {
 /*-------------------------Procesamiento paquetes-------------------------*/
 void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	switch (unPaquete->codigoOperacion) {
-	case HANDSHAKE:
+	case SOLICITUD_EJECUCION:
+		procesarSolicitudEjecucion();
 		break;
 	default:
 		break;
 	}
 	destruirPaquete(unPaquete);
+}
+
+void procesarSolicitudEjecucion(){
+	//Busco la sentencia a ejecutar
+	char * sentencia = proximaSentencia(archivo, &ip);
+
+	//Parceo la sentencia
+	//TODO: Implementar parser
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/

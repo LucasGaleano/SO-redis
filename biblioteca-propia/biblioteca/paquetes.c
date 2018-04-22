@@ -1,7 +1,6 @@
 #include "paquetes.h"
 
 /*------------------------------Paquetes------------------------------*/
-
 void enviarPaquetes(int socketfd, t_paquete * unPaquete) {
 
 	int desplazamiento = 0;
@@ -188,8 +187,16 @@ void enviarArchivo(int server_socket, char * rutaArchivo) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-/*-------------------------Recibir-------------------------*/
+void enviarSolicitudEjecucion(int server_socket) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
+	unPaquete->codigoOperacion = SOLICITUD_EJECUCION;
+
+	enviarPaquetes(server_socket, unPaquete);
+
+}
+
+/*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
 	return deserializarHandshake(unPaquete->buffer);
 }
@@ -201,3 +208,5 @@ char * recibirMensaje(t_paquete * unPaquete) {
 void* recibirArchivo(t_paquete * unPaquete) {
 	return deserializarArchivo(unPaquete->buffer);
 }
+
+void recibirSolicitudEjecucion(t_paquete * unPaquete){}
