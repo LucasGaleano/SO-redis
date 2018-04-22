@@ -110,3 +110,20 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 
 	return dataArchivo;
 }
+
+char * proximaSentencia(char * archivo, int * ip) {
+	char * archivoNoLeido = archivo + (*ip);
+
+	int i;
+
+	for (i = 0; archivoNoLeido[i] != '\n' && string_length(archivoNoLeido) >= i; ++i)
+		;
+
+	char * sentencia = malloc(sizeof(char) * i + 1);
+
+	memcpy(sentencia, archivoNoLeido, i);
+
+	*ip = *ip + i + 1;
+
+	return sentencia;
+}
