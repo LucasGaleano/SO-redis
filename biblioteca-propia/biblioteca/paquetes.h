@@ -2,7 +2,7 @@
 #define SRC_PROCESAMIENTOPAQUETES_H_
 
 #include "estructuras.h"
-#include "serializacion.h"
+#include "serializaciones.h"
 
 /*-----------------------------------Paquetes-----------------------------------*/
 void	 						enviarPaquetes				(int socketfd, t_paquete * unPaquete);
@@ -17,10 +17,12 @@ void 							mostrarPaquete				(t_paquete * unPaquete);
 void 							enviarHandshake				(int server_socket, int emisor);
 void 							enviarMensaje				(int server_socket, char * mensaje);
 void 							enviarArchivo				(int server_socket, char * rutaArchivo);
+void 							enviarSolicitudEjecucion	(int server_socket);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int 							recibirHandshake			(t_paquete * unPaquete);
 char * 							recibirMensaje				(t_paquete * unPaquete);
 void * 							recibirArchivo				(t_paquete * unPaquete);
+void 							recibirSolicitudEjecucion	(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */

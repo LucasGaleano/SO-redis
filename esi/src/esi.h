@@ -17,15 +17,19 @@ int socketPlanificador;
 
 bool recibirSolicitudes;
 
+void * archivo;
+int ip;
+
 /*-------------------------Conexion-------------------------*/
-void 		conectarEsi			(void);
-t_config* 	leerConfiguracion	(void);
+void 		conectarEsi					(void);
+t_config* 	leerConfiguracion			(void);
 
 /*-------------------------Procesamiento paquetes-------------------------*/
-void 		procesarPaquete		(t_paquete * unPaquete, int * client_socket);
+void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
+void 		procesarSolicitudEjecucion	(void);
 
 /*-------------------------Funciones auxiliares-------------------------*/
-void * 		abrirArchivo		(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
-char * 		proximaSentencia	(char * archivo, int * ip);
+void * 		abrirArchivo				(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
+char * 		proximaSentencia			(char * archivo, int * ip);
 
 #endif /* ESI_H_ */
