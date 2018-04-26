@@ -52,6 +52,7 @@ void conectarEsi() {
 			"PLANIFICADOR_IP");
 	int planificadorPuerto = config_get_int_value(configEsi,
 			"PLANIFICADOR_PUERTO");
+	char * nombre = config_get_string_value(configEsi, "NOMBRE");
 
 	//Conecto al coordinador
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto, ESI);
@@ -59,6 +60,7 @@ void conectarEsi() {
 	//Conecto al planificador
 	socketPlanificador = conectarCliente(planificadorIP, planificadorPuerto,
 			ESI);
+	enviarIdentificacion(socketPlanificador, nombre);
 
 	//Destruyo la configuracion
 	config_destroy(configEsi);
@@ -85,40 +87,65 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	destruirPaquete(unPaquete);
 }
 
-void procesarSolicitudEjecucion(){
+void procesarSolicitudEjecucion() {
 	//Busco la sentencia a ejecutar
 	char * sentencia = proximaSentencia(archivo, &ip);
 
 	//Parceo la sentencia
-	//TODO: Implementar parser
+	t_esi_operacion parsed = parse(sentencia);
+
+	//Verifico si el parceo es valido
+	if (parsed.valido) {
+		switch (parsed.keyword) {
+		case GET:
+			printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+			break;
+		case SET:
+			printf("SET\tclave: <%s>\tvalor: <%s>\n",
+					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+			break;
+		case STORE:
+			printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+			break;
+		default:
+			fprintf(stderr, "No pude interpretar <%s>\n", sentencia);
+			exit(EXIT_FAILURE);
+		}
+		destruir_operacion(parsed);
+	} else {
+		fprintf(stderr, "La linea <%s> no es valida\n", sentencia);
+		exit(EXIT_FAILURE);
+	}
+
+	//Libero memoria
+	free(sentencia);
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
-	//Abro el archivo
+//Abro el archivo
 	*archivo = fopen(rutaArchivo, "r");
 
 	if (*archivo == NULL) {
-		log_error(logESI, "%s: No existe el archivo",
-				rutaArchivo);
+		log_error(logESI, "%s: No existe el archivo", rutaArchivo);
 		perror("Error al abrir el archivo");
 		exit(EXIT_FAILURE);
 	}
 
-	//Copio informacion del archivo
+//Copio informacion del archivo
 	struct stat statArch;
 
 	stat(rutaArchivo, &statArch);
 
-	//Tamaño del archivo que voy a leer
+//Tamaño del archivo que voy a leer
 	*tamArc = statArch.st_size;
 
-	//Leo el total del archivo y lo asigno al buffer
+//Leo el total del archivo y lo asigno al buffer
 	int fd = fileno(*archivo);
 	void * dataArchivo = mmap(0, *tamArc, PROT_READ, MAP_SHARED, fd, 0);
 
-	//Confirmo la lectura del archivo
-	log_debug(logESI,"Abrio el archivo: %s",rutaArchivo);
+//Confirmo la lectura del archivo
+	log_debug(logESI, "Abrio el archivo: %s", rutaArchivo);
 
 	return dataArchivo;
 }
@@ -128,7 +155,8 @@ char * proximaSentencia(char * archivo, int * ip) {
 
 	int i;
 
-	for (i = 0; archivoNoLeido[i] != '\n' && string_length(archivoNoLeido) >= i; ++i)
+	for (i = 0; archivoNoLeido[i] != '\n' && string_length(archivoNoLeido) >= i;
+			++i)
 		;
 
 	char * sentencia = malloc(sizeof(char) * i + 1);

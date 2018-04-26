@@ -192,8 +192,19 @@ void enviarSolicitudEjecucion(int server_socket) {
 
 	unPaquete->codigoOperacion = SOLICITUD_EJECUCION;
 
-	enviarPaquetes(server_socket, unPaquete);
+	serializarNumero(unPaquete, 0);
 
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarIdentificacion(int server_socket, char * nombre){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = ENVIAR_IDENTIFICACION;
+
+	serializarMensaje(unPaquete, nombre);
+
+	enviarPaquetes(server_socket, unPaquete);
 }
 
 /*-------------------------Recibir-------------------------*/
@@ -209,4 +220,6 @@ void* recibirArchivo(t_paquete * unPaquete) {
 	return deserializarArchivo(unPaquete->buffer);
 }
 
-void recibirSolicitudEjecucion(t_paquete * unPaquete){}
+char * recibirIdentificacion(t_paquete * unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
+}

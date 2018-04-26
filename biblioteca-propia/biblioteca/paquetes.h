@@ -18,11 +18,12 @@ void 							enviarHandshake				(int server_socket, int emisor);
 void 							enviarMensaje				(int server_socket, char * mensaje);
 void 							enviarArchivo				(int server_socket, char * rutaArchivo);
 void 							enviarSolicitudEjecucion	(int server_socket);
+void 							enviarIdentificacion		(int server_socket, char * nombre);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int 							recibirHandshake			(t_paquete * unPaquete);
 char * 							recibirMensaje				(t_paquete * unPaquete);
 void * 							recibirArchivo				(t_paquete * unPaquete);
-void 							recibirSolicitudEjecucion	(t_paquete * unPaquete);
+char * 							recibirIdentificacion		(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */

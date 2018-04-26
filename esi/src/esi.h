@@ -4,6 +4,7 @@
 #include <biblioteca/sockets.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <parsi/parser.h>
 #include <stdio.h>
 #include <stdlib.h>
 
