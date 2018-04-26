@@ -8,6 +8,8 @@
 #ifndef ALGORITMOS_H_
 #define ALGORITMOS_H_
 
+#include <time.h>
+
 //rafaga =rafaga anterior*0,5 + real anterior*0,5
 //rr = 1 + espera/rafaga
 double calcularProximaRafaga(double, double);

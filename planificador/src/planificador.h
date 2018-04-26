@@ -13,6 +13,23 @@
 
 #define RUTA_CONFIGURACION_PLANIF "home/utnso/workspace/configuraciones/planificador.cfg"
 
+
+typedef struct
+{
+	int socketESI;
+	double estAnterior, realAnterior;
+}t_infoListos;
+
+
+typedef struct
+{
+	bool bloqueoUsuario;
+	char* codRecurso;
+	t_infoListos rafagasYsocket;
+}t_infoBloqueo;
+
+
+pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
 t_dictionary* g_listos;
 t_dictionary* g_exec;
 t_dictionary* g_term;

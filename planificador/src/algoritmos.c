@@ -8,3 +8,12 @@ double calcularRR(double tEnEspera, double estimadoAnterior, double realAnterior
 	return (1+ tEnEspera/calcularProximaRafaga(estimadoAnterior,realAnterior));
 }
 
+void SJFsinDesalojo(double estimadoAnt, double realAnt)
+{
+	time_t inicio = clock();
+	time_t final;
+
+
+	final = clock();
+
+}

@@ -19,13 +19,13 @@ int main(void) {
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 
-	pthread_t* hilo;
+	pthread_t* hiloServer;
 
-	pthread_create(hilo, NULL, (void*) iniciarServidor, puertoLocal);
+	pthread_create(hiloServer, NULL, (void*) iniciarServidor, puertoLocal);
 
 	//iniciarConsola
 
-	pthread_join(hilo, NULL);
+	pthread_join(hiloServer, NULL);
 
 	config_destroy(g_con);
 	log_destroy(g_logger);
@@ -50,6 +50,8 @@ procesarPaquete(t_paquete* unPaquete, int* socketCliente)
 	case HANDSHAKE:
 		recibirHandshake(unPaquete, socketCliente);
 		break;
+	case ENVIAR_IDENTIFICACION:
+		dictionary_put(g_listos, *socketCliente);
 	}
 	destruirPaquete(unPaquete);
 }
