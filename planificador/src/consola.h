@@ -14,8 +14,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <commons/collections/dictionary.h>
+#include "planificador.h"
 
-#include "planificador.h" // ?? no se si va, estaba pensando que se podria usar para pausarPlanificación
+
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -29,6 +31,10 @@ void 				bloquearESI								(char* linea);
 void 				desbloquearESI							(char* linea);
 
 /*------------------------------Auxiliares------------------------------*/
-char* 				obtenerParametro						(char *, int);
+char* 				obtenerParametro						(char*, int);
+bool 				estaBloqueado							(char* clave);
+bool 				estaEjecutando							(char* clave);
+bool 				estaBloqueadoPorUsuario					(char* clave);
+bool 				estaBloqueadoPorElRecurso				(char* claveESI, char* claveRecurso);
 
 #endif /* CONSOLA_H_ */
