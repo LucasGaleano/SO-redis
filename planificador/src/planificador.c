@@ -1,6 +1,6 @@
 #include "planificador.h"
 
-
+double g_est;
 
 int main(void) {
 
@@ -14,7 +14,7 @@ int main(void) {
 
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 	//hablar tipo del algoritmo de planificacion
-	double est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
+	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
@@ -51,7 +51,11 @@ procesarPaquete(t_paquete* unPaquete, int* socketCliente)
 		recibirHandshake(unPaquete, socketCliente);
 		break;
 	case ENVIAR_IDENTIFICACION:
-		dictionary_put(g_listos, *socketCliente);
+		t_infoListos *dat = malloc(sizeof(t_infoListos));
+		dat->estAnterior = g_est;
+		dat->realAnterior = g_est;
+		dat->socketESI = *socketCliente;
+		dictionary_put(g_listos, recibirIdentificacion(unPaquete), dat);
 	}
 	destruirPaquete(unPaquete);
 }

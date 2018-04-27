@@ -9,6 +9,11 @@
 #define ALGORITMOS_H_
 
 #include <time.h>
+#include <commons/string.h>
+#include <stdlib.h>
+
+#include "planificador.h"
+
 
 //rafaga =rafaga anterior*0,5 + real anterior*0,5
 //rr = 1 + espera/rafaga
