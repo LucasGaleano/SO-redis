@@ -7,21 +7,58 @@
 int main(void) {
 
 
-	t_config* archivoConfig = config_create(PATH_CONFIG);
-	g_configuracion = armarConfigCoordinador(archivoConfig);
-
-
-	printf("puerto de conexion: %i\n",g_configuracion.puertoConexion);
-	printf("algoritmo: %s\n",g_configuracion.algoritmoDist);
-	printf("cantidad entradas: %i\n",g_configuracion.cantidadEntradas);
-
-	config_destroy(archivoConfig);
 
 	return 0;
 }
 
 
+void procesarPaquete(t_paquete* paquete,int socketCliente){
 
+
+
+
+
+	switch(paquete->codigoOperacion){
+
+		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
+		case SOLICITUD_SET:
+
+			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
+			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
+
+			// char* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, tablaInstancias* tabla);
+
+			// retardo de planificador
+
+			//si no se puede acceder a la instancia, se le avisa al planificador
+
+			//3- Se elige la Instancia asociada y se le envía la solicitud.
+
+			//enviar a instancia.
+
+			break;
+
+		//4- La instancia retorna al Coordinador
+
+		case RESPUESTA_SET:
+			//5- El Coordinador logea la respuesta y envía al ESI
+			break;
+
+
+		case SOLICITUD_GET_STORE:
+
+			//actualizar la tabla de bloques, agregando la clave bloqueada si es que no esta bloqueado
+			//El Coordinador colabora con el Planificador avisando de este recurso??????
+			//QUIEN CONOCE LAS CLAVES QUE EXISTEN EN EL SISTEMA???????????????????????
+			break;
+
+
+	}
+
+
+
+
+}
 
 
 
