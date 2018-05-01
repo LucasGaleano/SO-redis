@@ -8,20 +8,18 @@
 #include "consola.h"
 
 /*------------------------------Consola------------------------------*/
-void iniciarConsola(){
+void iniciarConsola() {
 	char* linea;
-	bool ejecutar = true;  // no se xq no me entiende bool, buscar/preguntar despues
+	bool ejecutar = true;
 
-	while(ejecutar){
+	while (ejecutar) {
 		linea = readline(">");
 
-		// ver si esto es necesario FACU
-		if(linea){
-			add_history(linea); // averiguarlo yo despues o preguntar a facu xq le importa saber todos los comandos que se eje
-		}
-		else {
+		if (linea) {
+			add_history(linea);
+		} else {
 			free(linea);
-			break; // dudoso (continue??)
+			break;
 		}
 
 		ejecutarComando(linea, &ejecutar);
@@ -32,7 +30,7 @@ void iniciarConsola(){
 	clear_history();
 }
 
-void ejecutarComando(char* linea, bool* ejecutar){
+void ejecutarComando(char* linea, bool* ejecutar) {
 
 	// MAN
 	if (string_equals_ignore_case(linea, "man")) {
@@ -41,55 +39,55 @@ void ejecutarComando(char* linea, bool* ejecutar){
 	}
 
 	// PAUSAR PLANIFICACIÓN
-	if( string_equals_ignore_case(linea, "pausar") ){
-		_pausarPlanificacion();
-		break;
+	if (string_equals_ignore_case(linea, "pausar")) {
+		pausarPlanificacion();
+		return;
 	}
 
 	// CONTINUAR PLANIFICACIÓN
-	if( string_equals_ignore_case(linea, "continuar") ){
-		_continuarPlanificacion();
-		break;
+	if (string_equals_ignore_case(linea, "continuar")) {
+		continuarPlanificacion();
+		return;
 	}
 
 	// BLOQUEAR ESI
-	if( string_equals_ignore_case(linea, "bloquear") ){
-		_bloquearESI(linea);
-		break;
+	if (string_equals_ignore_case(linea, "bloquear")) {
+		bloquearESI(linea);
+		return;
 	}
 
 	// DESBLOQUEAR ESI
-	if( string_equals_ignore_case(linea, "desbloquear") ){
-		_desbloquearESI(linea);
-		break;
+	if (string_equals_ignore_case(linea, "desbloquear")) {
+		desbloquearESI(linea);
+		return;
 	}
 
 	// LISTAR PROCESOS
-	if( string_equals_ignore_case(linea, "listar") ){
-		_listarProcesos(linea);
-		break;
+	if (string_equals_ignore_case(linea, "listar")) {
+		listarProcesos(linea);
+		return;
 	}
 
 	// KILL PROCESO
-	if( string_equals_ignore_case(linea, "kill") ){
+	if (string_equals_ignore_case(linea, "kill")) {
 		killProceso(linea);
-		break;
+		return;
 	}
 
 	// STATUS
-	if( string_equals_ignore_case(linea, "status") ){
+	if (string_equals_ignore_case(linea, "status")) {
 		status(linea);
-		break;
+		return;
 	}
 
 	// DEADLOCK
-	if( string_equals_ignore_case(linea, "deadlock") ){
+	if (string_equals_ignore_case(linea, "deadlock")) {
 		deadlock();
-		break;
+		return;
 	}
 
 	// SALIR DE LA CONSOLA
-	if( string_equals_ignore_case(linea, "exit") ){
+	if (string_equals_ignore_case(linea, "exit")) {
 		salirConsola(ejecutar);
 		return;
 	}
@@ -119,115 +117,145 @@ void ejecutarMan() {
 	printf("DESCRIPTION \n");
 	printf("	pausar --> Pausar planificacion \n");
 	printf("	continuar --> Continuar planificacion \n");
-	printf("	bloquear --> Se bloqueara el proceso ESI hasta ser desbloqueado \n");
-	printf("	desbloquear -->  Se desbloqueara el proceso ESI con el ID especificado \n");
+	printf(
+			"	bloquear --> Se bloqueara el proceso ESI hasta ser desbloqueado \n");
+	printf(
+			"	desbloquear -->  Se desbloqueara el proceso ESI con el ID especificado \n");
 	printf("	listar --> Lista los procesos encolados esperando al recurso \n");
 	printf("	kill --> Finaliza el proceso \n");
-	printf("	status -->  Brinda informacion sobre las instancias del sistema \n");
+	printf(
+			"	status -->  Brinda informacion sobre las instancias del sistema \n");
 	printf("	deadlock -->   \n"); // Ver
 	printf("	exit --> Cierra la consola \n\n");
 }
-void salirConsola(bool* ejecutar){
+void salirConsola(bool* ejecutar) {
 	printf("Se cerro la consola \n");
 	*ejecutar = false;
 }
 
-void pausarPlanificacion(void){
+void pausarPlanificacion(void) {
 	pthread_mutex_lock(&mutexConsola);
 }
 
-void continuarPlanificacion(void){
+void continuarPlanificacion(void) {
 	pthread_mutex_unlock(&mutexConsola);
 }
 
-void bloquearESI(char* linea){
+void bloquearESI(char* linea) {
 
 	// obtener parametros
 	char* clave = obtenerParametro(linea, 1);
 	char* id_char = obtenerParametro(linea, 2);
 
-	if(clave == NULL)
+	if (clave == NULL)
 		return;
-	if(id_char == NULL)
+	if (id_char == NULL)
 		return;
 
-	int id = atoi(id_char);
-
+	// int id = atoi(id_char);
 
 	// veo que el ESI está listo o ejecutando
-	if( estaBloqueado(clave) || estaEjecutando(clave) ){
+	if (estaBloqueado(clave) || estaEjecutando(clave)) {
 		puts("Solo se puede bloquear el ESI en estado listo o ejecutando.");
 		return;
 	}
 
 	t_infoBloqueo aux;
-	aux.usuario = true;
+	aux.bloqueoUsuario = true;
 
 	// bloquear proceso
 	dictionary_put(g_bloq, clave, aux);
 
 }
 
-void desbloquearESI(char* linea){
+void desbloquearESI(char* linea) {
 
 	char* clave = obtenerParametro(linea, 1);
 
-	if(clave == NULL)
+	if (clave == NULL)
 		return;
 
-	if( !estaBloqueado(clave) ){
+	if (!estaBloqueado(clave)) {
 		printf("No se puede desbloquear un ESI que no está bloqueado \n");
-		break;
+		return;
 	}
 
-	if( !estaBloqueadoPorUsuario(clave) ){
-		printf("Solo se puede desbloquear un ESI que fue bloqueado por la consola \n");
-		break;
+	if (!estaBloqueadoPorUsuario(clave)) {
+		printf(
+				"Solo se puede desbloquear un ESI que fue bloqueado por la consola \n");
+		return;
 	}
 
 	// desbloquear
 	dictionary_remove(g_bloq, clave);
 	dictionary_put(g_listos, clave, NULL);
+
 }
 
-void listarProcesos(char* linea){
-	// ESI0
+void listarProcesos(char* linea) {
 	// t_dictionary -> elements_amount cant elementos que hay en total en el diccionario
 
 	char* claveRecurso = obtenerParametro(linea, 1);
 
-	if(claveRecurso == NULL)
+	if (claveRecurso == NULL)
 		return;
 
 	int i;
 
-	for(i = 0; i < g_bloq->elements_amount; i++) {
+	for (i = 0; i < g_bloq->elements_amount; i++) {
 
-		// memdoria dinamica
-		// borrale el ultimo el porque siempre voy a agregar nros
+		// Paso el nro de int a char
 
-		// crear clave
-		claveESI = string_append("ESI", itoa(i));
+		// VER: pasar a funcion
 
-		if( estaBloqueadoPorElRecurso(claveESI, claveRecurso) ){
+		int longitud = 1;
+		int aux = i;
+
+		while (aux >= 10) {
+			aux /= 10;
+			longitud++;
+		}
+		char* nro = malloc(sizeof(char) * longitud + 1);
+
+		if (nro == NULL) {
+			puts("Error de memoria");
+			exit(1);
+		}
+
+		sprintf(nro, "%d", i);
+
+		// Creo la clave
+		char* claveESI = malloc(sizeof(char) * (strlen("ESI") + longitud + 1));
+
+		if (claveESI == NULL) {
+			puts("Error de memoria");
+			exit(1);
+		}
+
+		strcat(claveESI, "ESI");
+		strcat(claveESI, nro);
+
+		free(nro);
+
+		if (estaBloqueadoPorElRecurso(claveESI, claveRecurso)) {
 			printf("%s", claveESI);
 		}
+
+		free(claveESI);
 	}
 }
 
-void killProceso(char* linea){
+void killProceso(char* linea) {
 
-		int id = obtenerParametro(linea, 1);
-		char* id_char = obtenerParametro(linea, 1);
+	char* id = obtenerParametro(linea, 1);
+	char* id_char = obtenerParametro(linea, 1);
 
-		if(clave == NULL)
-			return;
+	if (id_char == NULL)
+		return;
 
-		int id = atoi(id_char);
+	//int id = atoi(id_char);
 
 	// recordar la atomicidad en bloquear
-
-
 
 	/*No se si sirve
 	 * liberar mapa de memoria
@@ -238,42 +266,41 @@ void killProceso(char* linea){
 	 * activa planificador y reliza c. de contexto al proceso elegido*/
 }
 
-void status(char* linea){
+void status(char* linea) {
 	// informacion sobre las instancias del sistema
 
 	char* clave = obtenerParametro(linea, 1);
 
-	if(clave == NULL)
+	if (clave == NULL)
 		return;
 }
 
-void deadlock(){
+void deadlock() {
 	// Ver en bloqueos enunciado (p 9)
 }
 
-
 /*------------------------------Auxiliares------------------------------*/
 
-char* obtenerParametro(char* linea, int parametro){
+char* obtenerParametro(char* linea, int parametro) {
 	char** palabras = string_split(linea, " ");
 	return palabras[parametro];
 }
 
-bool estaBloqueado(char* clave){
+bool estaBloqueado(char* clave) {
 	return dictionary_has_key(g_bloq, clave);
 }
 
-bool estaEjecutando(char* clave){
+bool estaEjecutando(char* clave) {
 	return dictionary_has_key(g_exec, clave);
 }
 
-bool estaBloqueadoPorUsuario(char* clave){
-	t_infoBloqueo data = dictionary_get(clave);
-	return data->usuario;
+bool estaBloqueadoPorUsuario(char* clave) {
+	t_infoBloqueo data = dictionary_get(g_bloq, clave);
+	return data->bloqueoUsuario;
 }
 
-bool estaBloqueadoPorElRecurso(char* claveESI, char* claveRecurso){
+bool estaBloqueadoPorElRecurso(char* claveESI, char* claveRecurso) {
 	t_infoBloqueo* infoESI = dictionary_get(g_bloq, claveESI);
 
-	return string_equals_ignore_case(infoESI -> codRecurso, claveRecurso);
+	return string_equals_ignore_case(infoESI->codRecurso, claveRecurso);
 }

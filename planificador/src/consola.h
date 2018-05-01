@@ -14,7 +14,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <commons/collections/dictionary.h>
+#include <pthread.h>
 #include "planificador.h"
 
 
@@ -24,17 +26,22 @@ void 				iniciarConsola							(void);
 void 				ejecutarComando							(char *, bool *);
 
 /*------------------------------Comandos------------------------------*/
+void 				ejecutarMan								(void);
 void 				pausarPlanificacion						(void);
-void				salirConsola							(bool* ejecutar);
 void 				continuarPlanificacion					(void);
-void 				bloquearESI								(char* linea);
-void 				desbloquearESI							(char* linea);
+void 				bloquearESI								(char*);
+void 				desbloquearESI							(char*);
+void 				listarProcesos							(char*);
+void 				killProceso								(char*);
+void 				status									(char*);
+void 				deadlock								(void);
+void				salirConsola							(bool*);
 
 /*------------------------------Auxiliares------------------------------*/
 char* 				obtenerParametro						(char*, int);
-bool 				estaBloqueado							(char* clave);
-bool 				estaEjecutando							(char* clave);
-bool 				estaBloqueadoPorUsuario					(char* clave);
-bool 				estaBloqueadoPorElRecurso				(char* claveESI, char* claveRecurso);
+bool 				estaBloqueado							(char*);
+bool 				estaEjecutando							(char*);
+bool 				estaBloqueadoPorUsuario					(char*);
+bool 				estaBloqueadoPorElRecurso				(char*, char*);
 
 #endif /* CONSOLA_H_ */
