@@ -14,7 +14,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <commons/collections/dictionary.h>
 #include <pthread.h>
 #include "planificador.h"
@@ -39,8 +38,9 @@ void				salirConsola							(bool*);
 
 /*------------------------------Auxiliares------------------------------*/
 char* 				obtenerParametro						(char*, int);
-bool 				estaBloqueado							(char*);
+bool 				estaListo								(char*);
 bool 				estaEjecutando							(char*);
+bool 				estaBloqueado							(char*);
 bool 				estaBloqueadoPorUsuario					(char*);
 bool 				estaBloqueadoPorElRecurso				(char*, char*);
 

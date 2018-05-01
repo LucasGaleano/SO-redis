@@ -145,23 +145,30 @@ void bloquearESI(char* linea) {
 
 	// obtener parametros
 	char* clave = obtenerParametro(linea, 1);
-	char* id_char = obtenerParametro(linea, 2);
+	int id = atoi(obtenerParametro(linea, 2));
 
 	if (clave == NULL)
 		return;
-	if (id_char == NULL)
-		return;
-
-	// int id = atoi(id_char);
+	/*if (id == NULL) // preguntar
+	 return;*/
 
 	// veo que el ESI está listo o ejecutando
-	if (estaBloqueado(clave) || estaEjecutando(clave)) {
+	if (!(estaListo(clave) || estaEjecutando(clave))) {
 		puts("Solo se puede bloquear el ESI en estado listo o ejecutando.");
 		return;
 	}
 
-	t_infoBloqueo aux;
-	aux.bloqueoUsuario = true;
+	// preguntar casti esto
+	if (estaListo(clave)) {
+		free(dictionary_remove(g_listos, clave));
+	}
+
+	if (estaEjecutando(clave)) {
+		free(dictionary_remove(g_exec, clave));
+	}
+
+	t_infoBloqueo* aux;
+	aux->bloqueoUsuario = true;
 
 	// bloquear proceso
 	dictionary_put(g_bloq, clave, aux);
@@ -174,7 +181,7 @@ void desbloquearESI(char* linea) {
 
 	if (clave == NULL)
 		return;
-
+//
 	if (!estaBloqueado(clave)) {
 		printf("No se puede desbloquear un ESI que no está bloqueado \n");
 		return;
@@ -187,14 +194,12 @@ void desbloquearESI(char* linea) {
 	}
 
 	// desbloquear
-	dictionary_remove(g_bloq, clave);
+	free(dictionary_remove(g_bloq, clave)); // preguntar casti free
 	dictionary_put(g_listos, clave, NULL);
 
 }
 
 void listarProcesos(char* linea) {
-	// t_dictionary -> elements_amount cant elementos que hay en total en el diccionario
-
 	char* claveRecurso = obtenerParametro(linea, 1);
 
 	if (claveRecurso == NULL)
@@ -204,59 +209,29 @@ void listarProcesos(char* linea) {
 
 	for (i = 0; i < g_bloq->elements_amount; i++) {
 
-		// Paso el nro de int a char
-
-		// VER: pasar a funcion
-
-		int longitud = 1;
-		int aux = i;
-
-		while (aux >= 10) {
-			aux /= 10;
-			longitud++;
-		}
-		char* nro = malloc(sizeof(char) * longitud + 1);
-
-		if (nro == NULL) {
-			puts("Error de memoria");
-			exit(1);
-		}
-
-		sprintf(nro, "%d", i);
+		char* numero = string_itoa(i);
 
 		// Creo la clave
-		char* claveESI = malloc(sizeof(char) * (strlen("ESI") + longitud + 1));
+		char* claveESI = string_new();
 
-		if (claveESI == NULL) {
-			puts("Error de memoria");
-			exit(1);
-		}
-
-		strcat(claveESI, "ESI");
-		strcat(claveESI, nro);
-
-		free(nro);
+		string_append(&claveESI, "ESI");
+		string_append(&claveESI, numero);
 
 		if (estaBloqueadoPorElRecurso(claveESI, claveRecurso)) {
 			printf("%s", claveESI);
 		}
-
-		free(claveESI);
 	}
 }
 
 void killProceso(char* linea) {
+	int id = atoi(obtenerParametro(linea, 1));
 
-	char* id = obtenerParametro(linea, 1);
-	char* id_char = obtenerParametro(linea, 1);
+	/*if (id == NULL) // preguntar
+	 return;*/
 
-	if (id_char == NULL)
-		return;
-
-	//int id = atoi(id_char);
-
+	// conseguir clave o hicimos mal el diccionario?
+	//dictionary_put(g_term, /* clave */, NULL);
 	// recordar la atomicidad en bloquear
-
 	/*No se si sirve
 	 * liberar mapa de memoria
 	 * cerrar ficheros y liberar otros recursos
@@ -273,10 +248,14 @@ void status(char* linea) {
 
 	if (clave == NULL)
 		return;
+
 }
 
 void deadlock() {
 	// Ver en bloqueos enunciado (p 9)
+	// El Planificador lleva un registro de qué claves fueron bloqueadas por cada ESI en particular. Las cuales deberá liberar en cuanto reciba una operación STORE con dicha clave por parte de la ESI bloqueadora
+	// Esta liberación será de manera FIFO; el primer ESI que se encontraba bloqueado esperando esta clave será liberada (Esto no quiere decir que será inmediatamente tomado por este ESI; sino que estará disponible para ser planificado; y deberá re ejecutar la operación de GET al ser ejecutado).
+	// Cabe aclarar que la finalización de un ESI libera los recursos que este tenía tomados.
 }
 
 /*------------------------------Auxiliares------------------------------*/
@@ -286,16 +265,20 @@ char* obtenerParametro(char* linea, int parametro) {
 	return palabras[parametro];
 }
 
-bool estaBloqueado(char* clave) {
-	return dictionary_has_key(g_bloq, clave);
+bool estaListo(char* clave) {
+	return dictionary_has_key(g_listos, clave);
 }
 
 bool estaEjecutando(char* clave) {
 	return dictionary_has_key(g_exec, clave);
 }
 
+bool estaBloqueado(char* clave) {
+	return dictionary_has_key(g_bloq, clave);
+}
+
 bool estaBloqueadoPorUsuario(char* clave) {
-	t_infoBloqueo data = dictionary_get(g_bloq, clave);
+	t_infoBloqueo *data = dictionary_get(g_bloq, clave);
 	return data->bloqueoUsuario;
 }
 
@@ -304,3 +287,4 @@ bool estaBloqueadoPorElRecurso(char* claveESI, char* claveRecurso) {
 
 	return string_equals_ignore_case(infoESI->codRecurso, claveRecurso);
 }
+
