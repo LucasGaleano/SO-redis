@@ -16,30 +16,35 @@
 
 typedef struct
 {
-	int socketESI;
+	int socketESI, tEnEspera;
 	double estAnterior, realAnterior;
 }t_infoListos;
 
 
 typedef struct
 {
-	bool bloqueoUsuario;
 	char* codRecurso;
 	t_infoListos rafagasYsocket;
 }t_infoBloqueo;
 
+typedef struct
+{
+	char* codigo;
+	int consola;
+}t_infoClavezBloqueadas;
 
 pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
+
 t_dictionary* g_listos;
-t_dictionary* g_exec;
-t_dictionary* g_term;
 t_dictionary* g_bloq;
+
+t_list* g_clavesBloqueadas;
 
 t_log* g_logger;
 t_config* g_con;
 
 void procesarPaquete(t_paquete*, int*);
-void recibirHanshake(t_paquete*, int*);
+void recibirHanshakePlanif(t_paquete*, int*);
 void iniciarServidor(int);
 void asignarBloquedas(char**);
 
