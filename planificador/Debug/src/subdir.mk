@@ -4,12 +4,18 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/algoritmos.c \
+../src/consola.c \
 ../src/planificador.c 
 
 OBJS += \
+./src/algoritmos.o \
+./src/consola.o \
 ./src/planificador.o 
 
 C_DEPS += \
+./src/algoritmos.d \
+./src/consola.d \
 ./src/planificador.d 
 
 
