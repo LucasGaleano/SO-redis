@@ -9,9 +9,11 @@
 /*TABLA DE INSTANCIAS
  *
  *		{nombre de instancia, espacio ocupado(entradas), rango, 		disponible,   ip:puerto,  	     ultimaModificada}
- *	EJ:	 instancia1,          50 						 97-106(a-j)    true   		  127.012.12.2:4444  18:12:1234
- *		 instancia2			  32						 107-112(k-o)   true	      168.127.0.1:3333	 18:12:4312
+ *		 instancia1,          50 						 97-106(a-j)    true   		  127.012.12.2:4444  18:12:1234
+ *		 instancia2			    32						 107-112(k-o)   true	      168.127.0.1:3333	 18:12:4312
  */
+
+/*-------------------ESTRUCTURAS---------------------------*/
 
 typedef struct t_instancia {
 	char* nombre;
@@ -21,18 +23,20 @@ typedef struct t_instancia {
 	time_t ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
-}instancia;
+}t_instancia;
 
-t_list * crearListaInstancias();
+/*-------------------FUNCIONES---------------------------*/
 
-void agregarInstancia(t_list * lista, instancia* instancia );
+t_list *       crearListaInstancias                (void);
 
-instancia * crearInstancia(char* nombre,int espacio,char* ipPuerto,
-							time_t ultimaModificacion,int primerLetra,int ultimaLetra);
+void           agregarInstancia                    (t_list * lista, t_instancia* instancia );
 
-void destruirInstancia(instancia * instancia);
+t_instancia*  crearListaInstancias                 (char* nombre,int espacio,char* ipPuerto,
+							                                time_t ultimaModificacion,int primerLetra,int ultimaLetra);
 
-void mostrarInstancia(instancia * instancia);
+void           destruirInstancia                   (t_instancia * instancia);
+
+void           mostrarInstancia                    (t_instancia * instancia);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

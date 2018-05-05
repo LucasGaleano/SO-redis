@@ -1,25 +1,24 @@
 #include "tablasAdministrativas.h"
 #include <commons/collections/list.h>
 
-t_list * crearListaInstancias(){
 
-  t_list* aux = list_create();
+t_list* crearListaInstancias(void){
 
-	return aux;
+   t_list* aux = list_create();
+   return aux;
 
 }
 
 //TODO: ver de no agregar instancia ya existente (mismo nombre)
-void agregarInstancia(t_list * lista, instancia* instancia ){
-
+void agregarInstancia(t_list * lista, t_instancia* instancia ){
    list_add(lista, instancia);
 }
 
-instancia* crearInstancia(char* nombre,int espacio,char* ipPuerto,
+t_instancia* crearInstancia(char* nombre,int espacio,char* ipPuerto,
 							time_t ultimaModificacion,int primerLetra,int ultimaLetra){
 
-   instancia* aux = malloc(sizeof (instancia));
-   aux->nombre=string_duplicate(nombre);
+   t_instancia* aux = malloc(sizeof (t_instancia));
+   aux->nombre = string_duplicate(nombre);
    aux->espacio = espacio;
    aux->ipPuerto = string_duplicate(ipPuerto);
    aux->disponible = true;
@@ -31,7 +30,7 @@ instancia* crearInstancia(char* nombre,int espacio,char* ipPuerto,
 
 }
 
-void destruirInstancia(instancia * instancia){
+void destruirInstancia(t_instancia * instancia){
 
 	free(instancia->nombre);
 	free(instancia->ipPuerto);
@@ -39,9 +38,12 @@ void destruirInstancia(instancia * instancia){
 }
 
 
-void mostrarInstancia(instancia * instancia){
+void mostrarInstancia(t_instancia * instancia){
 
 	printf("nombre: %s\n", instancia->nombre);
+
+
+
 }
 
 

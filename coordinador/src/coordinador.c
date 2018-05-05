@@ -6,11 +6,12 @@
 
 int main(void) {
 
-
+	// t_list* g_tablaInstancias = crearListaInstancias();
+	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
+	iniciarServer(4444, (void*)procesarPaquete, logger);
 
 	return 0;
 }
-
 
 void procesarPaquete(t_paquete* paquete,int socketCliente){
 
@@ -21,7 +22,7 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 	switch(paquete->codigoOperacion){
 
 		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
-		case SOLICITUD_SET:
+		// case SOLICITUD_SET:
 
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
@@ -36,27 +37,24 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 
 			//enviar a instancia.
 
-			break;
+			// break;
 
 		//4- La instancia retorna al Coordinador
 
-		case RESPUESTA_SET:
+		// case RESPUESTA_SET:
 			//5- El Coordinador logea la respuesta y envía al ESI
-			break;
+			// break;
 
 
-		case SOLICITUD_GET_STORE:
+		// case SOLICITUD_GET_STORE:
 
 			//actualizar la tabla de bloques, agregando la clave bloqueada si es que no esta bloqueado
 			//El Coordinador colabora con el Planificador avisando de este recurso??????
 			//QUIEN CONOCE LAS CLAVES QUE EXISTEN EN EL SISTEMA???????????????????????
-			break;
+			// break;
 
 
 	}
-
-
-
 
 }
 
