@@ -41,11 +41,29 @@ void destruirInstancia(t_instancia * instancia){
 void mostrarInstancia(t_instancia * instancia){
 
 	printf("nombre: %s\n", instancia->nombre);
+}
+
+
+t_instancia* ultimaInstanciaUsada(t_list* tablaDeInstancias){
+
+  time_t fechaMasReciente = time(NULL);
+  t_instancia* aux;
+  t_instancia* ultimaInstanciaUsada;
+
+  for(int i=0;i<list_size(tablaDeInstancias);i++){
+
+      aux = list_get(tablaDeInstancias,i);
+      if(fechaMasReciente > aux->ultimaModificacion){
+        fechaMasReciente = aux->ultimaModificacion;
+        ultimaInstanciaUsada = aux;
+
+      }
+
+  }
+
+  return ultimaInstanciaUsada;
+
 
 
 
 }
-
-
-
-

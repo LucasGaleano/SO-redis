@@ -1,33 +1,31 @@
 #include "coordinador.h"
 
 
-
-
+void procesarPaquete(t_paquete* paquete,int socketCliente);
 
 int main(void) {
 
-	// t_list* g_tablaInstancias = crearListaInstancias();
-	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
-	iniciarServer(4444, (void*)procesarPaquete, logger);
 
+
+	// t_list* g_tablaDeInstancias = crearListaInstancias();
+	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
+	iniciarServer(5555, (void*)procesarPaquete, logger);
 	return 0;
 }
 
 void procesarPaquete(t_paquete* paquete,int socketCliente){
 
-
-
-
-
 	switch(paquete->codigoOperacion){
 
 		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
-		// case SOLICITUD_SET:
+		 case SOLICITUD_SET:
+
+		 	printf("%s\n",recibirMensaje(paquete));
 
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
 
-			// char* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, tablaInstancias* tabla);
+			// char* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, tablaDeInstancias* tabla);
 
 			// retardo de planificador
 
@@ -43,7 +41,7 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 
 		// case RESPUESTA_SET:
 			//5- El Coordinador logea la respuesta y envía al ESI
-			// break;
+			 break;
 
 
 		// case SOLICITUD_GET_STORE:
@@ -71,5 +69,21 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
 	configuracion.retardo = config_get_int_value(archivoConfig,"RETARDO");
 
 	return configuracion;
+
+}
+
+
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tabla){
+
+	switch (algoritmoDePlanificacion) {
+
+		case PLANIFICADOR_EL:
+
+			return ultimaInstaciaUsada(tabla);
+			//Modifcar instanciadasdas
+
+
+	}
+
 
 }

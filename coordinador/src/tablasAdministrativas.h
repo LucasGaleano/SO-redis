@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <commons/collections/list.h>
 #include <commons/string.h>
+#include <time.h>
 
 /*TABLA DE INSTANCIAS
  *
@@ -27,16 +28,12 @@ typedef struct t_instancia {
 
 /*-------------------FUNCIONES---------------------------*/
 
-t_list *       crearListaInstancias                (void);
-
-void           agregarInstancia                    (t_list * lista, t_instancia* instancia );
-
-t_instancia*  crearListaInstancias                 (char* nombre,int espacio,char* ipPuerto,
-							                                time_t ultimaModificacion,int primerLetra,int ultimaLetra);
-
-void           destruirInstancia                   (t_instancia * instancia);
-
-void           mostrarInstancia                    (t_instancia * instancia);
-
+t_list *       crearListaInstancias				(void);
+void           agregarInstancia           (t_list * lista, t_instancia* instancia );
+t_instancia*   crearInstancias        		(char* nombre,int espacio,char* ipPuerto,
+							                            	time_t ultimaModificacion,int primerLetra,int ultimaLetra);
+void           destruirInstancia          (t_instancia * instancia);
+void           mostrarInstancia           (t_instancia * instancia);
+t_instancia*					 ultimaInstanciaUsada				(t_list* tablaDeInstancias);
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */
