@@ -7,6 +7,8 @@ int main(void) {
 
 
 
+
+
 	// t_list* g_tablaDeInstancias = crearListaInstancias();
 	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 	iniciarServer(5555, (void*)procesarPaquete, logger);
@@ -73,16 +75,20 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
 }
 
 
-t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tabla){
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tablaDeInstancias){
 
 	switch (algoritmoDePlanificacion) {
 
 		case PLANIFICADOR_EL:
+			return ultimaInstaciaUsada(tablaDeInstancias);
+			break;
 
-			return ultimaInstaciaUsada(tabla);
-			//Modifcar instanciadasdas
-
-
+		case PLANIFICADOR_LSU:
+			return instanciaMayorEspacio(tablaDeInstancias);
+			break;
+			
+		default:
+			;
 	}
 
 

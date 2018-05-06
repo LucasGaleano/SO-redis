@@ -30,7 +30,7 @@ typedef struct t_configuracion{
 /*------------------------Globales-------------------------*/
 
 t_configuraciones g_configuracion;
-t_list g_tablaDeInstancias;
+t_list* g_tablaDeInstancias;
 
 
 /*------------------------FUNCIONES-------------------------*/
