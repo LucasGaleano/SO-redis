@@ -17,10 +17,10 @@ int main(void) {
 
 void procesarPaquete(t_paquete* paquete,int socketCliente){
 
-	switch(paquete->codigoOperacion){
+	// switch(paquete->codigoOperacion){
 
 		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
-		 case SOLICITUD_SET:
+		 // case SOLICITUD_SET:
 
 		 	printf("%s\n",recibirMensaje(paquete));
 
@@ -43,7 +43,7 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 
 		// case RESPUESTA_SET:
 			//5- El Coordinador logea la respuesta y envía al ESI
-			 break;
+			 // break;
 
 
 		// case SOLICITUD_GET_STORE:
@@ -54,7 +54,7 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 			// break;
 
 
-	}
+	// }
 
 }
 
@@ -77,19 +77,13 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
 
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tablaDeInstancias){
 
-	switch (algoritmoDePlanificacion) {
 
-		case PLANIFICADOR_EL:
-			return ultimaInstaciaUsada(tablaDeInstancias);
-			break;
+		if(algoritmoDePlanificacion == "EL")
+			return TraerUltimaInstaciaUsada(tablaDeInstancias);
 
-		case PLANIFICADOR_LSU:
-			return instanciaMayorEspacio(tablaDeInstancias);
-			break;
-			
-		default:
-			;
-	}
+		if(algoritmoDePlanificacion == "LSU")
+			return TraerInstanciaMayorEspacio(tablaDeInstancias);
+
 
 
 }
