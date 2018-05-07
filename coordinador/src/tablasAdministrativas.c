@@ -1,5 +1,5 @@
 #include "tablasAdministrativas.h"
-#include <commons/collections/list.h>
+
 #define MAX_ENTRADAS 1000
 
 t_list* crearListaInstancias(void){
@@ -74,15 +74,15 @@ t_instancia* traerInstanciaMenorEspacio(t_list* tablaDeInstancias){
     for(int i=0;i<list_size(tablaDeInstancias);i++){
 
         aux = list_get(tablaDeInstancias,i);
-        if(fechaMasReciente > aux->espacio){
-          fechaMasReciente = aux->espacio;
+        if(espacioMaximo > aux->espacio){
+          espacioMaximo = aux->espacio;
           instanciaMenorEspacio = aux;
 
         }
 
     }
 
-    return ultimaInstanciaUsada;
+    return instanciaMenorEspacio;
 
 
 }

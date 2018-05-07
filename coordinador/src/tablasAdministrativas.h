@@ -28,14 +28,14 @@ typedef struct t_instancia {
 
 /*-------------------FUNCIONES---------------------------*/
 
+t_instancia*	 traerInstanciaMenorEspacio 		  (t_list* tablaDeInstancias);
+t_instancia*	 traerUltimaInstanciaUsada				(t_list* tablaDeInstancias);
 t_list *       crearListaInstancias				(void);
 void           agregarInstancia           (t_list * lista, t_instancia* instancia );
-t_instancia*   crearInstancias        		(char* nombre,int espacio,char* ipPuerto,
+t_instancia*   crearInstancia        		(char* nombre,int espacio,char* ipPuerto,
 							                            	time_t ultimaModificacion,int primerLetra,int ultimaLetra);
 void           destruirInstancia          (t_instancia * instancia);
 void           mostrarInstancia           (t_instancia * instancia);
-t_instancia*	 traerUltimaInstanciaUsada				(t_list* tablaDeInstancias);
-t_instancia*	 traerInstanciaMenorEspacio 		  (t_list* tablaDeInstancias);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

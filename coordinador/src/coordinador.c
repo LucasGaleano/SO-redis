@@ -6,7 +6,8 @@ void procesarPaquete(t_paquete* paquete,int socketCliente);
 int main(void) {
 
 
-
+	g_tablaDeInstancias = crearListaInstancias();
+	agregarInstancia(g_tablaDeInstancias,(crearInstancia("instancia1",321,"123",321,22,33)));
 
 
 	// t_list* g_tablaDeInstancias = crearListaInstancias();
@@ -78,11 +79,13 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tablaDeInstancias){
 
 
-		if(algoritmoDePlanificacion == "EL")
-			return TraerUltimaInstaciaUsada(tablaDeInstancias);
+		if(!strcmp(algoritmoDePlanificacion,"EL"))
+			return traerUltimaInstanciaUsada(tablaDeInstancias);
 
-		if(algoritmoDePlanificacion == "LSU")
-			return TraerInstanciaMayorEspacio(tablaDeInstancias);
+		if(!strcmp(algoritmoDePlanificacion,"LSU"))
+			return traerInstanciaMenorEspacio(tablaDeInstancias);
+
+		return NULL;
 
 
 
