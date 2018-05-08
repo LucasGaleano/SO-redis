@@ -9,6 +9,7 @@
 #include <biblioteca/sockets.h>
 #include <biblioteca/paquetes.h>
 #include <biblioteca/estructuras.h>
+#include <pthread.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 

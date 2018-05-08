@@ -44,7 +44,7 @@ void mostrarInstancia(t_instancia * instancia){
 }
 
 
-t_instancia* TraerUltimaInstanciaUsada(t_list* tablaDeInstancias){
+t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias){
 
   time_t fechaMasReciente = time(NULL);
   t_instancia* aux;

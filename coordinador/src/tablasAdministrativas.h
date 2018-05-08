@@ -16,7 +16,7 @@
 
 /*-------------------ESTRUCTURAS---------------------------*/
 
-typedef struct t_instancia {
+typedef struct{
 	char* nombre;
 	int espacio;
 	bool disponible;
