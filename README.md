@@ -10,10 +10,13 @@ Siempre trabajar en una RAMA_PROPIA y cuando se considera cumplida la tarea, hac
 
 ## ¿Como hacer esta magia?
 
-git branch <nombre>: Te crea LOCALMENTE la rama
-git checkout <rama>: Te para sobre esa rama
-git push origin <rama>: sube los cambios en la rama en la que estés parado a la rama especificada
-git pull origin <rama>: Te trae los cambios que estén en GitHub de la rama especificada a la rama en la que estés parado
+git branch #nombre#: Te crea LOCALMENTE la rama.
+  
+git checkout #nombre_rama#: Te para sobre esa rama.
+  
+git push origin #nombre_rama#: sube los cambios en la rama en la que estés parado a la rama especificada.
+  
+git pull origin #nombre_rama#: Te trae los cambios que estén en GitHub de la rama especificada a la rama en la que estés parado.
   
 Luego desde GitHub habrá que iniciar en Pull Request. Desde la pantala principal, Branches-> bajo Active Branches, buscar la que queramos, New Pull Request. Llenar la información del Commit y esperar aprobación del resto.
 
