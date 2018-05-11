@@ -44,6 +44,36 @@ enum cod_op{
 	SOLICITUD_EJECUCION,
 
 	ENVIAR_IDENTIFICACION,
+
+	GET,
+	SET,
+	STORE,
+
+	RESPUESTA_SOLICITUD,
+
+	SOLICITAR_STATUS,
+	RESPUESTA_STATUS,
 };
+
+enum cod_respuesta
+{
+	OK = 0,
+	ABORTO,
+};
+
+//------------------------------Estructuras de comunicacion ESI Coordinador Instancia------------------------------//
+
+typedef struct
+{
+	char* clave, valor;
+}t_claveValor;
+
+
+//------------------------------Estructuras de comunicacion Consola Instancia------------------------------//
+
+typedef struct
+{
+	char* valor, nomInstanciaActual, nomIntanciaPosible;
+}t_respuestaStatus;
 
 #endif /* BIBLIOTECA_ESTRUCTURAS_H_ */

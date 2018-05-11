@@ -10,12 +10,17 @@ void 		serializarNumero		(t_paquete* unPaquete, int numero);
 void 		serializarMensaje		(t_paquete* unPaquete, char * mensaje);
 void 		serializarHandshake		(t_paquete * unPaquete, int emisor);
 void 		serializarArchvivo		(t_paquete * unPaquete, char * rutaArchivo);
+void 		serializarClaveValor	(t_paquete* unPaquete, t_claveValor* sentencia);
+void 		serializarRespuestaStatus(t_paquete* unPaquete, t_respuestaStatus* respuesta);
+
 
 /*----------------------------------------Deserializacion----------------------------------------*/
 int 		deserializarNumero		(t_stream* buffer);
 char * 		deserializarMensaje		(t_stream * buffer);
 int 		deserializarHandshake	(t_stream * buffer);
 void * 		deserializarArchivo		(t_stream * buffer);
+t_claveValor* deserializarClaveValor(t_stream* buffer);
+t_respuestaStatus* deserializarRespuestaStatus(t_stream* buffer);
 
 /*----------------------------------------Funciones auxiliares----------------------------------------*/
 void * 		abrirArchivo			(char * rutaArchivo, size_t * tamArc, FILE ** archivo);

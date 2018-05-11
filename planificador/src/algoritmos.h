@@ -14,10 +14,13 @@
 
 #include "planificador.h"
 
+int g_termino;
+int g_bloqueo;
+int g_finalizo;
+int g_tEjecucion;
 
-//rafaga =rafaga anterior*0,5 + real anterior*0,5
-//rr = 1 + espera/rafaga
-double calcularProximaRafaga(double, double);
-double calcularRR(double, double, double);
+void planificarSinDesalojo(char*);
+void gestionarRespuestaESI(t_paquete* unPaquete, int* socket);
+
 
 #endif /* ALGORITMOS_H_ */

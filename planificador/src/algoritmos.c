@@ -1,41 +1,38 @@
 #include "algoritmos.h"
 
-double calcularProximaRafaga(double estimadoAnterior, double realAnterior)
+inline double calcularProximaRafaga(double estimadoAnterior, double realAnterior)
 {
 	return estimadoAnterior*0.5 + realAnterior*0.5;
 }
 
-double calcularRR(double tEnEspera, double estimadoAnterior, double realAnterior)
+inline double calcularRR(double tEnEspera, double estimadoAnterior, double realAnterior)
 {
 	return (1+ tEnEspera/calcularProximaRafaga(estimadoAnterior,realAnterior));
 }
 
-char* asignarClave(int val)
+inline char* asignarID(int val, char* ret)
 {
-	char *ret = calloc(5, sizeof(char));
-	char num = itoa(val);
+	char num[2] = {'\0'};
+	sprintf(num, "%d", val);
 	strcpy(ret, "ESI");
 	return strcat(ret, num);
 }
 
-void SJFsinDesalojo()
+char* calcularSiguienteSJF(void)
 {
-	time_t inicio;
-	time_t final;
-
 	t_infoListos *actual;
 	double menor;
 
 	int i = 0;
-	char* auxKey = asignarClave(i);
-	char keyMenor[6];
+	char* auxKey = calloc(5, sizeof(char));
+	auxKey = asignarID(i, auxKey);
+	char* keyMenor = calloc(5, sizeof(char));
 	actual = dictionary_get(g_listos, auxKey);
 	menor = calcularProximaRafaga(actual->estAnterior, actual->realAnterior);
 	strcpy(keyMenor, auxKey);
 	for(i++; i<g_listos->elements_amount; i++)
 	{
-		free(auxKey);
-		auxKey = asignarClave(i);
+		auxKey = asignarID(i, auxKey);
 		actual = dictionary_get(g_listos, auxKey);
 		if(menor > calcularProximaRafaga(actual->estAnterior, actual->realAnterior))
 		{
@@ -44,23 +41,85 @@ void SJFsinDesalojo()
 		}
 	}
 
-	actual = dictionary_get(g_listos, keyMenor);
-	int socket = actual->socketESI;
-	inicio = clock();
+	return keyMenor;
+}
 
-	enviarSolicitudEjecucion(socket);
+char* calcularSiguienteHRRN(void)
+{
+	t_infoListos *actual;
+		double mayor;
 
-	free(dictionary_remove(g_listos, keyMenor));
+		int i = 0;
+		char* auxKey = calloc(5, sizeof(char));
+		auxKey = asignarID(i, auxKey);
+		char* keyMenor = calloc(5, sizeof(char));
+		actual = dictionary_get(g_listos, auxKey);
+		mayor = calcularRR(actual->tEnEspera, actual->estAnterior, actual->realAnterior);
+		strcpy(keyMenor, auxKey);
+		for(i++; i<g_listos->elements_amount; i++)
+		{
+			auxKey = asignarID(i, auxKey);
+			actual = dictionary_get(g_listos, auxKey);
+			if(mayor < calcularProximaRafaga(actual->tEnEspera, actual->estAnterior, actual->realAnterior))
+			{
+				mayor = calcularProximaRafaga(actual->tEnEspera, actual->estAnterior, actual->realAnterior);
+				strcpy(keyMenor, auxKey);
+			}
+		}
 
-	//esperar que ESI diga que terminó
+		return keyMenor;
+}
 
-	final = clock();
+void envejecer(char* key, t_infoListos* data)
+{
+	data->tEnEspera += g_tEjecucion;
+}
 
-	actual = malloc(sizeof(t_infoListos));
-	actual->estAnterior = calcularProximaRafaga(actual->estAnterior, actual->realAnterior);
-	actual->realAnterior = final - inicio;
-	actual->socketESI = socket;
+void planificarSinDesalojo(char* algoritmo)
+{
+	g_termino = 0;
+	int cont = 0;
+	t_infoListos *aEjecutar;
+	char* key;
 
-	dictionary_put(g_listos, keyMenor, actual);
+	if(strcmp(algoritmo, "SJF-SD") == 0)
+		key = calcularSiguienteSJF();
+	if(strcmp(algoritmo, "SJF-CD") == 0)
+			//TODO implementar
+	if(strcmp(algoritmo, "HRRN") == 0)
+			key = calcularSiguienteHRRN();
 
+	aEjecutar = dictionary_get(g_listos, key);
+	while(!g_termino)
+	{
+		enviarSolicitudEjecucion(aEjecutar->socketESI);
+		gestionarSolicitudes(aEjecutar->socketESI, (void*) gestionarRespuestaESI, g_logger);
+		cont++;
+	}
+	if(g_bloqueo)
+	{
+		t_infoBloqueo* aux = malloc(sizeof(t_infoBloqueo));
+		g_bloqueo = 0;
+		aEjecutar = dictionary_remove(g_listos, key);
+		aux->rafagasYsocket.estAnterior = calcularProximaRafaga(aEjecutar->estAnterior, aEjecutar->realAnterior);
+		aux->rafagasYsocket.realAnterior = cont;
+		aux->rafagasYsocket.socketESI = aEjecutar->socketESI;
+		//aux->codRecurso = codigo que bloquea
+		dictionary_put(g_bloq, key, aux);
+	}
+	if(g_finalizo)
+	{
+		g_finalizo = 0;
+		free(dictionary_remove(g_listos, key));
+	}
+	g_tEjecucion = cont;
+	if(strcmp(algoritmo, "HRRN") == 0)
+		dictionary_iterator(g_listos, (void*) envejecer);
+	free(key);
+}
+
+void gestionarRespuestaESI(t_paquete* unPaquete, int* socket)
+{
+	//TODO Hablar con Facu sobre como comunicamos resultados de ejecucion ESI
+	destruirPaquete(unPaquete);
 }
