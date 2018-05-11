@@ -19,11 +19,15 @@ void 							enviarMensaje				(int server_socket, char * mensaje);
 void 							enviarArchivo				(int server_socket, char * rutaArchivo);
 void 							enviarSolicitudEjecucion	(int server_socket);
 void 							enviarIdentificacion		(int server_socket, char * nombre);
+void 							enviarSentencia				(int cod, t_claveValor* sentencia, int server_socket);
+void 							enviarRespuestaStatus		(int server_socket, t_respuestaStatus* datos);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int 							recibirHandshake			(t_paquete * unPaquete);
 char * 							recibirMensaje				(t_paquete * unPaquete);
 void * 							recibirArchivo				(t_paquete * unPaquete);
 char * 							recibirIdentificacion		(t_paquete * unPaquete);
+t_claveValor* 					recibirClaveValor			(t_paquete* unPaquete);
+t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete* unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */
