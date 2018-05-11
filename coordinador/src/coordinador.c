@@ -31,7 +31,7 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 
 		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
 		 case SET:
-
+		  //TODO crear hilo para procesar la conexion
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
 			t_claveValor* sentencia = recibirClaveValor(paquete);
@@ -42,9 +42,10 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 			//si no se puede acceder a la instancia, se le avisa al planificador
 
 			//3- Se elige la Instancia asociada y se le envía la solicitud.
-			char* ip = string_split(char * text, char * separator)
-			conectarCliente()
-			enviarSolicitudEjecucion(SET,sentencia,InstanciaElegida->ipPuerto);
+			char* ip = string_duplicate(InstanciaElegida->ip) //TODO fijarse si hay que hacer free a la ip
+			int puerto = InstanciaElegida->puerto;
+			int socketInstancia = conectarCliente(ip,puerto,COORDINADOR);
+			enviarSentencia(SET,sentencia,InstanciaElegida->ipPuerto, socketInstancia);
 
 			break;
 
