@@ -14,12 +14,12 @@ void agregarInstancia(t_list * lista, t_instancia* instancia ){
    list_add(lista, instancia);
 }
 
-t_instancia* crearInstancia(char* nombre,int espacio,char* ipPuerto,
+t_instancia* crearInstancia(char* nombre,int espacioOcupado,char* ipPuerto,
 							time_t ultimaModificacion,int primerLetra,int ultimaLetra){
 
    t_instancia* aux = malloc(sizeof (t_instancia));
    aux->nombre = string_duplicate(nombre);
-   aux->espacio = espacio;
+   aux->espacioOcupado = espacioOcupado;
    aux->ipPuerto = string_duplicate(ipPuerto);
    aux->disponible = true;
    aux->ultimaModificacion = ultimaModificacion;
@@ -64,18 +64,18 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias){
   return ultimaInstanciaUsada;
 }
 
-t_instancia* traerInstanciaMenorEspacio(t_list* tablaDeInstancias){
+t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias){
 
 
-    unsigned int espacioMaximo = MAX_ENTRADAS ;
+    unsigned int espacioMinimo = MAX_ENTRADAS ;
     t_instancia* aux;
-    t_instancia* instanciaMenorEspacio;
+    t_instancia* instanciaMenorEspacioOcupado;
 
     for(int i=0;i<list_size(tablaDeInstancias);i++){
 
         aux = list_get(tablaDeInstancias,i);
-        if(espacioMaximo > aux->espacio){
-          espacioMaximo = aux->espacio;
+        if(espacioMinimo > aux->espacioOcupado){
+          espacioMinimo = aux->espacioOcupado;
           instanciaMenorEspacio = aux;
 
         }
