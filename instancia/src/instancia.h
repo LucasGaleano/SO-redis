@@ -1,32 +1,31 @@
 #ifndef INSTANCIA_H_
 #define INSTANCIA_H_
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <biblioteca/sockets.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /*------------------------Constantes-------------------------*/
-#define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
+#define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
 
 /*------------------------Variables globales-------------------------*/
 t_log * logInstancia;
 
-// Estructuras
+int socketCoordinador;
 
-typedef struct instanciaConfig {
-t_config * archivoConfig;
-int coordinadorPuertoConfig;
-char* coordinadorIpConfig;
-char* algoritmoReemplazo;
-char* puntoMontaje;
-char* nombreInstancia;
+char * algoritmoReemplazo;
+char * puntoMontaje;
+char * nombreInstancia;
 int intervaloDump;
-}instanciaConfig;
 
-// Funciones
+bool recibirSolicitudes;
 
-instanciaConfig cargarConfiguracionInstancia(char* pathConfig);
+/*------------------------Estructuras-------------------------*/
 
+/*-------------------------Conexion-------------------------*/
+void conectarInstancia(void);
+t_config* leerConfiguracion(void);
 
 #endif /* INSTANCIA_H_ */

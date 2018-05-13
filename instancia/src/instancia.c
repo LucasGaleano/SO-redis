@@ -3,28 +3,50 @@
 int main(void) {
 
 	//Creo archivo de log
-	logInstancia = log_create("log_Instancia.log", "instancia", true, LOG_LEVEL_TRACE);
+	logInstancia = log_create("log_Instancia.log", "instancia", true,
+			LOG_LEVEL_TRACE);
 	log_trace(logInstancia, "Inicio el proceso instancia \n");
 
-	instanciaConfig config = cargarConfiguracionInstancia(PATH_CONFIG);
+	//Conecto instancia con coordinador
+	conectarInstancia();
 
-	config_destroy(config.archivoConfig);
 
 	return 0;
 }
 
-instanciaConfig cargarConfiguracionInstancia(char * pathConfig){
+/*-------------------------Conexion-------------------------*/
+void conectarInstancia() {
+	//Leo la configuracion del esi
+	t_config* configInstancia = leerConfiguracion();
 
-	  instanciaConfig result;
-	  result.archivoConfig = config_create(pathConfig);
-	  result.coordinadorIpConfig = config_get_string_value(result.archivoConfig,"COORDINADOR_IP");
-	  result.coordinadorPuertoConfig = config_get_int_value(result.archivoConfig,"COORDINADOR_PUERTO");
-	  result.algoritmoReemplazo = config_get_string_value(result.archivoConfig,"ALGORITMO_REEMPLAZO");
-	  result.puntoMontaje = config_get_string_value(result.archivoConfig,"PUNTO_MONTAJE");
-	  result.nombreInstancia = config_get_string_value(result.archivoConfig,"NOMBRE_INSTANCIA");
-	  result.intervaloDump = config_get_int_value(result.archivoConfig,"INTERVALO_DUMP");
+	//Setteo las variables de configuracion
+	char * coordinadorIP = config_get_string_value(configInstancia,
+			"COORDINADOR_IP");
+	int coordinadorPuerto = config_get_int_value(configInstancia,
+			"COORDINADOR_PUERTO");
+	char * algoritmoReemplazo = config_get_string_value(configInstancia,
+			"ALGORITMO_REEMPLAZO");
+	char * puntoMontaje = config_get_string_value(configInstancia,
+			"PUNTO_MONTAJE");
+	char * nombreInstancia = config_get_string_value(configInstancia,
+			"NOMBRE_INSTANCIA");
+	int intervaloDump = config_get_int_value(configInstancia,
+			"INTERVALO_DUMP");
 
-	  return result;
+	//Conecto al coordinador
+	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
+			INSTANCIA);
+
+	//Destruyo la configuracion
+	config_destroy(configInstancia);
 }
 
+t_config* leerConfiguracion() {
+	t_config* configInstancia = config_create(RUTA_CONFIG);
+	if (!configInstancia) {
+		log_error(logInstancia, "Error al abrir la configuracion \n");
+		exit(EXIT_FAILURE);
+	}
+	return configInstancia;
+}
 
