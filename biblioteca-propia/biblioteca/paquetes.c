@@ -207,18 +207,32 @@ void enviarIdentificacion(int server_socket, char * nombre){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-/*	ENVIAR_RESPUESTA,
-
-	SOLICITAR_STATUS,
-	RESPUESTA_STATUS,*/
-
-void enviarSentencia(int cod, t_claveValor* sentencia, int server_socket)
-{
+void enviarGet(int server_socket, char * clave){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = cod;
+	unPaquete->codigoOperacion = GET;
 
-	serializarClaveValor(unPaquete, sentencia);
+	serializarClave(unPaquete, clave);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarSet(int server_socket, char * clave, char * valor){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = SET;
+
+	serializarClaveValor(unPaquete, clave, valor);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarStore(int server_socket, char * clave){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = STORE;
+
+	serializarClave(unPaquete, clave);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
@@ -234,8 +248,7 @@ void enviarRespuesta(int codRespuesta, int server_socket)
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitusStatus(int server_socket)
-{
+void enviarSolicitusStatus(int server_socket){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;
@@ -245,16 +258,16 @@ void enviarSolicitusStatus(int server_socket)
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarRespuestaStatus(int server_socket, t_respuestaStatus* datos)
-{
+void enviarRespuestaStatus(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = RESPUESTA_STATUS;
 
-	serializarRespuestaStatus(unPaquete, datos);
+	serializarRespuestaStatus(unPaquete, valor, nomInstanciaActual, nomIntanciaPosible);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
+
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
 	return deserializarHandshake(unPaquete->buffer);
@@ -272,17 +285,14 @@ char * recibirIdentificacion(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-t_claveValor* recibirClaveValor(t_paquete* unPaquete)
-{
+t_claveValor * recibirClaveValor(t_paquete* unPaquete){
 	return deserializarClaveValor(unPaquete->buffer);
 }
 
-int recibirRespuesta(t_paquete* unPaquete)
-{
+int recibirRespuesta(t_paquete* unPaquete){
 	return deserializarNumero(unPaquete->buffer);
 }
 
-t_respuestaStatus* recibirRespuestaStatus(t_paquete* unPaquete)
-{
+t_respuestaStatus* recibirRespuestaStatus(t_paquete* unPaquete){
 	return deserializarRespuestaStatus(unPaquete->buffer);
 }

@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <parsi/parser.h>
 
 /*------------------------------Estructuras------------------------------*/
 #define TAM_BLOQUE 1048576
@@ -45,10 +46,6 @@ enum cod_op{
 
 	ENVIAR_IDENTIFICACION,
 
-	GET,
-	SET,
-	STORE,
-
 	RESPUESTA_SOLICITUD,
 
 	SOLICITAR_STATUS,
@@ -65,7 +62,8 @@ enum cod_respuesta
 
 typedef struct
 {
-	char* clave, valor;
+	char* clave;
+	char * valor;
 }t_claveValor;
 
 
@@ -73,7 +71,9 @@ typedef struct
 
 typedef struct
 {
-	char* valor, nomInstanciaActual, nomIntanciaPosible;
+	char* valor;
+	char * nomInstanciaActual;
+	char * nomIntanciaPosible;
 }t_respuestaStatus;
 
 #endif /* BIBLIOTECA_ESTRUCTURAS_H_ */
