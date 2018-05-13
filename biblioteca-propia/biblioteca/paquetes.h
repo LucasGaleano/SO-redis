@@ -25,13 +25,13 @@ void 							enviarStore					(int server_socket, char * clave);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
-int 						  recibirHandshake			(t_paquete * unPaquete);
-char * 					  recibirMensaje				(t_paquete * unPaquete);
-void * 					  recibirArchivo				(t_paquete * unPaquete);
-char * 					  recibirIdentificacion		(t_paquete * unPaquete);
-t_claveValor* 	  recibirSET			(t_paquete * unPaquete);
-char* 					  recibirGET			(t_paquete * unPaquete);
-char* 					  recibirSTORE		(t_paquete * unPaquete);
+int								recibirHandshake			(t_paquete * unPaquete);
+char * 					  		recibirMensaje				(t_paquete * unPaquete);
+void * 					  		recibirArchivo				(t_paquete * unPaquete);
+char * 					  		recibirIdentificacion		(t_paquete * unPaquete);
+t_claveValor *					recibirSet					(t_paquete * unPaquete);
+char* 					  		recibirGet					(t_paquete * unPaquete);
+char* 					  		recibirSTore				(t_paquete * unPaquete);
 t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */

@@ -197,10 +197,20 @@ void enviarSolicitudEjecucion(int server_socket) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarIdentificacion(int server_socket, char * nombre){
+void enviarInfoEsi(int server_socket, char * nombre){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = ENVIAR_IDENTIFICACION;
+	unPaquete->codigoOperacion = ENVIAR_INFO_ESI;
+
+	serializarMensaje(unPaquete, nombre);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarInfoInstancia(int server_socket, char * nombre){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = ENVIAR_INFO_INSTANCIA;
 
 	serializarMensaje(unPaquete, nombre);
 
@@ -285,15 +295,15 @@ char * recibirIdentificacion(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-t_claveValor* recibirSET(t_paquete* unPaquete){
+t_claveValor* recibirSet(t_paquete* unPaquete){
 	return deserializarClaveValor(unPaquete->buffer);
 }
 
-t_claveValor* recibirGET(t_paquete* unPaquete){
+char * recibirGet(t_paquete* unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-t_claveValor* recibirSTORE(t_paquete* unPaquete){
+char * recibirStore(t_paquete* unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
