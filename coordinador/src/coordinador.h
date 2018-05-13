@@ -33,7 +33,8 @@ t_list* g_tablaDeInstancias;
 
 /*------------------------FUNCIONES-------------------------*/
 
-t_configuraciones armarConfigCoordinador(t_config*);
-
+t_configuraciones armarConfigCoordinador	(t_config*);
+t_instancia* 			PlanificarInstancia			(char* algoritmoDePlanificacion,char* Clave,
+	 																					t_list* tablaDeInstancias);
 
 #endif /* COORDINADOR_H_ */

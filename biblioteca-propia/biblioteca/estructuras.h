@@ -50,6 +50,8 @@ enum cod_op{
 
 	SOLICITAR_STATUS,
 	RESPUESTA_STATUS,
+
+	INFO_INSTANCIA;
 };
 
 enum cod_respuesta

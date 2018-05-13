@@ -9,9 +9,9 @@
 
 /*TABLA DE INSTANCIAS
  *
- *		{nombre de instancia, espacio ocupado(entradas), 	rango, 				 disponible, 	ip           puerto  	     ultimaModificada}
- *		 instancia1,          50 													97-106(a-j)    true   		  127.012.12.2 4444  				18:12:1234
- *		 instancia2			    	32						 							107-112(k-o)   true	      	168.127.0.1  3333	 				18:12:4312
+ *		{nombre de instancia, espacio ocupado(entradas), 	rango, 				 disponible, 	socket	     ultimaModificada}
+ *		 instancia1,          50 													97-106(a-j)    true   		  1  				18:12:1234
+ *		 instancia2			    	32						 							107-112(k-o)   true	      	2	 				18:12:4312
  */
 
 /*-------------------ESTRUCTURAS---------------------------*/
@@ -20,8 +20,7 @@ typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	char*	ip;
-	int puerto;
+	int* socket;
 	time_t ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
@@ -33,7 +32,7 @@ t_instancia*	 traerInstanciaMasEspacioDisponible 		  (t_list* tablaDeInstancias)
 t_instancia*	 traerUltimaInstanciaUsada				(t_list* tablaDeInstancias);
 t_list *       crearListaInstancias				(void);
 void           agregarInstancia           (t_list * lista, t_instancia* instancia );
-t_instancia*   crearInstancia        		(char* nombre,int espacio,char* ip, int puerto,
+t_instancia*   crearInstancia        		(char* nombre,int espacio,int* socket,
 							                            	time_t ultimaModificacion,int primerLetra,int ultimaLetra);
 void           destruirInstancia          (t_instancia * instancia);
 void           mostrarInstancia           (t_instancia * instancia);
