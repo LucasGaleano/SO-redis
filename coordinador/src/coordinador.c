@@ -23,7 +23,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 	 switch(paquete->codigoOperacion){
 
 		 case HANDSHAKE:
-
+		 // TODO que no se conecte un planificador mas de 2 veces, ESI y INSTANCIA no creo que sirvan
 			switch(recibirHandshake(paquete)){
 				case PLANIFICADOR:
 
@@ -43,8 +43,8 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 			break;
 
 			case INFO_INSTANCIA:
-
-		  	t_instancia* instanciaAux crearInstancia();
+				;
+		  	// t_instancia*  instanciaAux = crearInstancia();
 				// crearInstancia(nombre,0,socketCliente,0,0,0));
 				// TODO distribuir key entre instancias para el algoritmo de key explicit
 				// agregarInstancia(g_tablaDeInstancias,instanciaAux);
@@ -58,15 +58,14 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 		  //TODO crear hilo para procesar la conexion
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
-			t_claveValor* sentencia = recibirClaveValor(paquete);
 			t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 			//TODO retardo de planificador
 
 			//si no se puede acceder a la instancia, se le avisa al planificador
 
 			//3- Se elige la Instancia asociada y se le envía la solicitud.
-			int socketInstancia = *(instanciaElegida->socket)
-			enviarSolicitudEjecucion(SET,sentencia, socketInstancia);
+			int socketInstancia = *(instanciaElegida->socket);
+			enviarGet(socketInstancia,);
 
 
 			break;
