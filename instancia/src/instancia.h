@@ -4,10 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/config.h>
+#include <commons/log.h>
 
-// Constante
-
+/*------------------------Constantes-------------------------*/
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
+
+/*------------------------Variables globales-------------------------*/
+t_log * logInstancia;
 
 // Estructuras
 

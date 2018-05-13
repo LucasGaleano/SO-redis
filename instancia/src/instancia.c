@@ -2,6 +2,10 @@
 
 int main(void) {
 
+	//Creo archivo de log
+	logInstancia = log_create("log_Instancia.log", "instancia", true, LOG_LEVEL_TRACE);
+	log_trace(logInstancia, "Inicio el proceso instancia \n");
+
 	instanciaConfig config = cargarConfiguracionInstancia(PATH_CONFIG);
 
 	config_destroy(config.archivoConfig);
