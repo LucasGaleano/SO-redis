@@ -18,20 +18,24 @@ void 							enviarHandshake				(int server_socket, int emisor);
 void 							enviarMensaje				(int server_socket, char * mensaje);
 void 							enviarArchivo				(int server_socket, char * rutaArchivo);
 void 							enviarSolicitudEjecucion	(int server_socket);
-void 							enviarIdentificacion		(int server_socket, char * nombre);
+void 							enviarNombreEsi				(int server_socket, char * nombre);
+void 							enviarNombreInstancia		(int server_socket, char * nombre);
 void 							enviarGet					(int server_socket, char * clave);
 void 							enviarSet					(int server_socket, char * clave, char * valor);
 void 							enviarStore					(int server_socket, char * clave);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
+void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);
 char * 					  		recibirMensaje				(t_paquete * unPaquete);
 void * 					  		recibirArchivo				(t_paquete * unPaquete);
-char * 					  		recibirIdentificacion		(t_paquete * unPaquete);
+char * 					  		recibirNombreEsi			(t_paquete * unPaquete);
+char * 					  		recibirNombreInstancia		(t_paquete * unPaquete);
 t_claveValor *					recibirSet					(t_paquete * unPaquete);
 char* 					  		recibirGet					(t_paquete * unPaquete);
 char* 					  		recibirSTore				(t_paquete * unPaquete);
 t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
+t_infoInstancia * 				recibirInfoInstancia		(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */

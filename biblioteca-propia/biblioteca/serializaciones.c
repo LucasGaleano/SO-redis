@@ -43,11 +43,11 @@ void serializarArchvivo(t_paquete * unPaquete, char * rutaArchivo) {
 	fclose(archivofd);
 }
 
-void serializarClave(t_paquete * unPaquete, char * clave){
+void serializarClave(t_paquete * unPaquete, char * clave) {
 	serializarMensaje(unPaquete, clave);
 }
 
-void serializarClaveValor(t_paquete * unPaquete, char * clave, char * valor){
+void serializarClaveValor(t_paquete * unPaquete, char * clave, char * valor) {
 	int tamClave = strlen(clave) + 1;
 	int tamValor = strlen(valor) + 1;
 
@@ -67,12 +67,13 @@ void serializarClaveValor(t_paquete * unPaquete, char * clave, char * valor){
 	desplazamiento += tamValor;
 }
 
-void serializarRespuestaStatus(t_paquete* unPaquete, char * valor, char * nomInstanciaActual, char * nomIntanciaPosible){
+void serializarRespuestaStatus(t_paquete* unPaquete, char * valor,
+		char * nomInstanciaActual, char * nomIntanciaPosible) {
 	int tamActual = strlen(nomInstanciaActual) + 1;
 	int tamPosible = strlen(nomIntanciaPosible) + 1;
 	int tamValor = strlen(valor) + 1;
 
-	int tamTotal = tamValor+tamActual+tamPosible;
+	int tamTotal = tamValor + tamActual + tamPosible;
 
 	int desplazamiento = 0;
 
@@ -81,14 +82,37 @@ void serializarRespuestaStatus(t_paquete* unPaquete, char * valor, char * nomIns
 
 	unPaquete->buffer->data = malloc(tamTotal);
 
-	memcpy(unPaquete->buffer->data + desplazamiento, nomInstanciaActual, tamActual);
+	memcpy(unPaquete->buffer->data + desplazamiento, nomInstanciaActual,
+			tamActual);
 	desplazamiento += tamActual;
 
-	memcpy(unPaquete->buffer->data + desplazamiento, nomIntanciaPosible, tamPosible);
+	memcpy(unPaquete->buffer->data + desplazamiento, nomIntanciaPosible,
+			tamPosible);
 	desplazamiento += tamPosible;
 
 	memcpy(unPaquete->buffer->data + desplazamiento, valor, tamValor);
 	desplazamiento += tamValor;
+}
+
+void serializarInfoInstancia(t_paquete * unPaquete, int cantEntradas,
+		int tamanioEntrada) {
+	int tamCantEntradas = sizeof(int);
+	int tamTamanioEntrada = sizeof(int);
+	int tamTotal = tamCantEntradas + tamTamanioEntrada;
+
+	int desplazamiento = 0;
+
+	unPaquete->buffer = malloc(sizeof(t_stream));
+	unPaquete->buffer->size = tamTotal;
+
+	unPaquete->buffer->data = malloc(tamTotal);
+
+	memcpy(unPaquete->buffer->data + desplazamiento, &cantEntradas,
+			tamCantEntradas);
+	desplazamiento += tamCantEntradas;
+
+	memcpy(unPaquete->buffer->data + desplazamiento, &tamanioEntrada,
+			tamTamanioEntrada);
 }
 
 /*-------------------------Deserializacion-------------------------*/
@@ -114,11 +138,11 @@ void * deserializarArchivo(t_stream * buffer) {
 	return archivo;
 }
 
-char * deserializarClave(t_stream * buffer){
+char * deserializarClave(t_stream * buffer) {
 	return deserializarMensaje(buffer);
 }
 
-t_claveValor* deserializarClaveValor(t_stream * buffer){
+t_claveValor* deserializarClaveValor(t_stream * buffer) {
 	int desplazamiento = 0;
 	t_claveValor* ret = malloc(sizeof(t_claveValor));
 
@@ -131,7 +155,7 @@ t_claveValor* deserializarClaveValor(t_stream * buffer){
 	return ret;
 }
 
-t_respuestaStatus* deserializarRespuestaStatus(t_stream * buffer){
+t_respuestaStatus* deserializarRespuestaStatus(t_stream * buffer) {
 	int desplazamiento = 0;
 	t_respuestaStatus* ret = malloc(sizeof(t_respuestaStatus));
 
@@ -146,6 +170,22 @@ t_respuestaStatus* deserializarRespuestaStatus(t_stream * buffer){
 
 	return ret;
 }
+
+t_infoInstancia * deserializarInfoInstancia(t_stream * buffer) {
+	t_infoInstancia * info = malloc(sizeof(t_infoInstancia));
+
+	int tamNumero = sizeof(int);
+
+	int desplazamiento = 0;
+
+	memcpy(&info->cantEntradas, buffer->data + desplazamiento, tamNumero);
+	desplazamiento += tamNumero;
+
+	memcpy(&info->tamanioEntrada, buffer->data + desplazamiento, tamNumero);
+
+	return info;
+}
+
 /*-------------------------Funciones auxiliares-------------------------*/
 void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 	//Abro el archivo
