@@ -285,8 +285,16 @@ char * recibirIdentificacion(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-t_claveValor * recibirClaveValor(t_paquete* unPaquete){
+t_claveValor* recibirSET(t_paquete* unPaquete){
 	return deserializarClaveValor(unPaquete->buffer);
+}
+
+t_claveValor* recibirGET(t_paquete* unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
+}
+
+t_claveValor* recibirSTORE(t_paquete* unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
 }
 
 int recibirRespuesta(t_paquete* unPaquete){
