@@ -22,10 +22,12 @@ int intervaloDump;
 
 bool recibirSolicitudes;
 
-/*------------------------Estructuras-------------------------*/
-
 /*-------------------------Conexion-------------------------*/
-void conectarInstancia(void);
-t_config* leerConfiguracion(void);
+void 		conectarInstancia	(void);
+t_config* 	leerConfiguracion	(void);
+
+/*-------------------------Procesamiento paquetes-------------------------*/
+void 		procesarPaquete		(t_paquete * unPaquete, int * client_socket);
+
 
 #endif /* INSTANCIA_H_ */

@@ -1,7 +1,6 @@
 #include "instancia.h"
 
 int main(void) {
-
 	//Creo archivo de log
 	logInstancia = log_create("log_Instancia.log", "instancia", true,
 			LOG_LEVEL_TRACE);
@@ -10,8 +9,20 @@ int main(void) {
 	//Conecto instancia con coordinador
 	conectarInstancia();
 
+	//Quedo a la espera de solicitudes
+	recibirSolicitudes = true;
+	while (recibirSolicitudes) {
+		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+				logInstancia);
+	}
 
-	return 0;
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
+
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
+
+	return EXIT_SUCCESS;
 }
 
 /*-------------------------Conexion-------------------------*/
@@ -30,8 +41,7 @@ void conectarInstancia() {
 			"PUNTO_MONTAJE");
 	char * nombreInstancia = config_get_string_value(configInstancia,
 			"NOMBRE_INSTANCIA");
-	int intervaloDump = config_get_int_value(configInstancia,
-			"INTERVALO_DUMP");
+	int intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
 
 	//Conecto al coordinador
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
@@ -50,3 +60,11 @@ t_config* leerConfiguracion() {
 	return configInstancia;
 }
 
+/*-------------------------Procesamiento paquetes-------------------------*/
+void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
+	switch (unPaquete->codigoOperacion) {
+	default:
+		break;
+	}
+	destruirPaquete(unPaquete);
+}
