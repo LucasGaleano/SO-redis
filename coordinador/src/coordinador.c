@@ -1,13 +1,13 @@
 #include "coordinador.h"
 
 int recibirRespuesta(t_paquete* paquete);
-void procesarPaquete(t_paquete* paquete,int socketCliente);
+void procesarPaquete(t_paquete* paquete,int* socketCliente);
 void* imprimir(void* paquete);
 
 int main(void) {
 
 
-	//g_tablaDeInstancias = crearListaInstancias();
+	g_tablaDeInstancias = crearListaInstancias();
 	//agregarInstancia(g_tablaDeInstancias,(crearInstancia("instancia1",321,"123",123,321,22,33)));
 
 
@@ -17,7 +17,7 @@ int main(void) {
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete,int socketCliente){
+void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 	pthread_t pid;
 	 switch(paquete->codigoOperacion){
@@ -44,9 +44,11 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 
 			case INFO_INSTANCIA:
 
-		  	t_instancia * crearInstancia();
-				agregarInstancia();
-
+		  	t_instancia* instanciaAux crearInstancia();
+				// crearInstancia(nombre,0,socketCliente,0,0,0));
+				// TODO distribuir key entre instancias para el algoritmo de key explicit
+				// agregarInstancia(g_tablaDeInstancias,instanciaAux);
+				//
 
 		 	break;
 
@@ -57,16 +59,14 @@ void procesarPaquete(t_paquete* paquete,int socketCliente){
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
 			t_claveValor* sentencia = recibirClaveValor(paquete);
-			t_instancia* InstanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
+			t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 			//TODO retardo de planificador
 
 			//si no se puede acceder a la instancia, se le avisa al planificador
 
 			//3- Se elige la Instancia asociada y se le envía la solicitud.
-			char* ip = string_duplicate(InstanciaElegida->ip); //TODO fijarse si hay que hacer free a la ip
-			int puerto = InstanciaElegida->puerto;
-			int socketInstancia = conectarCliente(ip,puerto,COORDINADOR);
-			enviarSentencia(SET,sentencia, socketInstancia);
+			int socketInstancia = *(instanciaElegida->socket)
+			enviarSolicitudEjecucion(SET,sentencia, socketInstancia);
 
 
 			break;
