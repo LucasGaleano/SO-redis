@@ -47,6 +47,8 @@ void conectarInstancia() {
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
 			INSTANCIA);
 
+	enviarNombreInstancia(socketCoordinador, nombreInstancia);
+
 	//Destruyo la configuracion
 	config_destroy(configInstancia);
 }

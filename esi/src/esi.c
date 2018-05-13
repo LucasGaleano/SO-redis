@@ -60,7 +60,7 @@ void conectarEsi() {
 	//Conecto al planificador
 	socketPlanificador = conectarCliente(planificadorIP, planificadorPuerto,
 			ESI);
-	enviarIdentificacion(socketPlanificador, nombre);
+	enviarNombreEsi(socketPlanificador, nombre);
 
 	//Destruyo la configuracion
 	config_destroy(configEsi);
