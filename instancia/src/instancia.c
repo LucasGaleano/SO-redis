@@ -35,13 +35,12 @@ void conectarInstancia() {
 			"COORDINADOR_IP");
 	int coordinadorPuerto = config_get_int_value(configInstancia,
 			"COORDINADOR_PUERTO");
-	char * algoritmoReemplazo = config_get_string_value(configInstancia,
+	algoritmoReemplazo = config_get_string_value(configInstancia,
 			"ALGORITMO_REEMPLAZO");
-	char * puntoMontaje = config_get_string_value(configInstancia,
-			"PUNTO_MONTAJE");
-	char * nombreInstancia = config_get_string_value(configInstancia,
+	puntoMontaje = config_get_string_value(configInstancia, "PUNTO_MONTAJE");
+	nombreInstancia = config_get_string_value(configInstancia,
 			"NOMBRE_INSTANCIA");
-	int intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
+	intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
 
 	//Conecto al coordinador
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
@@ -65,8 +64,26 @@ t_config* leerConfiguracion() {
 /*-------------------------Procesamiento paquetes-------------------------*/
 void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	switch (unPaquete->codigoOperacion) {
+	case ENVIAR_INFO_INSTANCIA:
+		procesarEnviarInfoInstancia(unPaquete);
+		break;
 	default:
 		break;
 	}
 	destruirPaquete(unPaquete);
+}
+
+void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
+	t_infoInstancia * info = recibirInfoInstancia(unPaquete);
+
+	//Setteo tam de entrada y cantidad
+	info->cantEntradas = cantEntradas;
+	info->tamanioEntrada = tamanioEntrada;
+
+	//Creo el espacio de almacenamiento
+	almacenamiento = malloc(cantEntradas * tamanioEntrada);
+
+	//Libero memoria
+	free(info);
+
 }
