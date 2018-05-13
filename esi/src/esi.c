@@ -81,6 +81,12 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case SOLICITUD_EJECUCION:
 		procesarSolicitudEjecucion();
 		break;
+	case ENVIAR_ERROR:
+		procesarError();
+		break;
+	case RESPUESTA_SOLICITUD:
+		procesarRespuestaSolicitud();
+		break;
 	default:
 		break;
 	}
@@ -98,27 +104,40 @@ void procesarSolicitudEjecucion() {
 	if (parsed.valido) {
 		switch (parsed.keyword) {
 		case GET:
-			printf("GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+			log_trace(logESI,"GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+			enviarGet(socketCoordinador, parsed.argumentos.GET.clave);
 			break;
 		case SET:
-			printf("SET\tclave: <%s>\tvalor: <%s>\n",
+			log_trace(logESI,"SET\tclave: <%s>\tvalor: <%s>\n",
 					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+			enviarSet(socketCoordinador, parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
 			break;
 		case STORE:
-			printf("STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+			log_trace(logESI, "STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+			enviarStore(socketCoordinador, parsed.argumentos.STORE.clave);
 			break;
 		default:
-			fprintf(stderr, "No pude interpretar <%s>\n", sentencia);
+			log_warning(logESI, "No pude interpretar <%s>\n", sentencia);
 			exit(EXIT_FAILURE);
 		}
 		destruir_operacion(parsed);
 	} else {
-		fprintf(stderr, "La linea <%s> no es valida\n", sentencia);
+		log_error(logESI, "La linea <%s> no es valida\n", sentencia);
 		exit(EXIT_FAILURE);
 	}
 
 	//Libero memoria
 	free(sentencia);
+}
+
+void procesarError(){
+	recibirSolicitudes = false;
+	log_error(logESI, "Se desconecto el servidor");
+}
+
+void procesarRespuestaSolicitud(){
+	recibirSolicitudes = false;
+	log_error(logESI, "Fallo critico");
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/

@@ -28,6 +28,8 @@ t_config* 	leerConfiguracion			(void);
 /*-------------------------Procesamiento paquetes-------------------------*/
 void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarSolicitudEjecucion	(void);
+void 		procesarError				(void);
+void 		procesarRespuestaSolicitud	(void);
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 		abrirArchivo				(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
