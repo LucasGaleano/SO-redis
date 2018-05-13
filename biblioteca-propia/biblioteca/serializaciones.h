@@ -6,23 +6,24 @@
 #include <commons/collections/list.h>
 
 /*----------------------------------------Serializacion----------------------------------------*/
-void 		serializarNumero		(t_paquete* unPaquete, int numero);
-void 		serializarMensaje		(t_paquete* unPaquete, char * mensaje);
-void 		serializarHandshake		(t_paquete * unPaquete, int emisor);
-void 		serializarArchvivo		(t_paquete * unPaquete, char * rutaArchivo);
-void 		serializarClaveValor	(t_paquete* unPaquete, t_claveValor* sentencia);
-void 		serializarRespuestaStatus(t_paquete* unPaquete, t_respuestaStatus* respuesta);
-
+void	serializarNumero			(t_paquete * unPaquete, int numero);
+void	serializarMensaje			(t_paquete * unPaquete, char * mensaje);
+void	serializarHandshake			(t_paquete * unPaquete, int emisor);
+void	serializarArchvivo			(t_paquete * unPaquete, char * rutaArchivo);
+void 	serializarClave				(t_paquete * unPaquete, char * clave);
+void 	serializarClaveValor		(t_paquete * unPaquete, char * clave, char * valor);
+void	serializarRespuestaStatus	(t_paquete* unPaquete, char * valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 
 /*----------------------------------------Deserializacion----------------------------------------*/
-int 		deserializarNumero		(t_stream* buffer);
-char * 		deserializarMensaje		(t_stream * buffer);
-int 		deserializarHandshake	(t_stream * buffer);
-void * 		deserializarArchivo		(t_stream * buffer);
-t_claveValor* deserializarClaveValor(t_stream* buffer);
-t_respuestaStatus* deserializarRespuestaStatus(t_stream* buffer);
+int 				deserializarNumero			(t_stream * buffer);
+char * 				deserializarMensaje			(t_stream * buffer);
+int 				deserializarHandshake		(t_stream * buffer);
+void * 				deserializarArchivo			(t_stream * buffer);
+char * 				deserializarClave			(t_stream * buffer);
+t_claveValor* 		deserializarClaveValor		(t_stream * buffer);
+t_respuestaStatus* 	deserializarRespuestaStatus	(t_stream * buffer);
 
 /*----------------------------------------Funciones auxiliares----------------------------------------*/
-void * 		abrirArchivo			(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
+void *	abrirArchivo	(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
 
 #endif /* BIBLIOTECA_SERIALIZACION_H_ */

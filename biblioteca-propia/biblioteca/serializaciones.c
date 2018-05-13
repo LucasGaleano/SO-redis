@@ -43,12 +43,15 @@ void serializarArchvivo(t_paquete * unPaquete, char * rutaArchivo) {
 	fclose(archivofd);
 }
 
-void serializarClaveValor(t_paquete* unPaquete, t_claveValor* sentencia)
-{
-	int tamClave = string_length(sentencia->clave) + 1;
-	int tamValor = string_length(sentencia->valor) + 1;
+void serializarClave(t_paquete * unPaquete, char * clave){
+	serializarMensaje(unPaquete, clave);
+}
 
-	int tamTotal = tamValor+tamClave;
+void serializarClaveValor(t_paquete * unPaquete, char * clave, char * valor){
+	int tamClave = strlen(clave) + 1;
+	int tamValor = strlen(valor) + 1;
+
+	int tamTotal = tamValor + tamClave;
 
 	int desplazamiento = 0;
 
@@ -57,19 +60,17 @@ void serializarClaveValor(t_paquete* unPaquete, t_claveValor* sentencia)
 
 	unPaquete->buffer->data = malloc(tamTotal);
 
-	memcpy(unPaquete->buffer->data + desplazamiento, sentencia->clave, tamClave);
+	memcpy(unPaquete->buffer->data + desplazamiento, clave, tamClave);
 	desplazamiento += tamClave;
 
-	memcpy(unPaquete->buffer->data + desplazamiento, sentencia->valor, tamValor);
+	memcpy(unPaquete->buffer->data + desplazamiento, valor, tamValor);
 	desplazamiento += tamValor;
 }
 
-void serializarRespuestaStatus(t_paquete* unPaquete, t_respuestaStatus* respuesta)
-{
-	int tamActual = string_length(respuesta->nomInstanciaActual) + 1;
-	int tamPosible = string_length(respuesta->nomIntanciaPosible) + 1;
-	int tamValor = string_length(respuesta->valor) + 1;
-
+void serializarRespuestaStatus(t_paquete* unPaquete, char * valor, char * nomInstanciaActual, char * nomIntanciaPosible){
+	int tamActual = strlen(nomInstanciaActual) + 1;
+	int tamPosible = strlen(nomIntanciaPosible) + 1;
+	int tamValor = strlen(valor) + 1;
 
 	int tamTotal = tamValor+tamActual+tamPosible;
 
@@ -80,15 +81,16 @@ void serializarRespuestaStatus(t_paquete* unPaquete, t_respuestaStatus* respuest
 
 	unPaquete->buffer->data = malloc(tamTotal);
 
-	memcpy(unPaquete->buffer->data + desplazamiento, respuesta->nomInstanciaActual, tamActual);
+	memcpy(unPaquete->buffer->data + desplazamiento, nomInstanciaActual, tamActual);
 	desplazamiento += tamActual;
 
-	memcpy(unPaquete->buffer->data + desplazamiento, respuesta->nomIntanciaPosible, tamPosible);
+	memcpy(unPaquete->buffer->data + desplazamiento, nomIntanciaPosible, tamPosible);
 	desplazamiento += tamPosible;
 
-	memcpy(unPaquete->buffer->data + desplazamiento, respuesta->valor, tamValor);
+	memcpy(unPaquete->buffer->data + desplazamiento, valor, tamValor);
 	desplazamiento += tamValor;
 }
+
 /*-------------------------Deserializacion-------------------------*/
 int deserializarNumero(t_stream* buffer) {
 	return *(int*) (buffer->data);
@@ -112,32 +114,34 @@ void * deserializarArchivo(t_stream * buffer) {
 	return archivo;
 }
 
-t_claveValor* deserializarClaveValor(t_stream* buffer)
-{
+char * deserializarClave(t_stream * buffer){
+	return deserializarMensaje(buffer);
+}
+
+t_claveValor* deserializarClaveValor(t_stream * buffer){
 	int desplazamiento = 0;
 	t_claveValor* ret = malloc(sizeof(t_claveValor));
 
-	ret->clave = strdup(buffer + desplazamiento);
+	ret->clave = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->clave);
 
-	ret->valor = strdup(buffer + desplazamiento);
+	ret->valor = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->valor);
 
 	return ret;
 }
 
-t_respuestaStatus* deserializarRespuestaStatus(t_stream* buffer)
-{
+t_respuestaStatus* deserializarRespuestaStatus(t_stream * buffer){
 	int desplazamiento = 0;
 	t_respuestaStatus* ret = malloc(sizeof(t_respuestaStatus));
 
-	ret->nomInstanciaActual = strdup(buffer + desplazamiento);
+	ret->nomInstanciaActual = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->nomInstanciaActual);
 
-	ret->nomIntanciaPosible = strdup(buffer + desplazamiento);
+	ret->nomIntanciaPosible = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->nomIntanciaPosible);
 
-	ret->valor = strdup(buffer + desplazamiento);
+	ret->valor = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->valor);
 
 	return ret;
