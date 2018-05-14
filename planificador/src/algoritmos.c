@@ -151,7 +151,7 @@ case ABORTO:
 	destruirPaquete(unPaquete);
 }
 
-void gestionarRespuestaCoordinador(t_paquete* unPaquete, int* socket) {
+void gestionarRespuestaESI(t_paquete* unPaquete, int* socket) {
 	switch (unPaquete->codigoOperacion) {
 	case ABORTO:
 		g_termino = 1;
