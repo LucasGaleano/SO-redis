@@ -17,7 +17,6 @@ int socketCoordinador;
 
 char * algoritmoReemplazo;
 char * puntoMontaje;
-char * nombreInstancia;
 int intervaloDump;
 
 bool recibirSolicitudes;
@@ -25,7 +24,16 @@ bool recibirSolicitudes;
 int cantEntradas;
 int tamanioEntrada;
 
-void * almacenamiento;
+void * storage;
+
+t_list * tablaEntradas;
+
+/*------------------------Estructuras-------------------------*/
+typedef struct {
+	char * clave;
+	void * entrada;
+	int tamanio;
+} t_tabla_entradas;
 
 /*-------------------------Conexion-------------------------*/
 void 		conectarInstancia	(void);

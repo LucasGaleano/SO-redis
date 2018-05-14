@@ -38,7 +38,7 @@ void conectarInstancia() {
 	algoritmoReemplazo = config_get_string_value(configInstancia,
 			"ALGORITMO_REEMPLAZO");
 	puntoMontaje = config_get_string_value(configInstancia, "PUNTO_MONTAJE");
-	nombreInstancia = config_get_string_value(configInstancia,
+	char * nombreInstancia = config_get_string_value(configInstancia,
 			"NOMBRE_INSTANCIA");
 	intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
 
@@ -81,9 +81,36 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	info->tamanioEntrada = tamanioEntrada;
 
 	//Creo el espacio de almacenamiento
-	almacenamiento = malloc(cantEntradas * tamanioEntrada);
+	storage = malloc(cantEntradas * tamanioEntrada);
 
 	//Libero memoria
 	free(info);
 
 }
+
+/*-------------------------Tabla de entradas-------------------------*/
+void crearTablaEntradas(void) {
+	tablaEntradas = list_create();
+}
+
+void agregarClave(char * clave) {
+	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
+
+	registroEntrada->clave = strdup(clave);
+
+	list_add(tablaEntradas, registroEntrada);
+}
+
+t_tabla_entradas * buscarRegistroEntrada(){
+
+}
+
+void agregarValor(char * clave, char * valor){
+
+}
+
+
+//modificarValor
+//eliminarValor
+//eliminarClave
+//buscarClave
