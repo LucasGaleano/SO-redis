@@ -27,55 +27,45 @@ typedef struct {
 typedef struct {
 	int codigoOperacion;
 	t_stream * buffer;
-}t_paquete;
+} t_paquete;
 
 enum emisor {
-	COORDINADOR = 900,
-	ESI = 901,
-	INSTANCIA = 902,
-	PLANIFICADOR = 903,
+	COORDINADOR = 900, ESI = 901, INSTANCIA = 902, PLANIFICADOR = 903,
 };
 
-enum cod_op{
-	HANDSHAKE=0,
-	ENVIAR_MENSAJE,
-	ENVIAR_ARCHIVO,
-	ENVIAR_ERROR,
+enum cod_op {
+	HANDSHAKE = 0, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR,
 
 	SOLICITUD_EJECUCION,
 
-	ENVIAR_IDENTIFICACION,
+	ENVIAR_NOMBRE_ESI, ENVIAR_NOMBRE_INSTANCIA, ENVIAR_INFO_INSTANCIA,
 
 	RESPUESTA_SOLICITUD,
 
-	SOLICITAR_STATUS,
-	RESPUESTA_STATUS,
-
-	INFO_INSTANCIA;
+	SOLICITAR_STATUS, RESPUESTA_STATUS,
 };
 
-enum cod_respuesta
-{
-	OK = 0,
-	ABORTO,
+enum cod_respuesta {
+	OK = 0, ABORTO,
 };
 
 //------------------------------Estructuras de comunicacion ESI Coordinador Instancia------------------------------//
-
-typedef struct
-{
+typedef struct {
 	char* clave;
 	char * valor;
-}t_claveValor;
+} t_claveValor;
 
+//------------------------------Estructuras de comunicacion Coordinador Instancia------------------------------//
+typedef struct {
+	int cantEntradas;
+	int tamanioEntrada;
+} t_infoInstancia;
 
 //------------------------------Estructuras de comunicacion Consola Instancia------------------------------//
-
-typedef struct
-{
+typedef struct {
 	char* valor;
 	char * nomInstanciaActual;
 	char * nomIntanciaPosible;
-}t_respuestaStatus;
+} t_respuestaStatus;
 
 #endif /* BIBLIOTECA_ESTRUCTURAS_H_ */

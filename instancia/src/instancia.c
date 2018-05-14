@@ -1,26 +1,116 @@
 #include "instancia.h"
 
 int main(void) {
+	//Creo archivo de log
+	logInstancia = log_create("log_Instancia.log", "instancia", true,
+			LOG_LEVEL_TRACE);
+	log_trace(logInstancia, "Inicio el proceso instancia \n");
 
-	instanciaConfig config = cargarConfiguracionInstancia(PATH_CONFIG);
+	//Conecto instancia con coordinador
+	conectarInstancia();
 
-	config_destroy(config.archivoConfig);
+	//Quedo a la espera de solicitudes
+	recibirSolicitudes = true;
+	while (recibirSolicitudes) {
+		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+				logInstancia);
+	}
 
-	return 0;
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
+
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
+
+	return EXIT_SUCCESS;
 }
 
-instanciaConfig cargarConfiguracionInstancia(char * pathConfig){
+/*-------------------------Conexion-------------------------*/
+void conectarInstancia() {
+	//Leo la configuracion del esi
+	t_config* configInstancia = leerConfiguracion();
 
-	  instanciaConfig result;
-	  result.archivoConfig = config_create(pathConfig);
-	  result.coordinadorIpConfig = config_get_string_value(result.archivoConfig,"COORDINADOR_IP");
-	  result.coordinadorPuertoConfig = config_get_int_value(result.archivoConfig,"COORDINADOR_PUERTO");
-	  result.algoritmoReemplazo = config_get_string_value(result.archivoConfig,"ALGORITMO_REEMPLAZO");
-	  result.puntoMontaje = config_get_string_value(result.archivoConfig,"PUNTO_MONTAJE");
-	  result.nombreInstancia = config_get_string_value(result.archivoConfig,"NOMBRE_INSTANCIA");
-	  result.intervaloDump = config_get_int_value(result.archivoConfig,"INTERVALO_DUMP");
+	//Setteo las variables de configuracion
+	char * coordinadorIP = config_get_string_value(configInstancia,
+			"COORDINADOR_IP");
+	int coordinadorPuerto = config_get_int_value(configInstancia,
+			"COORDINADOR_PUERTO");
+	algoritmoReemplazo = config_get_string_value(configInstancia,
+			"ALGORITMO_REEMPLAZO");
+	puntoMontaje = config_get_string_value(configInstancia, "PUNTO_MONTAJE");
+	char * nombreInstancia = config_get_string_value(configInstancia,
+			"NOMBRE_INSTANCIA");
+	intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
 
-	  return result;
+	//Conecto al coordinador
+	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
+			INSTANCIA);
+
+	enviarNombreInstancia(socketCoordinador, nombreInstancia);
+
+	//Destruyo la configuracion
+	config_destroy(configInstancia);
+}
+
+t_config* leerConfiguracion() {
+	t_config* configInstancia = config_create(RUTA_CONFIG);
+	if (!configInstancia) {
+		log_error(logInstancia, "Error al abrir la configuracion \n");
+		exit(EXIT_FAILURE);
+	}
+	return configInstancia;
+}
+
+/*-------------------------Procesamiento paquetes-------------------------*/
+void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
+	switch (unPaquete->codigoOperacion) {
+	case ENVIAR_INFO_INSTANCIA:
+		procesarEnviarInfoInstancia(unPaquete);
+		break;
+	default:
+		break;
+	}
+	destruirPaquete(unPaquete);
+}
+
+void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
+	t_infoInstancia * info = recibirInfoInstancia(unPaquete);
+
+	//Setteo tam de entrada y cantidad
+	info->cantEntradas = cantEntradas;
+	info->tamanioEntrada = tamanioEntrada;
+
+	//Creo el espacio de almacenamiento
+	storage = malloc(cantEntradas * tamanioEntrada);
+
+	//Libero memoria
+	free(info);
+
+}
+
+/*-------------------------Tabla de entradas-------------------------*/
+void crearTablaEntradas(void) {
+	tablaEntradas = list_create();
+}
+
+void agregarClave(char * clave) {
+	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
+
+	registroEntrada->clave = strdup(clave);
+
+	list_add(tablaEntradas, registroEntrada);
+}
+
+t_tabla_entradas * buscarRegistroEntrada(){
+
+}
+
+void agregarValor(char * clave, char * valor){
+
 }
 
 
+//modificarValor
+//eliminarValor
+//eliminarClave
+//buscarClave

@@ -1,29 +1,47 @@
 #ifndef INSTANCIA_H_
 #define INSTANCIA_H_
 
+#include <biblioteca/sockets.h>
+#include <commons/config.h>
+#include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <commons/config.h>
 
-// Constante
+/*------------------------Constantes-------------------------*/
+#define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
 
-#define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
+/*------------------------Variables globales-------------------------*/
+t_log * logInstancia;
 
-// Estructuras
+int socketCoordinador;
 
-typedef struct instanciaConfig {
-t_config * archivoConfig;
-int coordinadorPuertoConfig;
-char* coordinadorIpConfig;
-char* algoritmoReemplazo;
-char* puntoMontaje;
-char* nombreInstancia;
+char * algoritmoReemplazo;
+char * puntoMontaje;
 int intervaloDump;
-}instanciaConfig;
 
-// Funciones
+bool recibirSolicitudes;
 
-instanciaConfig cargarConfiguracionInstancia(char* pathConfig);
+int cantEntradas;
+int tamanioEntrada;
+
+void * storage;
+
+t_list * tablaEntradas;
+
+/*------------------------Estructuras-------------------------*/
+typedef struct {
+	char * clave;
+	void * entrada;
+	int tamanio;
+} t_tabla_entradas;
+
+/*-------------------------Conexion-------------------------*/
+void 		conectarInstancia	(void);
+t_config* 	leerConfiguracion	(void);
+
+/*-------------------------Procesamiento paquetes-------------------------*/
+void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
+void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
 
 
 #endif /* INSTANCIA_H_ */
