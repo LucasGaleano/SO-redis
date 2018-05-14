@@ -6,12 +6,7 @@ void* imprimir(void* paquete);
 
 int main(void) {
 
-
 	g_tablaDeInstancias = crearListaInstancias();
-	//agregarInstancia(g_tablaDeInstancias,(crearInstancia("instancia1",321,"123",123,321,22,33)));
-
-
-	// t_list* g_tablaDeInstancias = crearListaInstancias();
 	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 	iniciarServer(5555, (void*)procesarPaquete, logger);
 	return 0;
@@ -42,15 +37,24 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 			break;
 
-			case INFO_INSTANCIA:
+			case ENVIAR_NOMBRE_ESI:
 				;
-		  	// t_instancia*  instanciaAux = crearInstancia();
-				// crearInstancia(nombre,0,socketCliente,0,0,0));
-				// TODO distribuir key entre instancias para el algoritmo de key explicit
-				// agregarInstancia(g_tablaDeInstancias,instanciaAux);
-				//
+
 
 		 	break;
+
+			case ENVIAR_NOMBRE_INSTANCIA:
+				;
+
+				t_instancia*  instanciaAux = crearInstancia();
+				crearInstancia(nombre,socketCliente);
+				// TODO distribuir key entre instancias para el algoritmo de key explicit
+				// agregarInstancia(g_tablaDeInstancias,instanciaAux);
+				//TODO Enviar info instancia (cantidades)
+
+
+
+			break;
 
 		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
 		 case SET:
@@ -58,14 +62,18 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 		  //TODO crear hilo para procesar la conexion
 			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
 			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
+			t_claveValor* sentencia = recibirSET(paquete);
 			t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
+
+			int socketInstancia = *(instanciaElegida->socket);
+			enviarSet(socketInstancia,sentencia);
+
 			//TODO retardo de planificador
 
-			//si no se puede acceder a la instancia, se le avisa al planificador
+			//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
 			//3- Se elige la Instancia asociada y se le envía la solicitud.
-			int socketInstancia = *(instanciaElegida->socket);
-			enviarGet(socketInstancia,);
+
 
 
 			break;
@@ -121,9 +129,9 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_l
 		if(!strcmp(algoritmoDePlanificacion,"EL"))
 			return traerUltimaInstanciaUsada(tablaDeInstancias);
 
+		//TODO algoritmo key explicit "KE"
+
 		return NULL;
-
-
 
 }
 
@@ -133,4 +141,35 @@ void* imprimir(void* paquete){
 	printf("mensaje:  %d\n",recibirHandshake(paquete));
 	sleep(10);
 	pthread_exit((void*)1);
+}
+
+void  DistribuirKeys (g_tablaDeInstancias)
+{  //abecedario en ascci - 97(a) - 122(z)
+   int cantidadInstanciasDisponibles = 0;
+	 int letrasAbecedario = 27;
+	 int primerLetra = 97;
+	 int ultimaLetraAbecedario = 122;
+	 int ultimaLetra = 0;
+
+	 for (size_t i = 0; i <  list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+			   cantidadInstanciasDisponibles++;
+		}
+	 }
+	 int letrasPorInstancia = (int)letrasAbecedario/cantidadInstanciasDisponibles;
+	 int resto = letrasAbecedario - (letrasPorInstancia * cantidadInstanciasDisponibles);
+	 letrasPorInstancias = resto == 0 ? letrasPorInstancias: letrasPorInstancias + 1;
+	 for (size_t i = 0; i < list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+	 	g_tablaDeInstancias[i]-> primeraLetra = primerLetra;
+	  ultimaLetra = (primerLetra + letrasPorInstancia) >= ultimaLetraAbecedario ? ultimaLetraAbecedario: primerLetra + letrasPorInstancia;
+		g_tablaDeInstancias[i]-> ultimaLetra = ultimaLetra;
+		primerLetra = ultimaLetra + 1;
+	 }
+ 	}
+}
+
+
+
+
 }
