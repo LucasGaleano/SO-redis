@@ -76,13 +76,13 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias){
         aux = list_get(tablaDeInstancias,i);
         if(espacioMinimo > aux->espacioOcupado){
           espacioMinimo = aux->espacioOcupado;
-          instanciaMenorEspacio = aux;
+          instanciaMenorEspacioOcupado = aux;
 
         }
 
     }
 
-    return instanciaMenorEspacio;
+    return instanciaMenorEspacioOcupado;
 
 
 }
