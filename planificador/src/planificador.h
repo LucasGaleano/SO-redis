@@ -22,6 +22,9 @@ typedef struct {
 }t_infoBloqueo;
 
 pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexBloqueo = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexListo = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t ESIentrada = PTHREAD_COND_INITIALIZER;
 
 t_dictionary* g_listos;
 t_dictionary* g_bloq;
@@ -31,6 +34,7 @@ t_config* g_con;
 
 double g_est;
 int g_socketCoordinador;
+char* g_algoritmo;
 
 void procesarPaquete(t_paquete*, int*);
 void recibirHanshakePlanif(t_paquete*, int*);

@@ -19,7 +19,10 @@ int g_bloqueo;
 int g_tEjecucion;
 
 int g_socketEnEjecucion;
+int g_huboModificacion;
 char* g_claveGET;
+
+pthread_mutex_t modificacion = PTHREAD_MUTEX_INITIALIZER;
 
 void planificarSinDesalojo(char*);
 void gestionarRespuestaESI(t_paquete* unPaquete, int* socket);

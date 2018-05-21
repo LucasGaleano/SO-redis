@@ -14,16 +14,19 @@ int main(void) {
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
+	char* algoritmo;
 
-	pthread_t* hiloServer;
+	pthread_t* hiloServidor;
+	pthread_t* hiloAlgoritmos;
 
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
 
-	pthread_create(hiloServer, NULL, (void*) iniciarServidor, puertoLocal);
+	pthread_create(hiloServidor, NULL, (void*) iniciarServidor, puertoLocal);
+	pthread_create(hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 
-	//iniciarConsola
+	iniciarConsola();
 
-	pthread_join(hiloServer, NULL);
+	pthread_join(hiloServidor, NULL);
 
 	config_destroy(g_con);
 	log_destroy(g_logger);
@@ -51,7 +54,13 @@ procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		dat->realAnterior = g_est;
 		dat->socketESI = *socketCliente;
 		dat->tEnEspera = 0;
+		pthread_mutex_lock(&mutexListo);
 		dictionary_put(g_listos, recibirIdentificacion(unPaquete), dat);
+		pthread_mutex_unlock(&mutexListo);
+		pthread_cond_signal(&ESIentrada);
+		pthread_mutex_lock(&modificacion);
+		g_huboModificacion = 1;
+		pthread_mutex_unlock(&modificacion);
 	}
 	destruirPaquete(unPaquete);
 }
@@ -70,3 +79,11 @@ recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente) {
 void iniciarServidor(int puerto) {
 	iniciarServer(puerto, (void*) procesarPaquete, g_logger);
 }
+
+void planificar(char* algoritmo) {
+	if (strcmp(algoritmo, "SJF_SD") == 0 || strcmp(algoritmo, "HRRN") == 0)
+		planificarSinDesalojo(algoritmo);
+	else
+		planificarConDesalojo();
+}
+
