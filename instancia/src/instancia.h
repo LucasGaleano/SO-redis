@@ -43,5 +43,12 @@ t_config* 	leerConfiguracion	(void);
 void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
 
+/*-------------------------Tabla de entradas-------------------------*/
+void 				crearTablaEntradas	(void);
+void 				destruirTabla		(void);
+t_tabla_entradas * 	buscarEntrada		(char * clave);
+void 				agregarClave		(char * clave);
+void 				eliminarClave		(char * clave);
+void 				mostrarTabla		(void);
 
 #endif /* INSTANCIA_H_ */

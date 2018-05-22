@@ -93,6 +93,16 @@ void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
 }
 
+void destruirTabla(void){
+	void eliminarEntrada(t_tabla_entradas * entrada){
+		free(entrada->clave);
+		if(entrada->entrada != NULL)free(entrada->entrada);
+		free(entrada);
+	}
+
+	list_destroy_and_destroy_elements(tablaEntradas, (void *) eliminarEntrada);
+}
+
 t_tabla_entradas * buscarEntrada(char * clave) {
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
 		return string_equals_ignore_case(entrada->clave, clave);
@@ -102,7 +112,7 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 			(void*) esEntradaBuscada);
 
 	if (registroEntrada == NULL)
-		return -1;
+		return NULL;
 
 	return registroEntrada;
 }
@@ -111,6 +121,8 @@ void agregarClave(char * clave) {
 	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
 	registroEntrada->clave = strdup(clave);
+
+	registroEntrada->tamanio = 0;
 
 	list_add(tablaEntradas, registroEntrada);
 }
@@ -130,9 +142,17 @@ void eliminarClave(char * clave) {
 	free(entradaBuscada);
 }
 
-void mostrarTabla(){
+void mostrarTabla(void) {
+	int i;
 
+	printf("Clave			Tamanio \n");
+	printf("-------------------------------\n");
+
+	for (i = 0; i < tablaEntradas->elements_count; i++) {
+		t_tabla_entradas * entrada = list_get(tablaEntradas, i);
+		printf("%s			%d \n", entrada->clave, entrada->tamanio);
+	}
 }
 
 /*-------------------------Algoritmo circular -------------------------*/
-bool * bitMapEntradas[cantEntradas];
+//bool * bitMapEntradas[cantEntradas];
