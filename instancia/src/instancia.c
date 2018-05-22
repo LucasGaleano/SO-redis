@@ -93,6 +93,20 @@ void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
 }
 
+t_tabla_entradas * buscarEntrada(char * clave) {
+	bool esEntradaBuscada(t_tabla_entradas * entrada) {
+		return string_equals_ignore_case(entrada->clave, clave);
+	}
+
+	t_tabla_entradas * registroEntrada = list_find(tablaEntradas,
+			(void*) esEntradaBuscada);
+
+	if (registroEntrada == NULL)
+		return -1;
+
+	return registroEntrada;
+}
+
 void agregarClave(char * clave) {
 	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
@@ -101,16 +115,24 @@ void agregarClave(char * clave) {
 	list_add(tablaEntradas, registroEntrada);
 }
 
-t_tabla_entradas * buscarRegistroEntrada(){
+void eliminarClave(char * clave) {
+	bool esEntradaBuscada(t_tabla_entradas * entrada) {
+		return string_equals_ignore_case(entrada->clave, clave);
+	}
+
+	t_tabla_entradas * entradaBuscada = list_remove_by_condition(tablaEntradas,
+			(void*) esEntradaBuscada);
+
+	//Libero memoria
+	free(entradaBuscada->clave);
+	if (entradaBuscada->entrada != NULL)
+		free(entradaBuscada->entrada);
+	free(entradaBuscada);
+}
+
+void mostrarTabla(){
 
 }
 
-void agregarValor(char * clave, char * valor){
-
-}
-
-
-//modificarValor
-//eliminarValor
-//eliminarClave
-//buscarClave
+/*-------------------------Algoritmo circular -------------------------*/
+bool * bitMapEntradas[cantEntradas];
