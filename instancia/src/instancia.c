@@ -135,11 +135,13 @@ void eliminarClave(char * clave) {
 	t_tabla_entradas * entradaBuscada = list_remove_by_condition(tablaEntradas,
 			(void*) esEntradaBuscada);
 
-	//Libero memoria
-	free(entradaBuscada->clave);
-	if (entradaBuscada->entrada != NULL)
-		free(entradaBuscada->entrada);
-	free(entradaBuscada);
+	if (entradaBuscada != NULL) {
+		//Libero memoria
+		free(entradaBuscada->clave);
+		if (entradaBuscada->entrada != NULL)
+			free(entradaBuscada->entrada);
+		free(entradaBuscada);
+	}
 }
 
 void mostrarTabla(void) {
