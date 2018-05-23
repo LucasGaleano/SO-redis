@@ -18,7 +18,8 @@
 #include <pthread.h>
 #include "planificador.h"
 
-
+/*------------------------------Globales-----------------------------*/
+char* g_idComparar;
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -39,9 +40,9 @@ void				salirConsola							(bool*);
 /*------------------------------Auxiliares------------------------------*/
 char* 				obtenerParametro						(char*, int);
 bool 				estaListo								(char*);
-bool 				estaEjecutando							(char*);
 bool 				estaBloqueado							(char*);
-bool 				estaBloqueadoPorUsuario					(char*);
-bool 				estaBloqueadoPorElRecurso				(char*, char*);
+bool 				estaEnLista								(char*, t_list );
+bool 				sonIguales								(char* );
+bool 				estaBloqueadoPorLaClave					(char*, char*);
 
 #endif /* CONSOLA_H_ */
