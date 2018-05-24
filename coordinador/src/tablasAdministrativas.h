@@ -20,7 +20,7 @@ typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	int* socket;
+	int socket;
 	time_t ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
@@ -29,13 +29,14 @@ typedef struct{
 
 /*-------------------FUNCIONES---------------------------*/
 
-t_instancia*	 traerInstanciaMasEspacioDisponible 		  (t_list* tablaDeInstancias);
-t_instancia*	 traerUltimaInstanciaUsada				(t_list* tablaDeInstancias);
-t_list *       crearListaInstancias				(void);
-void           agregarInstancia           (t_list * lista, t_instancia* instancia );
-t_instancia*   crearInstancia        		(char* nombre,int* socket);
-void           destruirInstancia          (t_instancia * instancia);
-void           mostrarInstancia           (t_instancia * instancia);
+t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias);
+t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias);
+t_list* crearListaInstancias(void);
+void agregarInstancia(t_list * lista, t_instancia* instancia );
+t_instancia* crearInstancia(char* nombre,int socket);
+void destruirInstancia(t_instancia * instancia);
+void mostrarInstancia(t_instancia * instancia);
+void distribuirKeys(t_list* g_tablaDeInstancias);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

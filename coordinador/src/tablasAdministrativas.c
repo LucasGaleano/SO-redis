@@ -63,8 +63,8 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias){
 
   return ultimaInstanciaUsada;
 }
-
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias){
+
 
 
     unsigned int espacioMinimo = MAX_ENTRADAS ;
@@ -85,4 +85,31 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias){
     return instanciaMenorEspacioOcupado;
 
 
+}
+
+
+void  distribuirKeys (list* g_tablaDeInstancias)
+{  //abecedario en ascci - 97(a) - 122(z)
+   int cantidadInstanciasDisponibles = 0;
+	 int letrasAbecedario = 27;
+	 int primerLetra = 97;
+	 int ultimaLetraAbecedario = 122;
+	 int ultimaLetra = 0;
+
+	 for (size_t i = 0; i <  list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+			   cantidadInstanciasDisponibles++;
+		}
+	 }
+	 int letrasPorInstancia = (int)letrasAbecedario/cantidadInstanciasDisponibles;
+	 int resto = letrasAbecedario - (letrasPorInstancia * cantidadInstanciasDisponibles);
+	 letrasPorInstancias = resto == 0 ? letrasPorInstancias: letrasPorInstancias + 1;
+	 for (size_t i = 0; i < list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+	 	g_tablaDeInstancias[i]-> primeraLetra = primerLetra;
+	  ultimaLetra = (primerLetra + letrasPorInstancia) >= ultimaLetraAbecedario ? ultimaLetraAbecedario: primerLetra + letrasPorInstancia;
+		g_tablaDeInstancias[i]-> ultimaLetra = ultimaLetra;
+		primerLetra = ultimaLetra + 1;
+	 }
+ 	}
 }
