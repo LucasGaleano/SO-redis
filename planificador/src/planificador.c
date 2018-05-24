@@ -14,15 +14,16 @@ int main(void) {
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
-	char* algoritmo;
+	char* algoritmo = config_get_string_value(g_con, "ALGORITMO");
+	g_alfa = (config_get_int_value(g_con, "ALFA")/100);
 
-	pthread_t* hiloServidor;
-	pthread_t* hiloAlgoritmos;
+	pthread_t hiloServidor;
+	pthread_t hiloAlgoritmos;
 
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
 
-	pthread_create(hiloServidor, NULL, (void*) iniciarServidor, puertoLocal);
-	pthread_create(hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
+	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor, &puertoLocal);
+	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 
 	iniciarConsola();
 
@@ -34,28 +35,28 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-asignarBloquedas(char** codigos) {
+void asignarBloquedas(char** codigos) {
 	int i = 0;
 	while (codigos[i] != NULL) {
-		t_list ins = list_create();
+		t_list* ins = list_create();
 		dictionary_put(g_bloq, codigos[i], ins);
 	}
 }
 
-procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
+void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 	t_infoListos *dat;
 	switch (unPaquete->codigoOperacion) {
 	case HANDSHAKE:
 		recibirHandshakePlanif(unPaquete, socketCliente);
 		break;
-	case ENVIAR_IDENTIFICACION:
+	case ENVIAR_NOMBRE_ESI:
 		dat = malloc(sizeof(t_infoListos));
 		dat->estAnterior = g_est;
 		dat->realAnterior = g_est;
 		dat->socketESI = *socketCliente;
 		dat->tEnEspera = 0;
 		pthread_mutex_lock(&mutexListo);
-		dictionary_put(g_listos, recibirIdentificacion(unPaquete), dat);
+		dictionary_put(g_listos, recibirNombreEsi(unPaquete), dat);
 		pthread_mutex_unlock(&mutexListo);
 		pthread_cond_signal(&ESIentrada);
 		pthread_mutex_lock(&modificacion);
@@ -65,7 +66,7 @@ procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 	destruirPaquete(unPaquete);
 }
 
-recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente) {
+void recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente) {
 	int tipoCliente;
 	memcpy(&tipoCliente, unPaquete->buffer->data, sizeof(int));
 	switch (tipoCliente) {

@@ -1,19 +1,19 @@
 #include "algoritmos.h"
 
-inline double calcularProximaRafaga(double estimadoAnterior,
+double calcularProximaRafaga(double estimadoAnterior,
 		double realAnterior) {
-	return estimadoAnterior * 0.5 + realAnterior * 0.5;
+	return estimadoAnterior * g_alfa + realAnterior * (1 - g_alfa);
 }
 
-inline double calcularRR(double tEnEspera, double estimadoAnterior,
+double calcularRR(double tEnEspera, double estimadoAnterior,
 		double realAnterior) {
 	return (1
 			+ tEnEspera / calcularProximaRafaga(estimadoAnterior, realAnterior));
 }
 
-inline char* asignarID(int val, char* ret) {
+char* asignarID(int val, char* ret) {
 	char* num = string_itoa(val);
-	ret = calloc(strlen(num) + 3);
+	ret = malloc(strlen(num) + 3);
 	ret = strdup("ESI");
 	return strcat(ret, num);
 }
@@ -22,14 +22,14 @@ void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	bloq->estAnterior = calcularProximaRafaga(bloq->estAnterior,
 			bloq->realAnterior);
 	bloq->realAnterior = nuevoReal;
-	t_infoBloqueo insert = malloc(sizeof(t_infoBloqueo));
+	t_infoBloqueo* insert = malloc(sizeof(t_infoBloqueo));
 	insert->idESI = strdup(key);
 	insert->data = bloq;
 	pthread_mutex_lock(&mutexBloqueo);
 	if (dictionary_has_key(g_bloq, g_claveGET)) {
 		list_add(dictionary_get(g_bloq, g_claveGET), insert);
 	} else {
-		t_list aux = list_create();
+		t_list* aux = list_create();
 		list_add(aux, insert);
 		dictionary_put(g_bloq, g_claveGET, aux);
 	}
@@ -41,8 +41,7 @@ char* calcularSiguienteSJF(void) {
 	double menor;
 
 	int i = 0;
-	char* auxKey;
-	auxKey = asignarID(i, auxKey);
+	char* auxKey = asignarID(i, auxKey);
 	char* keyMenor = calloc(5, sizeof(char));
 	actual = dictionary_get(g_listos, auxKey);
 	menor = calcularProximaRafaga(actual->estAnterior, actual->realAnterior);
@@ -66,8 +65,7 @@ char* calcularSiguienteHRRN(void) {
 	double mayor;
 
 	int i = 0;
-	char* auxKey;
-	auxKey = asignarID(i, auxKey);
+	char* auxKey = asignarID(i, auxKey);
 	char* keyMayor;
 	actual = dictionary_get(g_listos, auxKey);
 	mayor = calcularRR(actual->tEnEspera, actual->estAnterior,
@@ -189,11 +187,11 @@ void desbloquearESIs(t_infoBloqueo* nodo) {
 }
 
 void gestionarRespuestaCoordinador(t_paquete* unPaquete, int* socket) {
-	t_list aux;
+	t_list* aux;
 	switch (unPaquete->codigoOperacion) {
 	;
 case GET:
-	g_claveGET = recibirGET(unPaquete);
+	g_claveGET = recibirGet(unPaquete);
 	g_bloqueo = 1;
 	break;
 case STORE:
