@@ -2,6 +2,7 @@
 #define INSTANCIA_H_
 
 #include <biblioteca/sockets.h>
+#include <commons/bitarray.h>
 #include <commons/config.h>
 #include <commons/log.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ int cantEntradas;
 int tamanioEntrada;
 
 void * storage;
+bool * bitMap;
 
 t_list * tablaEntradas;
 
@@ -50,5 +52,16 @@ t_tabla_entradas * 	buscarEntrada		(char * clave);
 void 				agregarClave		(char * clave);
 void 				eliminarClave		(char * clave);
 void 				mostrarTabla		(void);
+
+/*-------------------------BitMap del Storage-------------------------*/
+void 				crearBitMap			(void);
+void 				destruirBitMap		(void);
+void 				liberarBitMap		(void);
+void 				llenarBitMap		(void);
+void 				liberarIndex		(int index);
+void 				ocuparIndex			(int index);
+int 				buscarIndexLibre	(void);
+void 				mostrarBitmap		(void);
+
 
 #endif /* INSTANCIA_H_ */

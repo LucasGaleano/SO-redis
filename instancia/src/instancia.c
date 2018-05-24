@@ -83,6 +83,9 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Creo el espacio de almacenamiento
 	storage = malloc(cantEntradas * tamanioEntrada);
 
+	//Creo bitMap del storage
+	crearBitMap();
+
 	//Libero memoria
 	free(info);
 
@@ -156,5 +159,61 @@ void mostrarTabla(void) {
 	}
 }
 
-/*-------------------------Algoritmo circular -------------------------*/
-//bool * bitMapEntradas[cantEntradas];
+/*-------------------------BitMap del Storage-------------------------*/
+void crearBitMap(void) {
+	bitMap = malloc(sizeof(bool) * cantEntradas);
+
+	liberarBitMap();
+}
+
+void destruirBitMap(void) {
+	free(bitMap);
+}
+
+void liberarBitMap(void) {
+	for (int i = 0; i < cantEntradas; i++)
+		liberarIndex(i);
+}
+
+void llenarBitMap(void) {
+	for (int i = 0; i < cantEntradas; i++)
+		ocuparIndex(i);
+}
+
+void liberarIndex(int index) {
+	if (index + 1 <= cantEntradas) {
+		bitMap[index] = false;
+	} else {
+		printf("No se puede liberar el index %d ya que no existe \n", index);
+	}
+}
+
+void ocuparIndex(int index) {
+	if (index + 1 <= cantEntradas) {
+		bitMap[index] = true;
+	} else {
+		printf("No se puede ocuapar el index %d ya que no existe \n", index);
+	}
+}
+
+int buscarIndexLibre(void) {
+	int index = 0;
+
+	while (bitMap[index]) {
+		index++;
+	}
+
+	if (index < 99)
+		bitMap[index] = false;
+
+	return index;
+}
+
+void mostrarBitmap(void) {
+	printf("Index			Ocupado \n");
+	printf("-------------------------------\n");
+	int i;
+	for (i = 0; i < cantEntradas; i++)
+		printf("%d			%d \n", i, bitMap[i]);
+}
+
