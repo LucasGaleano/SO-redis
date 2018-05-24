@@ -320,6 +320,7 @@ void status(char* linea) {
 
 void deadlock() {
 	/*t_list** ESIsEnDeadlock = devolverEsisEnDeadlock()*/
+
 	/*
 	 * printf("ESIs en deadlock \n");
 	 *
