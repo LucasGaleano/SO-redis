@@ -14,7 +14,7 @@ double calcularRR(double tEnEspera, double estimadoAnterior,
 char* asignarID(int val, char* ret) {
 	char* num = string_itoa(val);
 	ret = malloc(strlen(num) + 3);
-	ret = strdup("ESI");
+	strcpy(ret, "ESI");
 	return strcat(ret, num);
 }
 
