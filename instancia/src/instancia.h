@@ -54,14 +54,15 @@ void 				eliminarClave		(char * clave);
 void 				mostrarTabla		(void);
 
 /*-------------------------BitMap del Storage-------------------------*/
-void 				crearBitMap			(void);
-void 				destruirBitMap		(void);
-void 				liberarBitMap		(void);
-void 				llenarBitMap		(void);
-void 				liberarIndex		(int index);
-void 				ocuparIndex			(int index);
-int 				buscarIndexLibre	(void);
-void 				mostrarBitmap		(void);
+void 				crearBitMap					(void);
+void 				destruirBitMap				(void);
+void 				liberarBitMap				(void);
+void 				llenarBitMap				(void);
+void 				liberarIndex				(int index);
+void 				ocuparIndex					(int index);
+int 				buscarIndexLibre			(void);
+void 				mostrarBitmap				(void);
+int 				buscarCantidadIndexLibres	(int cantidad);
 
 
 #endif /* INSTANCIA_H_ */

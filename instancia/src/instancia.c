@@ -217,3 +217,29 @@ void mostrarBitmap(void) {
 		printf("%d			%d \n", i, bitMap[i]);
 }
 
+int buscarCantidadIndexLibres(int cantidad) {
+	bool loEncontre = false;
+	int candidato;
+	int contador;
+	int i;
+
+	for (i = 0; !loEncontre && i < cantEntradas; i++) {
+		if (!bitMap[i]) {
+			candidato = i;
+			contador = 1;
+
+			while (contador <= cantidad && (i + 1) < cantEntradas && !bitMap[i + 1]) {
+				i++;
+				contador++;
+			}
+
+			if (contador == cantidad)
+				loEncontre = true;
+		}
+	}
+
+	if (!loEncontre)
+		candidato = -1;
+
+	return candidato;
+}
