@@ -34,6 +34,7 @@ t_dictionary *  g_ESI;
 
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias);
 t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias);
+t_instancia* traerInstanciaQueContieneKey(t_list* tablaDeInstancia,char* primerLetraClave);
 void distribuirKeys(t_list* tablaDeInstancias);
 
 t_list* crearListaInstancias(void);
@@ -44,7 +45,7 @@ void mostrarInstancia(t_instancia * instancia);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int primerLetra,int socket);
 
 t_dictionary* crearDiccionarioESI(void);
-void agregarEsi(t_dictionary * diccionario, char * nombre , int valor);
+void agregarConexion(t_dictionary * diccionario, char * nombre , int valor);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

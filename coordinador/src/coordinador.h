@@ -27,15 +27,19 @@ typedef struct t_configuracion{
 
 /*------------------------Globales-------------------------*/
 
+t_log* g_logger;
 t_configuraciones g_configuracion;
 t_list* g_tablaDeInstancias;
-t_dictionary* g_diccionarioESI;
+t_dictionary* g_diccionarioConexiones;
 
 
 /*------------------------FUNCIONES-------------------------*/
 
-t_configuraciones armarConfigCoordinador	(t_config*);
-t_instancia* 			PlanificarInstancia			(char* algoritmoDePlanificacion,char* Clave,
-	 																					t_list* tablaDeInstancias);
+
+t_configuraciones armarConfigCoordinador(t_config*);
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
+																	char* Clave,
+	 																t_list* tablaDeInstancias);
+void logearRespuesta(int respuesta, t_instancia* instancia)
 
 #endif /* COORDINADOR_H_ */

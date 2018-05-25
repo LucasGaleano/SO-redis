@@ -128,16 +128,17 @@ t_dictionary* crearDiccionarioESI(){
 
 }
 
-void agregarESI(t_dictionary * diccionario, char * clave , int valor ){
-   dictionary_put(diccionario, clave, valor);
+void agregarConexion(t_dictionary * diccionario, char * clave , int valor ){
+   if(!dictionary_has_key(diccionario,clave))
+     dictionary_put(diccionario, clave, valor);
 }
 
-t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int primerLetra,int socket){
+t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int letraAEncontrar,int socket){
 
   bool instanciaCumpleCon(t_instancia* instancia){
 
     bool igualNombre = true;
-    bool igualPrimerLetra = true;
+    bool contieneLetraAEncontrar = true;
     bool igualSocket = true;
 
     if(nombre != NULL)
@@ -146,10 +147,11 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int primerLe
     if(socket != 0)
       igualSocket =  instancia->socket == socket ;
 
-    if(primerLetra != 0)
-      igualPrimerLetra = instancia->primerLetra == primerLetra ;
+    if(letraAEncontrar != 0)
 
-    return(igualNombre && igualPrimerLetra && igualSocket && instancia->disponible);
+      contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar && instancia->ultimaLetra >= letraAEncontrar);
+
+    return(igualNombre && contieneLetraAEncontrar && igualSocket && instancia->disponible);
 
   }
 

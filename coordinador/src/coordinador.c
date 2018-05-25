@@ -7,16 +7,16 @@ void* imprimir(void* paquete);
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
-  g_diccionarioESI = crearDiccionarioESI();
+  g_diccionarioConexiones = crearDiccionarioESI();
 
 
 
-	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
+	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 
 	t_config* config = config_create(PATH_CONFIG);
 	g_configuracion = armarConfigCoordinador(config);
 
-	iniciarServer(5555, (void*)procesarPaquete, logger);
+	iniciarServer(5555, (void*)procesarPaquete, g_logger);
 	return 0;
 }
 
@@ -26,21 +26,8 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 	 switch(paquete->codigoOperacion){
 
 		 case HANDSHAKE:
-		 // TODO que no se conecte un planificador mas de 2 veces, ESI y INSTANCIA no creo que sirvan
-			switch(recibirHandshake(paquete)){
-				case PLANIFICADOR:
 
-				break;
-
-				case ESI:
-
-				break;
-
-				case INSTANCIA:
-
-				break;
-
-			}
+		 		procesarHandshake(paquete, *socketCliente);
 
 			break;
 
@@ -49,8 +36,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 				;
 
 				char* nombreESI = recibirNombreEsi(paquete);
-				if(!dictionary_has_key(g_diccionarioESI,nombreESI)
-					agregarESI( g_diccionarioESI , nombreESI , *socketCliente);
+				agregarConexion( g_diccionarioConexiones , nombreESI , *socketCliente);
 
 
 		 	break;
@@ -75,7 +61,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 			enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
 
-			//TODO retardo de planificador
+			sleep(g_configuracion.retardo);
 
 			//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
@@ -90,18 +76,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 			t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,*socketCliente);
 
-			switch(respuesta){
-
-					case OK:
-
-						log_trace(logger,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual  );
-						break;
-
-					case ABORTO:
-
-						log_trace(logger,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual );
-						break;
-			}
+			logearRespuesta(respuesta,instanciaRespuesta);
 
 			 break;
 
@@ -109,6 +84,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 		case GET:
 			;
 			//Envio clave a bloquear al planificador
+			enviarGet();
 			break;
 
 			case STORE:
@@ -141,16 +117,56 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
 }
 
 
-t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* Clave, t_list* tablaDeInstancias){
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* clave, t_list* tablaDeInstancias){
 
-		if(!strcmp(algoritmoDePlanificacion,"LSU"))
+		if(string_equals_ignore_case(algoritmoDePlanificacion,"LSU"))
 			return traerInstanciaMasEspacioDisponible(tablaDeInstancias);
 
-		if(!strcmp(algoritmoDePlanificacion,"EL"))
+		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
 			return traerUltimaInstanciaUsada(tablaDeInstancias);
 
 		//TODO algoritmo key explicit "KE"
+		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
+			return buscarInstancia(tablaDeInstancias,NULL,(int)string_substring(clave,0,1),NULL);
 
 		return NULL;
+
+}
+
+
+void logearRespuesta(int respuesta, t_instancia* instancia){
+
+	switch(respuesta){
+
+			case OK:
+
+				log_trace(g_logger,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual  );
+				break;
+
+			case ABORTO:
+
+				log_trace(g_logger,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual );
+				break;
+	}
+
+}
+
+
+void procesarHandshake(t_paquete* paquete,int socketCliente){
+
+	switch(recibirHandshake(paquete)){
+		case PLANIFICADOR:
+			agregarConexion(g_diccionarioConexiones,"planificador",socketCliente);
+		break;
+
+		case ESI:
+			//TODO que hacer aca?
+		break;
+
+		case INSTANCIA:
+
+		break;
+
+	}
 
 }
