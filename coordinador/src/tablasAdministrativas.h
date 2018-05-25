@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/collections/list.h>
+#include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <time.h>
 
@@ -27,16 +28,23 @@ typedef struct{
 	char * trabajoActual;
 }t_instancia;
 
+t_dictionary *  g_ESI;
+
 /*-------------------FUNCIONES---------------------------*/
 
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias);
 t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias);
+void distribuirKeys(t_list* tablaDeInstancias);
+
 t_list* crearListaInstancias(void);
 void agregarInstancia(t_list * lista, t_instancia* instancia );
 t_instancia* crearInstancia(char* nombre,int socket);
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
-void distribuirKeys(t_list* g_tablaDeInstancias);
+t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int primerLetra,int socket);
+
+t_dictionary* crearDiccionarioESI(void);
+void agregarEsi(t_dictionary * diccionario, char * nombre , int valor);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

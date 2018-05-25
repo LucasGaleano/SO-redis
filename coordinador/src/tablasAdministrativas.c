@@ -93,7 +93,7 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias){
 }
 
 
-void  distribuirKeys (t_list* g_tablaDeInstancias)
+void  distribuirKeys (t_list* tablaDeInstancias)
 {  //abecedario en ascci - 97(a) - 122(z)
    int cantidadInstanciasDisponibles = 0;
 	 int letrasAbecedario = 27;
@@ -101,8 +101,8 @@ void  distribuirKeys (t_list* g_tablaDeInstancias)
 	 int ultimaLetraAbecedario = 122;
 	 int ultimaLetra = 0;
 
-	 for (size_t i = 0; i <  list_size(g_tablaDeInstancias); i++) {
-    t_instancia* instanciaAux = list_get(g_tablaDeInstancias,i);
+	 for (size_t i = 0; i <  list_size(tablaDeInstancias); i++) {
+    t_instancia* instanciaAux = list_get(tablaDeInstancias,i);
 		if (instanciaAux->disponible == true) {
 			   cantidadInstanciasDisponibles++;
 		}
@@ -110,8 +110,8 @@ void  distribuirKeys (t_list* g_tablaDeInstancias)
 	 int letrasPorInstancia = (int)letrasAbecedario/cantidadInstanciasDisponibles;
 	 int resto = letrasAbecedario - (letrasPorInstancia * cantidadInstanciasDisponibles);
 	 letrasPorInstancia = resto == 0 ? letrasPorInstancia: letrasPorInstancia + 1;
-	 for (size_t i = 0; i < list_size(g_tablaDeInstancias);i++) {
-    t_instancia* instanciaAux = list_get(g_tablaDeInstancias,i);
+	 for (size_t i = 0; i < list_size(tablaDeInstancias);i++) {
+    t_instancia* instanciaAux = list_get(tablaDeInstancias,i);
 		if (instanciaAux->disponible == true) {
 	 	   instanciaAux->primerLetra = primerLetra;
 	     ultimaLetra = (primerLetra + letrasPorInstancia) >= ultimaLetraAbecedario ? ultimaLetraAbecedario: primerLetra + letrasPorInstancia;
@@ -119,4 +119,40 @@ void  distribuirKeys (t_list* g_tablaDeInstancias)
 		   primerLetra = ultimaLetra + 1;
 	 }
  	}
+}
+
+t_dictionary* crearDiccionarioESI(){
+
+   t_dictionary* aux = dictionary_create();
+   return aux;
+
+}
+
+void agregarESI(t_dictionary * diccionario, char * clave , int valor ){
+   dictionary_put(diccionario, clave, valor);
+}
+
+t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int primerLetra,int socket){
+
+  bool instanciaCumpleCon(t_instancia* instancia){
+
+    bool igualNombre = true;
+    bool igualPrimerLetra = true;
+    bool igualSocket = true;
+
+    if(nombre != NULL)
+      igualNombre = string_equals_ignore_case(instancia->nombre,nombre);
+
+    if(socket != 0)
+      igualSocket =  instancia->socket == socket ;
+
+    if(primerLetra != 0)
+      igualPrimerLetra = instancia->primerLetra == primerLetra ;
+
+    return(igualNombre && igualPrimerLetra && igualSocket && instancia->disponible);
+
+  }
+
+  return list_find(tablaDeInstancias, (void*)instanciaCumpleCon );
+
 }

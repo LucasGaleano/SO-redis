@@ -7,6 +7,10 @@ void* imprimir(void* paquete);
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
+  g_diccionarioESI = crearDiccionarioESI();
+
+
+
 	t_log* logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 
 	t_config* config = config_create(PATH_CONFIG);
@@ -41,7 +45,12 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 			break;
 
 			case ENVIAR_NOMBRE_ESI:
+
 				;
+
+				char* nombreESI = recibirNombreEsi(paquete);
+				if(!dictionary_has_key(g_diccionarioESI,nombreESI)
+					agregarESI( g_diccionarioESI , nombreESI , *socketCliente);
 
 
 		 	break;
@@ -58,25 +67,17 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 			break;
 
-		//1- El Coordinador recibe una solicitud proveniente de un proceso ESI.
 		 case SET:
 		 	;
 		  //TODO crear hilo para procesar la conexion
-			//2- El Coordinador procesa la solicitud en su algoritmo de distribución
-			//con el fin de determinar la Instancia a la que se le asignará la solicitud.
 			t_claveValor* sentencia = recibirSET(paquete);
 			t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 
-			int socketInstancia = instanciaElegida->socket;
-			//enviarSet(socketInstancia,sentencia);
+			enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
 
 			//TODO retardo de planificador
 
 			//TODO si no se puede acceder a la instancia, se le avisa al planificador
-
-			//3- Se elige la Instancia asociada y se le envía la solicitud.
-
-
 
 			break;
 
@@ -84,7 +85,24 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 
 		case RESPUESTA_SOLICITUD:
 			;
-			//5- El Coordinador logea la respuesta y envía al ESI
+			//El Coordinador logea la respuesta y envía al ESI
+			int respuesta = recibirRespuesta(paquete);
+
+			t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,*socketCliente);
+
+			switch(respuesta){
+
+					case OK:
+
+						log_trace(logger,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual  );
+						break;
+
+					case ABORTO:
+
+						log_trace(logger,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual );
+						break;
+			}
+
 			 break;
 
 

@@ -29,6 +29,7 @@ typedef struct t_configuracion{
 
 t_configuraciones g_configuracion;
 t_list* g_tablaDeInstancias;
+t_dictionary* g_diccionarioESI;
 
 
 /*------------------------FUNCIONES-------------------------*/
