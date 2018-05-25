@@ -135,9 +135,6 @@ void salirConsola(bool* ejecutar) {
 
 void pausarPlanificacion(void) {
 	pthread_mutex_lock(&mutexConsola);
-	// PREGUNTA
-	// preguntar gaston poner en planificador.h
-	//pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
 }
 
 void continuarPlanificacion(void) {
@@ -155,66 +152,64 @@ void bloquearESI(char* linea) {
 		free(clave);
 		return;
 	}
-	//int id = atoi(id_char); // Hacer atoi cuando lo use
 
-	if (!(estaListo(clave) || estaEjecutando(clave))) {
-		puts("Solo se puede bloquear el ESI en estado listo o ejecutando.");
+	if (!(estaListo(id))) {
+		puts("Solo se puede bloquear el ESI en estado listo.");
 		return;
 	}
 
-	if (estaListo(clave)) {
-		free(dictionary_remove(g_listos, clave));
+	if (estaBloqueadoPorLaClave(id, clave)) {
+		puts("Ya esta bloqueado el ESI por la clave.");
+		return;
 	}
 
-	if (estaEjecutando(clave)) {
-		free(dictionary_remove(g_exec, clave));
+	if (!dictionary_has_key(g_bloq, clave)) {
+		t_list* listaVacia = list_create();
+		dictionary_put(g_bloq, clave, listaVacia);
 	}
 
-	// falta distinguir si esta bloqueado por la consola no?
-	/*t_infoBloqueo* aux;			PREGUNTA
-	 aux->bloqueoUsuario = true;*/
+	dictionary_remove(g_listos, id);
 
-	// Bloquear proceso
-	dictionary_put(g_bloq, clave, NULL);
+	// agrega al ESI a la lista de espera de esa clave
+	t_infoBloqueo* infoBLoqueo = malloc(sizeof(t_infoBloqueo));
+	t_infoListos infoListos = dictionary_get(g_listos, id);
+	infoBLoqueo->idESI = id;
+	infoBLoqueo->data = infoListos;
+
+	t_list* lista = dictionary_get(g_bloq, clave);
+
+	list_add(lista, infoBLoqueo);
 
 	// Libero memoria
 	free(clave);
 	free(id);
+	//free(lista);
+	//free(infoBLoqueo);
 
 }
 
 void desbloquearESI(char* linea) {
 
 	char* clave = obtenerParametro(linea, 1);
-	char* id = obtenerParametro(linea, 2);
 
 	if (clave == NULL)
 		return;
 
-	if (id == NULL) {
-		free(clave);
+	if (!estaBloqueadaLaClave(clave)) {
 		return;
 	}
 
-	if (!estaBloqueado(clave)) {
-		printf("No se puede desbloquear un ESI que no está bloqueado \n");
-		return;
-	}
-
-	if (!estaBloqueadoPorUsuario(clave)) {
-		printf(
-				"Solo se puede desbloquear un ESI que fue bloqueado por la consola \n");
-		return;
-	}
+	// poner el esi en listos
+	t_infoBloqueo* infoBloqueoPrimero = list_get(dictionary_get(g_bloq, clave),
+			0);
+	dictionary_put(g_listos, infoBloqueoPrimero->idESI,
+			infoBloqueoPrimero->data);
 
 	// Desbloqueo
-	free(dictionary_remove(g_bloq, clave));
-	dictionary_put(g_listos, clave, NULL);
+	list_remove(dictionary_get(g_bloq, clave), 0);
 
 	// Libero memoria
 	free(clave);
-	free(id);
-
 }
 
 void listarProcesos(char* linea) {
@@ -247,66 +242,92 @@ void listarProcesos(char* linea) {
 }
 
 void killProceso(char* linea) {
-	char* clave = obtenerParametro(linea, 1);
-	char* id = obtenerParametro(linea, 2);
+	char* idESI = obtenerParametro(linea, 1);
 
-	if (clave == NULL)
+	if (idESI == NULL)
 		return;
 
-	if (id == NULL) {
-		free(clave);
-		return;
+	// libero las claves que tiene tomado el ESI kasefjbskj
+
+	// preguntar lucas: como se que claves tiene bloqueado un esi
+	// esto que escribo es conceptual, cuando lo hable con lucas adaptarlo
+	if (tieneAlgunaClaveBloqueda(idESI)) {
+		char* clavesBloqueadasPorEsi[]; // se que esta mal escrito
+		int i;
+		for (i = 0; i < cantClavesBloqueadas; i++) {
+			char* lineaExtra = string_new();
+			string_append(&lineaExtra, "desbloquear ");
+			string_append(&lineaExtra, clavesBloqueadasPorEsi[i]);
+			desbloquearESI(lineaExtra);
+		}
 	}
 
-	// PREGUNTAR que lo de atomicidad
-	// recordar la atomicidad en bloquear
+	// free(en el estado que este)
+	if (estaListo(idESI)) {
+		dictionary_remove_and_destroy(g_listos, idESI, (void*) free);
+	}
 
-	// PREGUNTA si est{a bien esto despues de pensarlo mas
-	dictionary_put(g_term, clave, NULL);
+	if (estaBloqueado(idESI)) {
+		char* clavesBloqueadasPorEsi[]; // se que esta mal escrito
+		int i;
 
+		for (i = 0; i < cantClavesBloqueadas; i++) {
+			if (estaBloqueadoPorElRecurso(idESI, clavesBloqueadasPorEsi[i])) {
+				t_list* lista = dictionary_get(g_bloq, claveRecurso);
+				g_idComparar = idESI;
+				list_remove_and_destroy_by_condition(lista, (void*) sonIguales,
+						(void*) eliminarT_infoBloqueo);
+			}
 
-	// liberar recursos?
-
-	/*No se si sirve
-	 * liberar mapa de memoria
-	 * cerrar ficheros y liberar otros recursos
-	 * eliminar PCB de cola de procesos listos
-	 * liberar PCB
-	 * liberar pila del sistema
-	 * activa planificador y reliza c. de contexto al proceso elegido*/
+		}
+	}
 
 	// Libero memoria
-	free(clave);
-	free(id);
+	free(idESI);
 }
 
 void status(char* linea) {
 	// informacion sobre las instancias del sistema
 	// PREGUNTA
-	// es clave de la instancia? y la clave seria el nombre de la instancia?
 
 	char* clave = obtenerParametro(linea, 1);
 
 	if (clave == NULL)
 		return;
 
-	// comunicarse con el coordinador PREGUNTA4
+	// comunicarse con el coordinador
+	// hablar con lucas
 
-	printf("Informacion de la instancia \n");
-	printf("	Path del archivo de conguracion: %s \n", /*instancia.path*/); // ?? t_config * archivoConfig;
-	printf("	Coordinador del puerto de config: %d \n", /*instancia.coordinadorPuertoConfig*/);
-	printf("	Coordinador Ip de Config: %s \n", /*instancia.coordinadorIpConfig*/);
-	printf("	Algoritmo de reemplazo: %s \n", /*instancia.algoritmoReemplazo*/);
-	printf("	Punto de montaje: %s \n", /*instancia.puntoMontaje*/);
-	printf("	Nombre de instancia: %s \n", /*instancia.nombreInstancia*/);
-	printf("	Intervalo Dump: %s \n", /*instancia.puntoMontaje*/);
+	// esto solo es conceptual
+	if(/*TengoValor*/)
+		puts("Valor: %", );
+	else
+		puts("No posee valor.");
+
+	puts("Instancia actual en donde esta clave: %", );
+	puts("Instancia en donde se guardaria clave: %", );
+
+	// muestro ESIs bloqueados a la espera de dicha clave
+	char* lineaExtra = string_new();
+	string_append(&lineaExtra, "listar ");
+	string_append(&lineaExtra, clave);
+	listarProcesos(lineaExtra);
 
 	// Libero memoria
 	free(clave);
+	free(lineaExtra);
 }
 
 void deadlock() {
-	// Mostrar los ESIs que estan en un deadlock? PREGUNTA6
+	/*t_list** ESIsEnDeadlock = devolverEsisEnDeadlock()*/
+
+	/*
+	 * printf("ESIs en deadlock \n");
+	 *
+	 * while(termino de leer toda la lista)
+	 * {
+	 * 	printf("%s \n", claveESI);
+	 * }*/
 
 	// Ver en bloqueos enunciado (p 9)
 	// El Planificador lleva un registro de qué claves fueron bloqueadas por cada ESI en particular. Las cuales deberá liberar en cuanto reciba una operación STORE con dicha clave por parte de la ESI bloqueadora
@@ -321,26 +342,45 @@ char* obtenerParametro(char* linea, int parametro) {
 	return palabras[parametro];
 }
 
-bool estaListo(char* clave) {
-	return dictionary_has_key(g_listos, clave);
+bool estaListo(char* id) {
+	return dictionary_has_key(g_listos, id);
 }
 
-bool estaEjecutando(char* clave) {
-	return dictionary_has_key(g_exec, clave);
+bool estaBloqueadaLaClave(char* clave) {
+	return dictionary_has_key(clave);
 }
 
-bool estaBloqueado(char* clave) {
-	return dictionary_has_key(g_bloq, clave);
+bool sonIguales(t_infoBloqueo infoBloqueo) {
+	return string_equals_ignore_case(infoBloqueo->idESI, g_idComparar);
 }
 
-bool estaBloqueadoPorUsuario(char* clave) {
-	/*t_infoBloqueo *data = dictionary_get(g_bloq, clave);
-	 return data->bloqueoUsuario;*/
+bool estaBloqueadoPorLaClave(char* id, char* clave) {
+	g_idComparar = id;
+	return list_any_satisfy(dictionary_get(g_bloq, clave), (void*) sonIguales);
 }
 
-bool estaBloqueadoPorElRecurso(char* claveESI, char* claveRecurso) {
-	/*t_infoBloqueo* infoESI = dictionary_get(g_bloq, claveESI);
+bool estaBloqueado(char* id) {
+	int i;
 
-	 return string_equals_ignore_case(infoESI->codRecurso, claveRecurso);*/
+	for (i = 0; i < g_bloq->elements_amount; i++) {
+
+		char* numero = string_itoa(i); // repitiendo logica, arreglar desp
+		char* claveESI = string_new();
+
+		string_append(&claveESI, "ESI");
+		string_append(&claveESI, numero);
+
+		if (estaBloqueadoPorElRecurso(claveESI, claveRecurso)) {
+			return true;
+		}
+
+		free(claveESI);
+	}
+	return false;
 }
 
+void eliminarT_infoBloqueo(t_infoBloqueo infoBloqueo) {
+	free(infoBloqueo->data);
+	free(infoBloqueo->idESI);
+	free(infoBloqueo);
+}
