@@ -17,7 +17,7 @@
 
  y en planificar.c
  g_clavesBloqueadas = dictionary_create();
- 
+
  */
 
 #include "consola.h"
@@ -293,14 +293,7 @@ void status(char* linea) {
 	// comunicarse con el coordinador
 	// hablar con lucas
 
-	// esto solo es conceptual
-	if(/*TengoValor*/)
-		puts("Valor: %", );
-	else
-		puts("No posee valor.");
-
-	puts("Instancia actual en donde esta clave: %", );
-	puts("Instancia en donde se guardaria clave: %", );
+	enviarSolicitudStatus(g_socketCoordinador, clave);
 
 	// muestro ESIs bloqueados a la espera de dicha clave
 	char* lineaExtra = string_new();
@@ -402,4 +395,14 @@ void desbloqueoClave(char* idESI, t_list* listaBloqueadas){
 void eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas* infoClavesBloqueadas){
 	free(infoClavesBloqueadas->clave);
 	free(infoClavesBloqueadas);
+}
+
+void respuestaStatus(t_respuestaStatus* respuestaStatus){
+	if(respuestaStatus->valor == " ")
+		puts("No posee valor.");
+	else
+		puts("Valor: %s", respuestaStatus->valor);
+
+	puts("Instancia actual en donde esta clave: %s", respuestaStatus->nomInstanciaActual);
+	puts("Instancia en donde se guardaria clave: %s", respuestaStatus->nomIntanciaPosible;);
 }
