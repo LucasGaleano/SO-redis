@@ -5,6 +5,21 @@
  *      Author: utnso
  */
 
+ /* asumo que en globales están
+ typedef struct {
+ 	char* clave;
+ }t_infoClavesBloqueadas;
+
+
+ t_dictionary* g_clavesBloqueadas;
+
+
+
+ y en planificar.c
+ g_clavesBloqueadas = dictionary_create();
+ 
+ */
+
 #include "consola.h"
 
 /*------------------------------Consola------------------------------*/
@@ -143,47 +158,41 @@ void continuarPlanificacion(void) {
 
 void bloquearESI(char* linea) {
 	char* clave = obtenerParametro(linea, 1);
-	char* id = obtenerParametro(linea, 2);
+	char* idESI = obtenerParametro(linea, 2);
 
 	if (clave == NULL)
 		return;
 
-	if (id == NULL) {
+	if (idESI == NULL) {
 		free(clave);
 		return;
 	}
 
-	if (!(estaListo(id))) {
+	if (!(estaListo(idESI))) {
 		puts("Solo se puede bloquear el ESI en estado listo.");
 		return;
 	}
 
-	if (estaBloqueadoPorLaClave(id, clave)) {
+	if (estaBloqueadoPorLaClave(idESI, clave)) {
 		puts("Ya esta bloqueado el ESI por la clave.");
 		return;
 	}
 
+	// agrega al ESI a la lista de espera de esa clave
 	if (!dictionary_has_key(g_bloq, clave)) {
 		t_list* listaVacia = list_create();
 		dictionary_put(g_bloq, clave, listaVacia);
 	}
 
-	dictionary_remove(g_listos, id);
-
-	// agrega al ESI a la lista de espera de esa clave
 	t_infoBloqueo* infoBLoqueo = malloc(sizeof(t_infoBloqueo));
-	t_infoListos infoListos = dictionary_get(g_listos, id);
-	infoBLoqueo->idESI = id;
-	infoBLoqueo->data = infoListos;
+	infoBLoqueo->idESI = idESI;
+	infoBLoqueo->data = dictionary_remove(g_listos, idESI);
 
-	t_list* lista = dictionary_get(g_bloq, clave);
-
-	list_add(lista, infoBLoqueo);
+	list_add(dictionary_get(g_bloq, clave), infoBLoqueo);
 
 	// Libero memoria
 	free(clave);
-	free(id);
-	//free(lista);
+	free(idESI);
 	//free(infoBLoqueo);
 
 }
@@ -195,27 +204,30 @@ void desbloquearESI(char* linea) {
 	if (clave == NULL)
 		return;
 
-	if (!estaBloqueadaLaClave(clave)) {
-		return;
-	}
-
 	// poner el esi en listos
-	t_infoBloqueo* infoBloqueoPrimero = list_get(dictionary_get(g_bloq, clave),
-			0);
+	t_infoBloqueo* infoBloqueoPrimero = list_remove(dictionary_get(g_bloq, clave), 0);
 	dictionary_put(g_listos, infoBloqueoPrimero->idESI,
 			infoBloqueoPrimero->data);
 
-	// Desbloqueo
-	list_remove(dictionary_get(g_bloq, clave), 0);
+	// pongo la clave en el diccionario de claves bloqueadas
+	if(!dictionary_has_key(g_clavesBloqueadas, infoBloqueoPrimero->idESI)){
+		t_list* listaVacia = list_create();
+		list_add(listaVacia, clave);
+		dictionary_put(g_clavesBloqueadas, infoBloqueoPrimero->idESI, listaVacia);
+		free(listaVacia);
+	}
+	list_add(dictionary_get(g_clavesBloqueadas, infoBloqueoPrimero->idESI), clave);
+
 
 	// Libero memoria
 	free(clave);
+	//free(infoBloqueoPrimero)
 }
 
 void listarProcesos(char* linea) {
-	char* claveRecurso = obtenerParametro(linea, 1);
+	char* clave = obtenerParametro(linea, 1);
 
-	if (claveRecurso == NULL)
+	if (clave == NULL)
 		return;
 
 	printf("Claves de las ESIs bloqueadas por el recurso\n");
@@ -225,20 +237,20 @@ void listarProcesos(char* linea) {
 	for (i = 0; i < g_bloq->elements_amount; i++) {
 
 		char* numero = string_itoa(i);
-		char* claveESI = string_new();
+		char* idESI = string_new();
 
-		string_append(&claveESI, "ESI");
-		string_append(&claveESI, numero);
+		string_append(&idESI, "ESI");
+		string_append(&idESI, numero);
 
-		if (estaBloqueadoPorElRecurso(claveESI, claveRecurso)) {
-			printf("	%s \n", claveESI);
+		if (estaBloqueadoPorElRecurso(idESI, clave)) {
+			printf("	%s \n", idESI);
 		}
 
-		free(claveESI);
+		free(idESI);
 	}
 
 	// Libero memoria
-	free(claveRecurso);
+	free(clave);
 }
 
 void killProceso(char* linea) {
@@ -247,39 +259,24 @@ void killProceso(char* linea) {
 	if (idESI == NULL)
 		return;
 
-	// libero las claves que tiene tomado el ESI kasefjbskj
-
-	// preguntar lucas: como se que claves tiene bloqueado un esi
-	// esto que escribo es conceptual, cuando lo hable con lucas adaptarlo
-	if (tieneAlgunaClaveBloqueda(idESI)) {
-		char* clavesBloqueadasPorEsi[]; // se que esta mal escrito
-		int i;
-		for (i = 0; i < cantClavesBloqueadas; i++) {
-			char* lineaExtra = string_new();
-			string_append(&lineaExtra, "desbloquear ");
-			string_append(&lineaExtra, clavesBloqueadasPorEsi[i]);
-			desbloquearESI(lineaExtra);
-		}
-	}
-
 	// free(en el estado que este)
 	if (estaListo(idESI)) {
 		dictionary_remove_and_destroy(g_listos, idESI, (void*) free);
 	}
 
 	if (estaBloqueado(idESI)) {
-		char* clavesBloqueadasPorEsi[]; // se que esta mal escrito
-		int i;
+		// saco al ESI de todas las listas de ESIs que están esperando esa clave
+		g_idComparar = idESI;
+		dictionary_iterator(g_bloq, (void*)siEstaBloqueadaPorClaveEliminar);
+	}
 
-		for (i = 0; i < cantClavesBloqueadas; i++) {
-			if (estaBloqueadoPorElRecurso(idESI, clavesBloqueadasPorEsi[i])) {
-				t_list* lista = dictionary_get(g_bloq, claveRecurso);
-				g_idComparar = idESI;
-				list_remove_and_destroy_by_condition(lista, (void*) sonIguales,
-						(void*) eliminarT_infoBloqueo);
-			}
+	// Liberar recursos
+	if (dictionary_has_key(g_clavesBloqueadas, idESI)) {
+		// Asigno claves tomadas por otros ESIs al primer ESI que estaba esperando esa clave
+		dictionary_iterator(g_clavesBloqueadas, (void*)desbloqueoClave);
 
-		}
+		// Lo elimino el idESI del diccionario de claves bloqueadas por ESI
+		dictionary_remove_and_destroy(g_clavesBloqueadas, idESI, (void*)eliminarT_infoClavesBloqueadas);
 	}
 
 	// Libero memoria
@@ -287,8 +284,6 @@ void killProceso(char* linea) {
 }
 
 void status(char* linea) {
-	// informacion sobre las instancias del sistema
-	// PREGUNTA
 
 	char* clave = obtenerParametro(linea, 1);
 
@@ -342,7 +337,7 @@ char* obtenerParametro(char* linea, int parametro) {
 	return palabras[parametro];
 }
 
-bool estaListo(char* id) {
+bool estaListo(char* siEstaBlooqueadaPorClaveElimina(char*,void*)id) {
 	return dictionary_has_key(g_listos, id);
 }
 
@@ -359,7 +354,7 @@ bool estaBloqueadoPorLaClave(char* id, char* clave) {
 	return list_any_satisfy(dictionary_get(g_bloq, clave), (void*) sonIguales);
 }
 
-bool estaBloqueado(char* id) {
+bool estaBloqueado(char* id) { // estaMuyMAlESTO
 	int i;
 
 	for (i = 0; i < g_bloq->elements_amount; i++) {
@@ -379,8 +374,32 @@ bool estaBloqueado(char* id) {
 	return false;
 }
 
-void eliminarT_infoBloqueo(t_infoBloqueo infoBloqueo) {
+void eliminarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
 	free(infoBloqueo->data);
 	free(infoBloqueo->idESI);
 	free(infoBloqueo);
+}
+
+void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBoqueados){
+	if(estaBloqueadoPorLaClave(g_idComparar, clave)){
+		list_remove_and_destroy_by_condition(listaBloqueados, (void*)sonIguales, (void*)eliminarT_infoBloqueo);
+	}
+}
+
+void desbloqueoClave(char* idESI, t_list* listaBloqueadas){
+	int i;
+	int tamañoLista = list_size(listaBloqueadas);
+	for(i = 0; i < tamañoLista; i++){
+		char* lineaExtra = string_new();
+		string_append(&lineaExtra, "desbloquear ");
+		string_append(&lineaExtra, list_get(listaBoqueadas, i));
+		desbloquearESI(lineaExtra);
+
+		free(lineaExtra);
+	}
+}
+
+void eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas* infoClavesBloqueadas){
+	free(infoClavesBloqueadas->clave);
+	free(infoClavesBloqueadas);
 }

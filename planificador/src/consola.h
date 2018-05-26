@@ -41,10 +41,14 @@ void				salirConsola							(bool*);
 char* 				obtenerParametro						(char*, int);
 bool 				estaListo								(char*);
 bool 				estaBloqueadaLaClave					(char*);
-bool 				estaEnLista								(char*, t_list);
-bool 				sonIguales								(t_infoBloqueo);
+bool 				sonIguales								(t_infoBloqueo*);
 bool 				estaBloqueadoPorLaClave					(char*, char*);
 bool				estaBloqueado							(char*);
-void				eliminarT_infoBloqueo					(t_infoBloqueo);
+void				eliminarT_infoBloqueo					(t_infoBloqueo*);
+void        siEstaBloqueadaPorClaveEliminar(char*, t_list*);
+void        desbloqueoClave(char*, t_list*);
+void        eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas*);
+
+
 
 #endif /* CONSOLA_H_ */
