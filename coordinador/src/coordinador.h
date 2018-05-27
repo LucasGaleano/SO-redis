@@ -36,7 +36,8 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
-
+void procesarHandshake(t_paquete* paquete,int socketCliente);
+void procesarNombreESI(char* nombreESI, int socketCliente);
 void log_seguro(t_log* logger,sem_t a,char* format,...);
 void procesarNombreInstancia(char* nombre, int socketCliente);
 void procesarRespuestaSET(int respuesta,int socketCliente);
