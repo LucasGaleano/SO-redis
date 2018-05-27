@@ -121,7 +121,7 @@ void  distribuirKeys (t_list* tablaDeInstancias)
  	}
 }
 
-t_dictionary* crearDiccionarioESI(){
+t_dictionary* crearDiccionarioConexiones(){
 
    t_dictionary* aux = dictionary_create();
    return aux;
@@ -131,6 +131,10 @@ t_dictionary* crearDiccionarioESI(){
 void agregarConexion(t_dictionary * diccionario, char * clave , int valor ){
    if(!dictionary_has_key(diccionario,clave))
      dictionary_put(diccionario, clave, valor);
+}
+
+int conseguirConexion(t_dictionary * diccionario, char * clave){
+  return dictionary_get(diccionario,clave);
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int letraAEncontrar,int socket){

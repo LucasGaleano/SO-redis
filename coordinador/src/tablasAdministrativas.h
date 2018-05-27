@@ -44,9 +44,9 @@ void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int primerLetra,int socket);
 
-t_dictionary* crearDiccionarioESI(void);
-void agregarConexion(t_dictionary * diccionario, char * nombre , int valor);
-
+t_dictionary* crearDiccionarioConexiones(void);
+void agregarConexion(t_dictionary * diccionario, char * clave , int valor);
+void conseguirConexion(t_dictionary * diccionario, char * clave);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

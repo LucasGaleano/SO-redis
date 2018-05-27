@@ -12,7 +12,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
+#define PATH_CONFIG "/home/lucas/workspace/tp-2018-1C--0/configuraciones/coordinador.cfg"
 
 
 /*---------------------Estructuras-------------------------*/
@@ -37,12 +37,13 @@ sem_t g_mutexLog;
 
 /*------------------------FUNCIONES-------------------------*/
 void procesarHandshake(t_paquete* paquete,int socketCliente);
+void procesarGET(char* clave,int socketCliente);
+void procesarSET(t_claveValor* sentencia, int socketCliente);
 void procesarNombreESI(char* nombreESI, int socketCliente);
-void log_seguro(t_log* logger,sem_t a,char* format,...);
 void procesarNombreInstancia(char* nombre, int socketCliente);
 void procesarRespuestaSET(int respuesta,int socketCliente);
 void logearRespuesta(int respuesta, t_instancia* instancia);
-void procesarSET(t_claveValor* sentencia, int socketCliente);
+void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
 																	char* Clave,

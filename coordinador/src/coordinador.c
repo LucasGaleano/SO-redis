@@ -7,7 +7,7 @@ void* imprimir(void* paquete);
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
-  g_diccionarioConexiones = crearDiccionarioESI();
+  g_diccionarioConexiones = crearDiccionarioConexiones();
 
 	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 
@@ -23,39 +23,34 @@ int main(void) {
 void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paquetes
 
 	pthread_t pid;
-	 switch(paquete->codigoOperacion){
+	switch(paquete->codigoOperacion){
 
-		 case HANDSHAKE:
+		case HANDSHAKE:
 
-		 		procesarHandshake(paquete, *socketCliente);
+		 	procesarHandshake(paquete, *socketCliente);
 
+		break;
+
+		case ENVIAR_NOMBRE_ESI:
+			;
+
+			char* nombreESI = recibirNombreEsi(paquete);
+			procesarNombreESI(nombreESI,*socketCliente);
 			break;
 
-			case ENVIAR_NOMBRE_ESI:
 
-				;
-
-				char* nombreESI = recibirNombreEsi(paquete);
-				procesarNombreESI(nombreESI,*socketCliente);
-
-
-
-		 	break;
-
-
-			case ENVIAR_NOMBRE_INSTANCIA:
-				;
-				char* nombre = recibirNombreEsi(paquete);
-				procesarNombreInstancia(nombre,*socketCliente);
+		case ENVIAR_NOMBRE_INSTANCIA:
+			;
+			char* nombre = recibirNombreEsi(paquete);
+			procesarNombreInstancia(nombre,*socketCliente);
 			break;
 
-		 	case SET:
+	 	case SET:
 		 	;
 
 		  	//TODO crear hilo para procesar la conexion
-				t_claveValor* sentencia = recibirSet(paquete);
-				procesarSET(sentencia,*socketCliente);
-
+			t_claveValor* sentencia = recibirSet(paquete);
+			procesarSET(sentencia,*socketCliente);
 			break;
 
 
@@ -63,22 +58,21 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 			;
 			//El Coordinador logea la respuesta y envía al ESI
 			int respuesta = recibirRespuesta(paquete);
-
 			procesarRespuestaSET(respuesta,*socketCliente);
 			break;
 
 
 		case GET:
 			;
-			//Envio clave a bloquear al planificador
-			//enviarGet();
+			char* clave = recibirGet(paquete);
+			procesarGET(clave,*socketCliente);
 			break;
 
-			case STORE:
+		case STORE:
 
 				//El Coordinador colabora con el Planificador avisando de este recurso
 				//avisa si hubo error o no por instanica que se desconecto pero tenia la clave
-				break;
+			break;
 
 		default:
 
@@ -128,12 +122,12 @@ void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta){
 
 			case OK:
 
-				log_seguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+				logTraceSeguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 
 			case ABORTO:
 
-				log_seguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+				logTraceSeguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 	}
 }
@@ -173,6 +167,12 @@ void procesarRespuestaSET(int respuesta,int socketCliente){
 	logearRespuesta(respuesta,instanciaRespuesta);
 }
 
+void procesarGET(char* clave,int socketCliente){
+
+	socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
+	enviarGet(socketDelPlanificador,clave);
+}
+
 void procesarNombreInstancia(char* nombre, int socketCliente){
 
 	t_instancia*  instanciaNueva = crearInstancia(nombre, socketCliente);
@@ -185,7 +185,7 @@ void procesarNombreESI(char* nombreESI, int socketCliente){
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
 }
 
-void log_seguro(t_log* logger,sem_t mutex,char* format,...){
+void logTraceSeguro(t_log* logger,sem_t mutex,char* format,...){
 
 	va_list ap;
 	va_start(ap,format);
