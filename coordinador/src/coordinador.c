@@ -9,18 +9,18 @@ int main(void) {
 	g_tablaDeInstancias = crearListaInstancias();
   g_diccionarioConexiones = crearDiccionarioESI();
 
-
-
 	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 
 	t_config* config = config_create(PATH_CONFIG);
 	g_configuracion = armarConfigCoordinador(config);
 
-	iniciarServer(5555, (void*)procesarPaquete, g_logger);
+	sem_init(&g_mutexLog,0,1); //TODO destrur semaphore
+
+	iniciarServer(configuracion.puertoConexion, (void*)procesarPaquete, g_logger);
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete,int* socketCliente){
+void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paquetes
 
 	pthread_t pid;
 	 switch(paquete->codigoOperacion){
@@ -36,7 +36,8 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 				;
 
 				char* nombreESI = recibirNombreEsi(paquete);
-				agregarConexion( g_diccionarioConexiones , nombreESI , *socketCliente);
+				procesarNombreESI(nombreESI,*socketCliente);
+
 
 
 		 	break;
@@ -44,41 +45,24 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 			case ENVIAR_NOMBRE_INSTANCIA:
 				;
 				char* nombre = recibirNombreEsi(paquete);
-				t_instancia*  instanciaNueva = crearInstancia(nombre,*socketCliente);
-				agregarInstancia(g_tablaDeInstancias,instanciaNueva);
-				distribuirKeys(g_tablaDeInstancias);
-
-				enviarInfoInstancia(socketCliente,g_configuracion.cantidadEntradas,g_configuracion.tamanioEntradas);
-
-
+				procesarNombreInstancia(nombre,*socketCliente);
 			break;
 
-		 case SET:
+		 	case SET:
 		 	;
-		  //TODO crear hilo para procesar la conexion
-			t_claveValor* sentencia = recibirSET(paquete);
-			t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
-
-			enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
-
-			sleep(g_configuracion.retardo);
-
-			//TODO si no se puede acceder a la instancia, se le avisa al planificador
-
+		  	//TODO crear hilo para procesar la conexion
+				t_claveValor* sentencia = recibirSET(paquete);
+				procesarSET(sentencia,*socketCliente);
 			break;
 
-		//4- La instancia retorna al Coordinador
 
 		case RESPUESTA_SOLICITUD:
 			;
 			//El Coordinador logea la respuesta y envía al ESI
 			int respuesta = recibirRespuesta(paquete);
 
-			t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,*socketCliente);
-
-			logearRespuesta(respuesta,instanciaRespuesta);
-
-			 break;
+			procesarRespuestaSET(respuesta,*socketCliente);
+			break;
 
 
 		case GET:
@@ -90,7 +74,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){
 			case STORE:
 
 				//El Coordinador colabora con el Planificador avisando de este recurso
-				//avisa si hubo error o no
+				//avisa si hubo error o no por instanica que se desconecto pero tenia la clave
 				break;
 
 		default:
@@ -140,12 +124,12 @@ void logearRespuesta(int respuesta, t_instancia* instancia){
 
 			case OK:
 
-				log_trace(g_logger,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual  );
+				log_seguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 
 			case ABORTO:
 
-				log_trace(g_logger,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual );
+				log_seguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 	}
 
@@ -169,4 +153,41 @@ void procesarHandshake(t_paquete* paquete,int socketCliente){
 
 	}
 
+}
+
+
+void procesarSET(t_claveValor* sentencia, int socketCliente){
+
+	t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
+	sleep(g_configuracion.retardo);
+	enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
+	//TODO si no se puede acceder a la instancia, se le avisa al planificador
+}
+
+void procesarRespuestaSET(int respuesta,int socketCliente){
+
+	t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,socketCliente);
+	logearRespuesta(respuesta,instanciaRespuesta);
+}
+
+void procesarNombreInstancia(char* nombre, int socketCliente){
+
+	t_instancia*  instanciaNueva = crearInstancia(nombre, socketCliente);
+	agregarInstancia(g_tablaDeInstancias,instanciaNueva);
+	distribuirKeys(g_tablaDeInstancias);
+	enviarInfoInstancia(socketCliente,g_configuracion.cantidadEntradas,g_configuracion.tamanioEntradas);
+}
+
+void procesarNombreESI(char* nombreESI, int socketCliente){
+	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
+}
+
+void log_seguro(t_log* logger,sem_t mutex,char* format,...){
+
+	va_list ap;
+	va_start(ap,format);
+	char* mensaje = string_from_vformat(format,ap);
+	sem_wait($mutex);
+	log_trace(logger,mensaje);
+	sem_post($mutex);
 }

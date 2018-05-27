@@ -10,6 +10,7 @@
 #include <biblioteca/paquetes.h>
 #include <biblioteca/estructuras.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
@@ -31,15 +32,19 @@ t_log* g_logger;
 t_configuraciones g_configuracion;
 t_list* g_tablaDeInstancias;
 t_dictionary* g_diccionarioConexiones;
+sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
 
-
+void log_seguro(t_log* logger,sem_t a,char* format,...);
+void procesarNombreInstancia(char* nombre, int socketCliente);
+void procesarRespuestaSET(int respuesta,int socketCliente);
+void logearRespuesta(int respuesta, t_instancia* instancia);
+void procesarSET(t_claveValor* sentencia, int socketCliente);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
 																	char* Clave,
 	 																t_list* tablaDeInstancias);
-void logearRespuesta(int respuesta, t_instancia* instancia)
 
 #endif /* COORDINADOR_H_ */
