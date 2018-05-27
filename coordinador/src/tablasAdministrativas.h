@@ -48,4 +48,5 @@ t_dictionary* crearDiccionarioESI(void);
 void agregarConexion(t_dictionary * diccionario, char * nombre , int valor);
 
 
+
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

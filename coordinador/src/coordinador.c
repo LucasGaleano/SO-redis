@@ -7,6 +7,7 @@ void* imprimir(void* paquete);
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
+
   g_diccionarioConexiones = crearDiccionarioESI();
 
 	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
@@ -17,6 +18,7 @@ int main(void) {
 	sem_init(&g_mutexLog,0,1); //TODO destrur semaphore
 
 	iniciarServer(configuracion.puertoConexion, (void*)procesarPaquete, g_logger);
+
 	return 0;
 }
 
@@ -42,6 +44,7 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 		 	break;
 
+
 			case ENVIAR_NOMBRE_INSTANCIA:
 				;
 				char* nombre = recibirNombreEsi(paquete);
@@ -50,9 +53,11 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 		 	case SET:
 		 	;
+
 		  	//TODO crear hilo para procesar la conexion
 				t_claveValor* sentencia = recibirSET(paquete);
 				procesarSET(sentencia,*socketCliente);
+
 			break;
 
 
@@ -110,6 +115,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* clave, t_l
 			return traerUltimaInstanciaUsada(tablaDeInstancias);
 
 		//TODO algoritmo key explicit "KE"
+
 		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
 			return buscarInstancia(tablaDeInstancias,NULL,(int)string_substring(clave,0,1),NULL);
 
@@ -132,6 +138,7 @@ void logearRespuesta(int respuesta, t_instancia* instancia){
 				log_seguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 	}
+
 
 }
 
@@ -190,4 +197,35 @@ void log_seguro(t_log* logger,sem_t mutex,char* format,...){
 	sem_wait($mutex);
 	log_trace(logger,mensaje);
 	sem_post($mutex);
+}
+
+void  DistribuirKeys (g_tablaDeInstancias)
+{  //abecedario en ascci - 97(a) - 122(z)
+   int cantidadInstanciasDisponibles = 0;
+	 int letrasAbecedario = 27;
+	 int primerLetra = 97;
+	 int ultimaLetraAbecedario = 122;
+	 int ultimaLetra = 0;
+
+	 for (size_t i = 0; i <  list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+			   cantidadInstanciasDisponibles++;
+		}
+	 }
+	 int letrasPorInstancia = (int)letrasAbecedario/cantidadInstanciasDisponibles;
+	 int resto = letrasAbecedario - (letrasPorInstancia * cantidadInstanciasDisponibles);
+	 letrasPorInstancias = resto == 0 ? letrasPorInstancias: letrasPorInstancias + 1;
+	 for (size_t i = 0; i < list_size(g_tablaDeInstancias); i++) {
+		if (g_tablaDeInstancias[i]->disponible == true) {
+	 	g_tablaDeInstancias[i]-> primeraLetra = primerLetra;
+	  ultimaLetra = (primerLetra + letrasPorInstancia) >= ultimaLetraAbecedario ? ultimaLetraAbecedario: primerLetra + letrasPorInstancia;
+		g_tablaDeInstancias[i]-> ultimaLetra = ultimaLetra;
+		primerLetra = ultimaLetra + 1;
+	 }
+ 	}
+}
+
+
+
+
 }

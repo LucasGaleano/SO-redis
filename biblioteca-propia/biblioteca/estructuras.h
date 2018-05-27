@@ -34,7 +34,7 @@ enum emisor {
 };
 
 enum cod_op {
-	HANDSHAKE = 0, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR,
+	HANDSHAKE = 100, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR,
 
 	SOLICITUD_EJECUCION,
 
@@ -46,7 +46,7 @@ enum cod_op {
 };
 
 enum cod_respuesta {
-	OK = 0, ABORTO,
+	OK = 200, ABORTO,
 };
 
 //------------------------------Estructuras de comunicacion ESI Coordinador Instancia------------------------------//

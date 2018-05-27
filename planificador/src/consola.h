@@ -16,9 +16,10 @@
 #include <stdlib.h>
 #include <commons/collections/dictionary.h>
 #include <pthread.h>
-#include "planificador.h"
+#include "globales.h"
 
-
+/*------------------------------Globales-----------------------------*/
+char* g_idComparar;
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -39,9 +40,15 @@ void				salirConsola							(bool*);
 /*------------------------------Auxiliares------------------------------*/
 char* 				obtenerParametro						(char*, int);
 bool 				estaListo								(char*);
-bool 				estaEjecutando							(char*);
-bool 				estaBloqueado							(char*);
-bool 				estaBloqueadoPorUsuario					(char*);
-bool 				estaBloqueadoPorElRecurso				(char*, char*);
+bool 				estaBloqueadaLaClave					(char*);
+bool 				sonIguales								(t_infoBloqueo*);
+bool 				estaBloqueadoPorLaClave					(char*, char*);
+bool				estaBloqueado							(char*);
+void				eliminarT_infoBloqueo					(t_infoBloqueo*);
+void        siEstaBloqueadaPorClaveEliminar(char*, t_list*);
+void        desbloqueoClave(char*, t_list*);
+void        eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas*);
+
+
 
 #endif /* CONSOLA_H_ */
