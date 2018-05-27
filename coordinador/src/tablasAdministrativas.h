@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/collections/list.h>
+#include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <time.h>
 
@@ -20,22 +21,32 @@ typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	int* socket;
+	int socket;
 	time_t ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;
 }t_instancia;
 
+t_dictionary *  g_ESI;
+
 /*-------------------FUNCIONES---------------------------*/
 
-t_instancia*	 traerInstanciaMasEspacioDisponible 		  (t_list* tablaDeInstancias);
-t_instancia*	 traerUltimaInstanciaUsada				(t_list* tablaDeInstancias);
-t_list *       crearListaInstancias				(void);
-void           agregarInstancia           (t_list * lista, t_instancia* instancia );
-t_instancia*   crearInstancia        		(char* nombre,int* socket);
-void           destruirInstancia          (t_instancia * instancia);
-void           mostrarInstancia           (t_instancia * instancia);
+t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias);
+t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias);
+t_instancia* traerInstanciaQueContieneKey(t_list* tablaDeInstancia,char* primerLetraClave);
+void distribuirKeys(t_list* tablaDeInstancias);
+
+t_list* crearListaInstancias(void);
+void agregarInstancia(t_list * lista, t_instancia* instancia );
+t_instancia* crearInstancia(char* nombre,int socket);
+void destruirInstancia(t_instancia * instancia);
+void mostrarInstancia(t_instancia * instancia);
+t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int primerLetra,int socket);
+
+t_dictionary* crearDiccionarioESI(void);
+void agregarConexion(t_dictionary * diccionario, char * nombre , int valor);
+
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */
