@@ -81,7 +81,7 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	info->tamanioEntrada = tamanioEntrada;
 
 	//Creo el espacio de almacenamiento
-	storage = malloc(cantEntradas * tamanioEntrada);
+	crearStorage();
 
 	//Creo bitMap del storage
 	crearBitMap();
@@ -242,4 +242,40 @@ int buscarCantidadIndexLibres(int cantidad) {
 		candidato = -1;
 
 	return candidato;
+}
+
+/*-------------------------Storage-------------------------*/
+void crearStorage(void){
+	storage = malloc(cantEntradas * tamanioEntrada);
+}
+
+void destruirStorage(void) {
+	free(storage);
+}
+
+int guardarEnStorage(void * valor) {
+	int tamValor = strlen(valor);
+
+	int entradasNecesaria = tamValor / tamanioEntrada;
+
+	int resto = tamValor % tamanioEntrada;
+
+	if (resto != 0)
+		entradasNecesaria++;
+
+	int primeraEntrada = buscarCantidadIndexLibres(entradasNecesaria);
+
+	if (primeraEntrada != -1) {
+		int i;
+
+		for (i = 0; i < entradasNecesaria; i++)
+			ocuparIndex(primeraEntrada + i);
+
+		memcpy(storage + primeraEntrada, valor, tamValor);
+
+		return 0;
+
+	} else {
+		return -1;
+	}
 }

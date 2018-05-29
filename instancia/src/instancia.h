@@ -64,5 +64,9 @@ int 				buscarIndexLibre			(void);
 void 				mostrarBitmap				(void);
 int 				buscarCantidadIndexLibres	(int cantidad);
 
+/*-------------------------Storage-------------------------*/
+void				crearStorage				(void);
+void 				destruirStorage				(void);
+int 				guardarEnStorage			(void * valor);
 
 #endif /* INSTANCIA_H_ */
