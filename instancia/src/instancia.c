@@ -253,7 +253,7 @@ void destruirStorage(void) {
 	free(storage);
 }
 
-int guardarEnStorage(void * valor) {
+void * guardarEnStorage(void * valor) {
 	int tamValor = strlen(valor);
 
 	int entradasNecesaria = tamValor / tamanioEntrada;
@@ -273,9 +273,9 @@ int guardarEnStorage(void * valor) {
 
 		memcpy(storage + primeraEntrada, valor, tamValor);
 
-		return 0;
+		return storage + primeraEntrada;
 
 	} else {
-		return -1;
+		return NULL;
 	}
 }

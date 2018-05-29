@@ -67,6 +67,6 @@ int 				buscarCantidadIndexLibres	(int cantidad);
 /*-------------------------Storage-------------------------*/
 void				crearStorage				(void);
 void 				destruirStorage				(void);
-int 				guardarEnStorage			(void * valor);
+void * 				guardarEnStorage			(void * valor);
 
 #endif /* INSTANCIA_H_ */
