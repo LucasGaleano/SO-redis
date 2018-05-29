@@ -83,6 +83,9 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Creo el espacio de almacenamiento
 	storage = malloc(cantEntradas * tamanioEntrada);
 
+	//Creo bitMap del storage
+	crearBitMap();
+
 	//Libero memoria
 	free(info);
 
@@ -93,24 +96,150 @@ void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
 }
 
+void destruirTabla(void){
+	void eliminarEntrada(t_tabla_entradas * entrada){
+		free(entrada->clave);
+		if(entrada->entrada != NULL)free(entrada->entrada);
+		free(entrada);
+	}
+
+	list_destroy_and_destroy_elements(tablaEntradas, (void *) eliminarEntrada);
+}
+
+t_tabla_entradas * buscarEntrada(char * clave) {
+	bool esEntradaBuscada(t_tabla_entradas * entrada) {
+		return string_equals_ignore_case(entrada->clave, clave);
+	}
+
+	t_tabla_entradas * registroEntrada = list_find(tablaEntradas,
+			(void*) esEntradaBuscada);
+
+	if (registroEntrada == NULL)
+		return NULL;
+
+	return registroEntrada;
+}
+
 void agregarClave(char * clave) {
 	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
 	registroEntrada->clave = strdup(clave);
 
+	registroEntrada->tamanio = 0;
+
 	list_add(tablaEntradas, registroEntrada);
 }
 
-t_tabla_entradas * buscarRegistroEntrada(){
+void eliminarClave(char * clave) {
+	bool esEntradaBuscada(t_tabla_entradas * entrada) {
+		return string_equals_ignore_case(entrada->clave, clave);
+	}
 
+	t_tabla_entradas * entradaBuscada = list_remove_by_condition(tablaEntradas,
+			(void*) esEntradaBuscada);
+
+	if (entradaBuscada != NULL) {
+		//Libero memoria
+		free(entradaBuscada->clave);
+		if (entradaBuscada->entrada != NULL)
+			free(entradaBuscada->entrada);
+		free(entradaBuscada);
+	}
 }
 
-void agregarValor(char * clave, char * valor){
+void mostrarTabla(void) {
+	int i;
 
+	printf("Clave			Tamanio \n");
+	printf("-------------------------------\n");
+
+	for (i = 0; i < tablaEntradas->elements_count; i++) {
+		t_tabla_entradas * entrada = list_get(tablaEntradas, i);
+		printf("%s			%d \n", entrada->clave, entrada->tamanio);
+	}
 }
 
+/*-------------------------BitMap del Storage-------------------------*/
+void crearBitMap(void) {
+	bitMap = malloc(sizeof(bool) * cantEntradas);
 
-//modificarValor
-//eliminarValor
-//eliminarClave
-//buscarClave
+	liberarBitMap();
+}
+
+void destruirBitMap(void) {
+	free(bitMap);
+}
+
+void liberarBitMap(void) {
+	for (int i = 0; i < cantEntradas; i++)
+		liberarIndex(i);
+}
+
+void llenarBitMap(void) {
+	for (int i = 0; i < cantEntradas; i++)
+		ocuparIndex(i);
+}
+
+void liberarIndex(int index) {
+	if (index + 1 <= cantEntradas) {
+		bitMap[index] = false;
+	} else {
+		printf("No se puede liberar el index %d ya que no existe \n", index);
+	}
+}
+
+void ocuparIndex(int index) {
+	if (index + 1 <= cantEntradas) {
+		bitMap[index] = true;
+	} else {
+		printf("No se puede ocuapar el index %d ya que no existe \n", index);
+	}
+}
+
+int buscarIndexLibre(void) {
+	int index = 0;
+
+	while (bitMap[index]) {
+		index++;
+	}
+
+	if (index < 99)
+		bitMap[index] = false;
+
+	return index;
+}
+
+void mostrarBitmap(void) {
+	printf("Index			Ocupado \n");
+	printf("-------------------------------\n");
+	int i;
+	for (i = 0; i < cantEntradas; i++)
+		printf("%d			%d \n", i, bitMap[i]);
+}
+
+int buscarCantidadIndexLibres(int cantidad) {
+	bool loEncontre = false;
+	int candidato;
+	int contador;
+	int i;
+
+	for (i = 0; !loEncontre && i < cantEntradas; i++) {
+		if (!bitMap[i]) {
+			candidato = i;
+			contador = 1;
+
+			while (contador <= cantidad && (i + 1) < cantEntradas && !bitMap[i + 1]) {
+				i++;
+				contador++;
+			}
+
+			if (contador == cantidad)
+				loEncontre = true;
+		}
+	}
+
+	if (!loEncontre)
+		candidato = -1;
+
+	return candidato;
+}
