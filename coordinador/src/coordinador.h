@@ -37,8 +37,9 @@ sem_t g_mutexLog;
 
 /*------------------------FUNCIONES-------------------------*/
 void procesarHandshake(t_paquete* paquete,int socketCliente);
-void procesarGET(char* clave,int socketCliente);
 void procesarSET(t_claveValor* sentencia, int socketCliente);
+void procesarGET(char* clave,int socketCliente);
+void procesarSTORE(char* clave,int socketCliente);
 void procesarNombreESI(char* nombreESI, int socketCliente);
 void procesarNombreInstancia(char* nombre, int socketCliente);
 void procesarRespuestaSET(int respuesta,int socketCliente);
