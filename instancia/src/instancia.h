@@ -35,6 +35,7 @@ typedef struct {
 	char * clave;
 	void * entrada;
 	int tamanio;
+	int inexComienzo;
 } t_tabla_entradas;
 
 /*-------------------------Conexion-------------------------*/
@@ -46,12 +47,14 @@ void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
 
 /*-------------------------Tabla de entradas-------------------------*/
-void 				crearTablaEntradas	(void);
-void 				destruirTabla		(void);
-t_tabla_entradas * 	buscarEntrada		(char * clave);
-void 				agregarClave		(char * clave);
-void 				eliminarClave		(char * clave);
-void 				mostrarTabla		(void);
+void 				crearTablaEntradas		(void);
+void 				destruirTabla			(void);
+t_tabla_entradas * 	buscarEntrada			(char * clave);
+void 				agregarClave			(char * clave);
+void 				eliminarClave			(char * clave);
+void 				mostrarTabla			(void);
+int 				agregarClaveValor		(char * clave, void * valor);
+void * 				buscarValorSegunClave	(char * clave);
 
 /*-------------------------BitMap del Storage-------------------------*/
 void 				crearBitMap					(void);
@@ -67,6 +70,6 @@ int 				buscarCantidadIndexLibres	(int cantidad);
 /*-------------------------Storage-------------------------*/
 void				crearStorage				(void);
 void 				destruirStorage				(void);
-void * 				guardarEnStorage			(void * valor);
+void * 				guardarEnStorage			(void * valor, int * index);
 
 #endif /* INSTANCIA_H_ */
