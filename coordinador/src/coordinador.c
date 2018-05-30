@@ -70,8 +70,10 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 		case STORE:
 
+				char* clave = recibirStore(paquete);
 				//El Coordinador colabora con el Planificador avisando de este recurso
-				//avisa si hubo error o no por instanica que se desconecto pero tenia la clave
+				procesarSTORE(clave,*socketCliente);
+				//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 			break;
 
 		default:
@@ -127,7 +129,7 @@ void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta){
 
 			case ABORTO:
 
-				logTraceSeguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+				logTraceSeguro(g_logger,g_mutexLog,"ERROR nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 	}
 }
@@ -158,6 +160,7 @@ void procesarSET(t_claveValor* sentencia, int socketCliente){
 	t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 	sleep(g_configuracion.retardo);
 	enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR SET planificador clave: %s\n",clave);
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 }
 
@@ -169,8 +172,16 @@ void procesarRespuestaSET(int respuesta,int socketCliente){
 
 void procesarGET(char* clave,int socketCliente){
 
-	socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
+	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
 	enviarGet(socketDelPlanificador,clave);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR GET planificador clave: %s\n",clave);
+}
+
+void procesarSTORE(char* clave,int socketCliente){
+
+	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
+	enviarStore(socketDelPlanificador,clave);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR STORE planificador clave: %s\n",clave);
 }
 
 void procesarNombreInstancia(char* nombre, int socketCliente){
@@ -185,12 +196,12 @@ void procesarNombreESI(char* nombreESI, int socketCliente){
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
 }
 
-void logTraceSeguro(t_log* logger,sem_t mutex,char* format,...){
+void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format,...){
 
 	va_list ap;
 	va_start(ap,format);
 	char* mensaje = string_from_vformat(format,ap);
-	sem_wait(&mutex);
+	sem_wait(&mutexLog);
 	log_trace(logger,mensaje);
-	sem_post(&mutex);
+	sem_post(&mutexLog);
 }
