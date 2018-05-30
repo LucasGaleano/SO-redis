@@ -133,7 +133,7 @@ void agregarConexion(t_dictionary * diccionario, char * clave , int valor ){
      dictionary_put(diccionario, clave, valor);
 }
 
-int conseguirConexion(t_dictionary * diccionario, char * clave){
+void* conseguirConexion(t_dictionary * diccionario, char * clave){
   return dictionary_get(diccionario,clave);
 }
 
