@@ -1,29 +1,29 @@
 #include "instancia.h"
 
 int main(void) {
-	//Creo archivo de log
-	logInstancia = log_create("log_Instancia.log", "instancia", true,
-			LOG_LEVEL_TRACE);
-	log_trace(logInstancia, "Inicio el proceso instancia \n");
+ //Creo archivo de log
+ logInstancia = log_create("log_Instancia.log", "instancia", true,
+ LOG_LEVEL_TRACE);
+ log_trace(logInstancia, "Inicio el proceso instancia \n");
 
-	//Conecto instancia con coordinador
-	conectarInstancia();
+ //Conecto instancia con coordinador
+ conectarInstancia();
 
-	//Quedo a la espera de solicitudes
-	recibirSolicitudes = true;
-	while (recibirSolicitudes) {
-		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
-				logInstancia);
-	}
+ //Quedo a la espera de solicitudes
+ recibirSolicitudes = true;
+ while (recibirSolicitudes) {
+ gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+ logInstancia);
+ }
 
-	//Termina esi
-	log_trace(logInstancia, "Termino el proceso instancia \n");
+ //Termina esi
+ log_trace(logInstancia, "Termino el proceso instancia \n");
 
-	//Destruyo archivo de log
-	log_destroy(logInstancia);
+ //Destruyo archivo de log
+ log_destroy(logInstancia);
 
-	return EXIT_SUCCESS;
-}
+ return EXIT_SUCCESS;
+ }
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -137,15 +137,16 @@ void eliminarClave(char * clave) {
 			(void*) esEntradaBuscada);
 
 	if (entradaBuscada != NULL) {
-		if(entradaBuscada->tamanio != 0){
-		int i;
-		int cantidadEntradasABorar = entradaBuscada->tamanio / tamanioEntrada;
+		if (entradaBuscada->tamanio != 0) {
+			int i;
+			int cantidadEntradasABorar = entradaBuscada->tamanio
+					/ tamanioEntrada;
 
-		if (entradaBuscada->tamanio % tamanioEntrada != 0)
-			cantidadEntradasABorar++;
+			if (entradaBuscada->tamanio % tamanioEntrada != 0)
+				cantidadEntradasABorar++;
 
-		for (i = 0; i < entradaBuscada->tamanio; i++)
-			liberarIndex(entradaBuscada->inexComienzo + i);
+			for (i = 0; i < entradaBuscada->tamanio; i++)
+				liberarIndex(entradaBuscada->inexComienzo + i);
 		}
 		free(entradaBuscada->clave);
 		free(entradaBuscada);
@@ -155,12 +156,13 @@ void eliminarClave(char * clave) {
 void mostrarTabla(void) {
 	int i;
 
-	printf("Clave			Tamanio \n");
-	printf("-------------------------------\n");
+	printf("Clave			Tamanio			1°Entrada \n");
+	printf("----------------------------------------------------------\n");
 
 	for (i = 0; i < tablaEntradas->elements_count; i++) {
 		t_tabla_entradas * entrada = list_get(tablaEntradas, i);
-		printf("%s			%d \n", entrada->clave, entrada->tamanio);
+		printf("%s			%d			%d \n", entrada->clave, entrada->tamanio,
+				entrada->inexComienzo);
 	}
 	printf("\n");
 }
@@ -203,6 +205,36 @@ void * buscarValorSegunClave(char * clave) {
 	return respuesta;
 }
 
+t_tabla_entradas * buscarEntradaSegunIndex(int index) {
+	bool esEntradaBuscada(t_tabla_entradas * entrada) {
+		return (entrada->inexComienzo == index);
+	}
+
+	t_tabla_entradas * registroEntrada = list_find(tablaEntradas,
+			(void*) esEntradaBuscada);
+
+	return registroEntrada;
+}
+
+void mostrarEntrada(char * clave) {
+	t_tabla_entradas * entrada = buscarEntrada(clave);
+
+	printf("Clave: %s \n", entrada->clave);
+
+	char * respuesta = malloc(entrada->tamanio + 1);
+
+	memcpy(respuesta, entrada->entrada, entrada->tamanio);
+
+	respuesta[entrada->tamanio] = '\0';
+
+	printf("Valor: %s \n", respuesta);
+
+	printf("Tamanio: %d \n\n", entrada->tamanio);
+
+	free(respuesta);
+}
+
+
 /*-------------------------BitMap del Storage-------------------------*/
 void crearBitMap(void) {
 	bitMap = malloc(sizeof(bool) * cantEntradas);
@@ -228,7 +260,8 @@ void liberarIndex(int index) {
 	if (index + 1 <= cantEntradas) {
 		bitMap[index] = false;
 	} else {
-		log_error(logInstancia, "No se puede liberar el index %d ya que no existe \n", index);
+		log_error(logInstancia,
+				"No se puede liberar el index %d ya que no existe \n", index);
 	}
 }
 
@@ -236,7 +269,8 @@ void ocuparIndex(int index) {
 	if (index + 1 <= cantEntradas) {
 		bitMap[index] = true;
 	} else {
-		log_error(logInstancia, "No se puede ocuapar el index %d ya que no existe \n", index);
+		log_error(logInstancia,
+				"No se puede ocuapar el index %d ya que no existe \n", index);
 	}
 }
 
@@ -263,7 +297,6 @@ void mostrarBitmap(void) {
 }
 
 int buscarCantidadIndexLibres(int cantidad) {
-	printf("La cantidad pedida es: %d \n", cantidad);
 	bool loEncontre = false;
 	int candidato;
 	int contador;
@@ -272,18 +305,18 @@ int buscarCantidadIndexLibres(int cantidad) {
 	for (i = 0; !loEncontre && i < cantEntradas; i++) {
 		if (!bitMap[i]) {
 			candidato = i;
-			printf("El candidato es: %d \n", candidato);
+			//printf("El candidato es: %d \n", candidato);
 			contador = 1;
-			printf("El contador es: %d \n", contador);
+			//printf("El contador es: %d \n", contador);
 
 			while (contador < cantidad && (i + 1) < cantEntradas
 					&& !bitMap[i + 1]) {
 				i++;
 				contador++;
-				printf("El contador es: %d \n", contador);
+				//printf("El contador es: %d \n", contador);
 			}
 
-			printf("El contador definitivo es: %d \n",contador);
+			//printf("El contador definitivo es: %d \n",contador);
 
 			if (contador == cantidad)
 				loEncontre = true;
@@ -315,21 +348,77 @@ void * guardarEnStorage(void * valor, int * index) {
 	if (resto != 0)
 		entradasNecesaria++;
 
-	int primeraEntrada = buscarCantidadIndexLibres(entradasNecesaria);
+	*index = buscarCantidadIndexLibres(entradasNecesaria);
 
-	if (primeraEntrada != -1) {
-		int i;
+	if ((*index) != -1) {
 
-		for (i = 0; i < entradasNecesaria; i++)
-			ocuparIndex(primeraEntrada + i);
-
-		memcpy(storage + primeraEntrada, valor, tamValor);
-
-		*index = primeraEntrada;
-
-		return storage + primeraEntrada;
+		return guardarEnStorageEnIndex(valor, *index);
 
 	} else {
 		return NULL;
+	}
+}
+
+void * guardarEnStorageEnIndex(void * valor, int index) {
+	int tamValor = strlen(valor);
+
+	int entradasNecesaria = tamValor / tamanioEntrada;
+
+	int resto = tamValor % tamanioEntrada;
+
+	if (resto != 0)
+		entradasNecesaria++;
+
+	int i;
+
+	for (i = 0; i < entradasNecesaria; i++)
+		ocuparIndex(index + i);
+
+	memcpy(storage + index, valor, tamValor);
+
+	return storage + index;
+}
+
+void compactar(void) {
+	int i;
+	int primeraEntradaLibre;
+
+	for (i = 0; i < cantEntradas; i++) {
+		if (!bitMap[i]) {
+
+			primeraEntradaLibre = i;
+
+			for (; i < cantEntradas && !bitMap[i]; i++)
+				;
+
+			if (i == cantEntradas)
+				break;
+
+			int indexOcupado = i;
+
+			t_tabla_entradas * entrada = buscarEntradaSegunIndex(i);
+
+			int cantidadEntradas = entrada->tamanio / tamanioEntrada;
+
+			if (entrada->tamanio % tamanioEntrada != 0)
+				cantidadEntradas++;
+
+			entrada->inexComienzo = primeraEntradaLibre;
+
+			void * valor = buscarValorSegunClave(entrada->clave);
+
+			entrada->entrada = guardarEnStorageEnIndex(valor,
+					primeraEntradaLibre);
+
+			free(valor);
+
+			for (int i2 = 0; i2 < cantidadEntradas; i2++) {
+				ocuparIndex(primeraEntradaLibre);
+				liberarIndex(indexOcupado);
+				primeraEntradaLibre++;
+				indexOcupado++;
+			}
+		}
+
 	}
 }

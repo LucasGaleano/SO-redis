@@ -55,6 +55,8 @@ void 				eliminarClave			(char * clave);
 void 				mostrarTabla			(void);
 int 				agregarClaveValor		(char * clave, void * valor);
 void * 				buscarValorSegunClave	(char * clave);
+t_tabla_entradas *	buscarEntradaSegunIndex	(int index);
+void 				mostrarEntrada			(char * clave);
 
 /*-------------------------BitMap del Storage-------------------------*/
 void 				crearBitMap					(void);
@@ -71,5 +73,7 @@ int 				buscarCantidadIndexLibres	(int cantidad);
 void				crearStorage				(void);
 void 				destruirStorage				(void);
 void * 				guardarEnStorage			(void * valor, int * index);
+void * 				guardarEnStorageEnIndex		(void * valor, int index);
+void 				compactar					(void);
 
 #endif /* INSTANCIA_H_ */
