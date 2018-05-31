@@ -77,8 +77,8 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	t_infoInstancia * info = recibirInfoInstancia(unPaquete);
 
 	//Setteo tam de entrada y cantidad
-	info->cantEntradas = cantEntradas;
-	info->tamanioEntrada = tamanioEntrada;
+	cantEntradas = info->cantEntradas;
+	tamanioEntrada = info->tamanioEntrada;
 
 	//Creo el espacio de almacenamiento
 	crearStorage();
