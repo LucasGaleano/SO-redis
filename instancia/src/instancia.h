@@ -55,6 +55,7 @@ void 				eliminarClave			(char * clave);
 void 				mostrarTabla			(void);
 int 				agregarClaveValor		(char * clave, void * valor);
 void * 				buscarValorSegunClave	(char * clave);
+t_tabla_entradas *	buscarValorSegunIndex	(int index);
 
 /*-------------------------BitMap del Storage-------------------------*/
 void 				crearBitMap					(void);
