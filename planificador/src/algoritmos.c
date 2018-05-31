@@ -1,14 +1,23 @@
 #include "algoritmos.h"
 
-double calcularProximaRafaga(double estimadoAnterior,
-		double realAnterior) {
+double calcularProximaRafaga(double estimadoAnterior, double realAnterior, double arg) {
 	return estimadoAnterior * g_alfa + realAnterior * (1 - g_alfa);
 }
 
-double calcularRR(double tEnEspera, double estimadoAnterior,
-		double realAnterior) {
+double calcularRR(double estimadoAnterior,
+		double realAnterior, double tEnEspera) {
 	return (1
-			+ tEnEspera / calcularProximaRafaga(estimadoAnterior, realAnterior));
+			+ tEnEspera / calcularProximaRafaga(estimadoAnterior, realAnterior, 0));
+}
+
+int esMenor(int comp1, int comp2)
+{
+	return comp1<comp2;
+}
+
+int esMayor(int comp1, int comp2)
+{
+	return comp1>comp2;
 }
 
 char* asignarID(int val, char* ret) {
@@ -20,7 +29,7 @@ char* asignarID(int val, char* ret) {
 
 void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	bloq->estAnterior = calcularProximaRafaga(bloq->estAnterior,
-			bloq->realAnterior);
+			bloq->realAnterior, 0);
 	bloq->realAnterior = nuevoReal;
 	t_infoBloqueo* insert = malloc(sizeof(t_infoBloqueo));
 	insert->idESI = strdup(key);
@@ -36,53 +45,30 @@ void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	pthread_mutex_unlock(&mutexBloqueo);
 }
 
-char* calcularSiguienteSJF(void) {
+char* calcularSiguiente(double (*calculadorProx) (double, double, double), int(*ponderacion)(int, int)) {
 	t_infoListos *actual;
-	double menor;
+	double unValor;
 
 	int i = 0;
 	char* auxKey = asignarID(i, auxKey);
-	char* keyMenor = calloc(5, sizeof(char));
+	char* key;
 	actual = dictionary_get(g_listos, auxKey);
-	menor = calcularProximaRafaga(actual->estAnterior, actual->realAnterior);
-	keyMenor = strdup(auxKey);
-	for (i++; i < g_listos->elements_amount; i++) {
-		auxKey = asignarID(i, auxKey);
-		actual = dictionary_get(g_listos, auxKey);
-		double prox = calcularProximaRafaga(actual->estAnterior,
-				actual->realAnterior);
-		if (menor < prox) {
-			menor = prox;
-			strcpy(keyMenor, auxKey);
-		}
-	}
-
-	return keyMenor;
-}
-
-char* calcularSiguienteHRRN(void) {
-	t_infoListos *actual;
-	double mayor;
-
-	int i = 0;
-	char* auxKey = asignarID(i, auxKey);
-	char* keyMayor;
-	actual = dictionary_get(g_listos, auxKey);
-	mayor = calcularRR(actual->tEnEspera, actual->estAnterior,
+	unValor = calculadorProx(actual->tEnEspera, actual->estAnterior,
 			actual->realAnterior);
-	keyMayor = strdup(auxKey);
-	for (i++; i < g_listos->elements_amount; i++) {
+	key = strdup(auxKey);
+	for (i++; i < dictionary_size(g_listos); i++) {
+		free(auxKey);
 		auxKey = asignarID(i, auxKey);
 		actual = dictionary_get(g_listos, auxKey);
 		double prox = calcularRR(actual->tEnEspera, actual->estAnterior,
 				actual->realAnterior);
-		if (mayor < prox) {
-			mayor = prox;
-			strcpy(keyMayor, auxKey);
+		if (ponderacion(unValor, prox)) {
+			unValor = prox;
+			strcpy(key, auxKey);
 		}
 	}
 
-	return keyMayor;
+	return key;
 }
 
 void envejecer(char* key, t_infoListos* data) {
@@ -96,13 +82,14 @@ void planificarSinDesalojo(char* algoritmo) {
 	char* key;
 	while (1) {
 		cont = 0;
+		sem_wait(&ESIentrada);
 		pthread_mutex_lock(&mutexListo);
-		pthread_cond_wait(&ESIentrada, &mutexListo);
 		if (strcmp(algoritmo, "SJF-SD") == 0)
-			key = calcularSiguienteSJF();
+			key = calcularSiguiente((void*) calcularProximaRafaga, (void*) esMayor);
 		if (strcmp(algoritmo, "HRRN") == 0)
-			key = calcularSiguienteHRRN();
+			key = calcularSiguiente((void*) calcularRR, (void*)esMenor);
 
+		g_idESIactual = strdup(key);
 		aEjecutar = dictionary_remove(g_listos, key);
 		pthread_mutex_unlock(&mutexListo);
 		g_socketEnEjecucion = aEjecutar->socketESI;
@@ -110,11 +97,9 @@ void planificarSinDesalojo(char* algoritmo) {
 			pthread_mutex_lock(&mutexConsola);
 			enviarSolicitudEjecucion(g_socketEnEjecucion);
 			pthread_mutex_unlock(&mutexConsola);
-			gestionarSolicitudes(g_socketEnEjecucion,
-					(void*) gestionarRespuestaESI, g_logger);
+			sem_wait(&continua);
 			if (!g_termino) {
-				gestionarSolicitudes(g_socketCoordinador,
-						(void*) gestionarRespuestaCoordinador, g_logger);
+				sem_wait(&continua);
 				cont++;
 			}
 		}
@@ -148,14 +133,18 @@ void planificarConDesalojo(void) {
 			pthread_mutex_unlock(&modificacion);
 			if (aEjecutar != NULL) {
 				aEjecutar->estAnterior = calcularProximaRafaga(
-						aEjecutar->estAnterior, aEjecutar->realAnterior);
+						aEjecutar->estAnterior, aEjecutar->realAnterior, 0);
 				aEjecutar->realAnterior = cont;
+				pthread_mutex_lock(&mutexListo);
 				dictionary_put(g_listos, key, aEjecutar);
+				pthread_mutex_unlock(&mutexListo);
+				sem_post(&ESIentrada);
 			}
 			cont = 0;
+			sem_wait(&ESIentrada);
 			pthread_mutex_lock(&mutexListo);
-			pthread_cond_wait(&ESIentrada, &mutexListo);
-			key = calcularSiguienteSJF();
+			key = calcularSiguiente((void*) calcularProximaRafaga, (void*) esMayor);
+			g_idESIactual = strdup(key);
 			aEjecutar = dictionary_remove(g_listos, key);
 			pthread_mutex_unlock(&mutexListo);
 			g_socketEnEjecucion = aEjecutar->socketESI;
@@ -163,11 +152,9 @@ void planificarConDesalojo(void) {
 		pthread_mutex_lock(&mutexConsola);
 		enviarSolicitudEjecucion(g_socketEnEjecucion);
 		pthread_mutex_unlock(&mutexConsola);
-		gestionarSolicitudes(g_socketEnEjecucion, (void*) gestionarRespuestaESI,
-				g_logger);
+		sem_wait(&continua);
 		if (!g_termino) {
-			gestionarSolicitudes(g_socketCoordinador,
-					(void*) gestionarRespuestaCoordinador, g_logger);
+			sem_wait(&continua);
 			cont++;
 		}
 		if (g_bloqueo) {
@@ -180,44 +167,4 @@ void planificarConDesalojo(void) {
 		}
 		free(key);
 	}
-}
-
-void desbloquearESIs(t_infoBloqueo* nodo) {
-	dictionary_put(g_listos, nodo->idESI, nodo->data);
-}
-
-void gestionarRespuestaCoordinador(t_paquete* unPaquete, int* socket) {
-	t_list* aux;
-	switch (unPaquete->codigoOperacion) {
-	;
-case GET:
-	g_claveGET = recibirGet(unPaquete);
-	g_bloqueo = 1;
-	break;
-case STORE:
-	pthread_mutex_lock(&mutexBloqueo);
-	aux = dictionary_remove(g_bloq, recibirStore(unPaquete));
-	list_iterate(aux, (void*) desbloquearESIs);
-	list_destroy(aux);
-	pthread_mutex_unlock(&mutexBloqueo);
-	pthread_mutex_lock(&modificacion);
-	g_huboModificacion = 1;
-	pthread_mutex_unlock(&modificacion);
-	break;
-case ABORTO:
-	g_termino = 1;
-	enviarRespuesta(ABORTO, g_socketEnEjecucion);
-	break;
-	}
-	destruirPaquete(unPaquete);
-}
-
-void gestionarRespuestaESI(t_paquete* unPaquete, int* socket) {
-	switch (unPaquete->codigoOperacion) {
-	;
-case ABORTO:
-	g_termino = 1;
-	break;
-	}
-	destruirPaquete(unPaquete);
 }
