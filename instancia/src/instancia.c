@@ -1,29 +1,29 @@
 #include "instancia.h"
 
-/*int main(void) {
- //Creo archivo de log
- logInstancia = log_create("log_Instancia.log", "instancia", true,
- LOG_LEVEL_TRACE);
- log_trace(logInstancia, "Inicio el proceso instancia \n");
+int main(void) {
+	//Creo archivo de log
+	logInstancia = log_create("log_Instancia.log", "instancia", true,
+			LOG_LEVEL_TRACE);
+	log_trace(logInstancia, "Inicio el proceso instancia \n");
 
- //Conecto instancia con coordinador
- conectarInstancia();
+	//Conecto instancia con coordinador
+	conectarInstancia();
 
- //Quedo a la espera de solicitudes
- recibirSolicitudes = true;
- while (recibirSolicitudes) {
- gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
- logInstancia);
- }
+	//Quedo a la espera de solicitudes
+	recibirSolicitudes = true;
+	while (recibirSolicitudes) {
+		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+				logInstancia);
+	}
 
- //Termina esi
- log_trace(logInstancia, "Termino el proceso instancia \n");
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
 
- //Destruyo archivo de log
- log_destroy(logInstancia);
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
 
- return EXIT_SUCCESS;
- }*/
+	return EXIT_SUCCESS;
+}
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -86,6 +86,12 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Creo bitMap del storage
 	crearBitMap();
 
+	//Creo tabla de entradas
+	crearTablaEntradas();
+
+	//Creo el hilo para hacer el dump
+	crearAlmacenamientoContinuo();
+
 	//Libero memoria
 	free(info);
 
@@ -96,7 +102,7 @@ void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
 }
 
-void destruirTabla(void) {
+void destruirTablaEntradas(void) {
 	void eliminarEntrada(t_tabla_entradas * entrada) {
 		free(entrada->clave);
 		free(entrada);
@@ -153,7 +159,7 @@ void eliminarClave(char * clave) {
 	}
 }
 
-void mostrarTabla(void) {
+void mostrarTablaEntradas(void) {
 	int i;
 
 	printf("Clave			Tamanio			1°Entrada \n");
@@ -422,6 +428,7 @@ void compactar(void) {
 	}
 }
 
+/*-------------------------Dump-------------------------*/
 void dump(void) {
 	void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 		char * rutaArchivo = string_new();
@@ -443,3 +450,20 @@ void dump(void) {
 
 	list_iterate(tablaEntradas, (void*) almacenarEnMemoriaSecundaria);
 }
+
+void almacenamientoContinuo(void) {
+	while(true){
+		sleep(intervaloDump);
+		dump();
+	}
+}
+
+void crearAlmacenamientoContinuo(void) {
+	pthread_t threadAlmacenamientoContinuo;
+
+	if (pthread_create(&threadAlmacenamientoContinuo, NULL, (void*) almacenamientoContinuo, NULL)) {
+		perror("Error el crear el thread almacenamientoContinuo.");
+		exit(EXIT_FAILURE);
+	}
+}
+

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 /*------------------------Constantes-------------------------*/
 #define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
@@ -49,11 +50,11 @@ void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
 
 /*-------------------------Tabla de entradas-------------------------*/
 void 				crearTablaEntradas		(void);
-void 				destruirTabla			(void);
+void 				destruirTablaEntradas	(void);
 t_tabla_entradas * 	buscarEntrada			(char * clave);
 void 				agregarClave			(char * clave);
 void 				eliminarClave			(char * clave);
-void 				mostrarTabla			(void);
+void 				mostrarTablaEntradas	(void);
 int 				agregarClaveValor		(char * clave, void * valor);
 void * 				buscarValorSegunClave	(char * clave);
 t_tabla_entradas *	buscarEntradaSegunIndex	(int index);
@@ -76,6 +77,10 @@ void 				destruirStorage				(void);
 void * 				guardarEnStorage			(void * valor, int * index);
 void * 				guardarEnStorageEnIndex		(void * valor, int index);
 void 				compactar					(void);
+
+/*-------------------------Dump-------------------------*/
 void 				dump						(void);
+void 				almacenamientoContinuo		(void);
+void 				crearAlmacenamientoContinuo	(void);
 
 #endif /* INSTANCIA_H_ */
