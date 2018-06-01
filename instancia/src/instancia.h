@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <dirent.h>
 
 /*------------------------Constantes-------------------------*/
 #define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
@@ -79,8 +80,13 @@ void * 				guardarEnStorageEnIndex		(void * valor, int index);
 void 				compactar					(void);
 
 /*-------------------------Dump-------------------------*/
-void 				dump						(void);
-void 				almacenamientoContinuo		(void);
-void 				crearAlmacenamientoContinuo	(void);
+void 				dump							(void);
+void 				almacenamientoContinuo			(void);
+void 				crearAlmacenamientoContinuo		(void);
+void 				recuperarInformacionDeInstancia	(void);
+
+/*-------------------------Funciones auxiliares-------------------------*/
+void * 				abrirArchivo					(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
+t_list * 			listarArchivosDeMismaCarpeta	(char * ruta);
 
 #endif /* INSTANCIA_H_ */

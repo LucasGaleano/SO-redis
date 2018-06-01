@@ -89,6 +89,9 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Creo tabla de entradas
 	crearTablaEntradas();
 
+	//Verifico que no tenga archivos anteriores
+	recuperarInformacionDeInstancia();
+
 	//Creo el hilo para hacer el dump
 	crearAlmacenamientoContinuo();
 
@@ -428,6 +431,9 @@ void compactar(void) {
 
 /*-------------------------Dump-------------------------*/
 void dump(void) {
+
+	mkdir(puntoMontaje, 0777);
+
 	void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 		char * rutaArchivo = string_new();
 		string_append(&rutaArchivo, puntoMontaje);
@@ -465,3 +471,92 @@ void crearAlmacenamientoContinuo(void) {
 	}
 }
 
+void recuperarInformacionDeInstancia(void) {
+	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
+
+	if(listaArchivos == NULL)return;
+
+	void guardarArchivoEnEstructurasAdministrativas(char * rutaArchivo) {
+		size_t tamArch;
+		FILE * archivofd;
+
+		void * archivo = abrirArchivo(rutaArchivo, &tamArch, &archivofd);
+
+		char ** spliteado = string_split(rutaArchivo, "/");
+
+		int i;
+
+		for (i = 0; spliteado[i] != NULL; i++)
+			;
+
+		agregarClaveValor(spliteado[i - 1], archivo);
+
+		for (i = 0; spliteado[i] != NULL; ++i) {
+			free(spliteado[i]);
+		}
+		free(spliteado[i]);
+		free(spliteado);
+
+		munmap(archivo, tamArch);
+		fclose(archivofd);
+
+	}
+
+	list_iterate(listaArchivos,
+			(void*) guardarArchivoEnEstructurasAdministrativas);
+
+	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
+}
+
+/*-------------------------Funciones auxiliares-------------------------*/
+void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
+	//Abro el archivo
+	*archivo = fopen(rutaArchivo, "r");
+
+	if (*archivo == NULL) {
+		log_error(logInstancia, "%s: No existe el archivo", rutaArchivo);
+		perror("Error al abrir el archivo");
+		exit(EXIT_FAILURE);
+	}
+
+	//Copio informacion del archivo
+	struct stat statArch;
+
+	stat(rutaArchivo, &statArch);
+
+	//Tamaño del archivo que voy a leer
+	*tamArc = statArch.st_size;
+
+	//Leo el total del archivo y lo asigno al buffer
+	int fd = fileno(*archivo);
+	void * dataArchivo = mmap(0, *tamArc, PROT_READ, MAP_SHARED, fd, 0);
+
+	return dataArchivo;
+}
+
+t_list * listarArchivosDeMismaCarpeta(char * ruta) {
+
+	DIR *dir;
+
+	struct dirent *ent;
+
+	dir = opendir(ruta);
+
+	if(dir == NULL)return NULL;
+
+	t_list * listaArchivos = list_create();
+
+	while ((ent = readdir(dir)) != NULL) {
+		if (ent->d_name[0] != '.') {
+			char * archivo = string_new();
+			string_append(&archivo, ruta);
+			string_append(&archivo, "/");
+			string_append(&archivo, (char*) ent->d_name);
+			list_add(listaArchivos, archivo);
+		}
+	}
+
+	closedir(dir);
+
+	return listaArchivos;
+}
