@@ -26,6 +26,12 @@ typedef struct t_configuracion{
 }t_configuraciones;
 
 
+typedef struct {
+	t_paquete* paquete;
+	int* socket;
+}pthreadArgs_t;
+
+
 /*------------------------Globales-------------------------*/
 
 t_log* g_logger;
@@ -36,13 +42,13 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
-void procesarHandshake(t_paquete* paquete,int socketCliente);
-void procesarSET(t_claveValor* sentencia, int socketCliente);
-void procesarGET(char* clave,int socketCliente);
-void procesarSTORE(char* clave,int socketCliente);
-void procesarNombreESI(char* nombreESI, int socketCliente);
-void procesarNombreInstancia(char* nombre, int socketCliente);
-void procesarRespuestaSET(int respuesta,int socketCliente);
+void procesarHandshake(pthreadArgs_t* args);
+void procesarSET(pthreadArgs_t* args);
+void procesarGET(pthreadArgs_t* args);
+void procesarSTORE(pthreadArgs_t* args);
+void procesarNombreESI(pthreadArgs_t* args);
+void procesarNombreInstancia(pthreadArgs_t* args);
+void procesarRespuestaSET(pthreadArgs_t* args);
 void logearRespuesta(int respuesta, t_instancia* instancia);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);

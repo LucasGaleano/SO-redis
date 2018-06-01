@@ -27,53 +27,75 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 		case HANDSHAKE:
 
-		 	procesarHandshake(paquete, *socketCliente);
+
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+		 	pthread_create(&pid,NULL,procesarHandshake,args);
 
 		break;
 
 		case ENVIAR_NOMBRE_ESI:
 			;
 
-			char* nombreESI = recibirNombreEsi(paquete);
-			procesarNombreESI(nombreESI,*socketCliente);
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+			pthread_create(&pid,NULL,procesarNombreESI,args);
 			break;
 
 
 		case ENVIAR_NOMBRE_INSTANCIA:
 			;
-			char* nombre = recibirNombreEsi(paquete);
-			procesarNombreInstancia(nombre,*socketCliente);
+
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+			pthread_create(&pid,NULL,procesarNombreInstancia,args);
 			break;
 
 	 	case SET:
 		 	;
 
-		  	//TODO crear hilo para procesar la conexion
-			t_claveValor* sentencia = recibirSet(paquete);
-			procesarSET(sentencia,*socketCliente);
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+			pthread_create(&pid,NULL,procesarSET,args);
 			break;
 
 
 		case RESPUESTA_SOLICITUD:
 			;
 			//El Coordinador logea la respuesta y envía al ESI
-			int respuesta = recibirRespuesta(paquete);
-			procesarRespuestaSET(respuesta,*socketCliente);
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+			pthread_create(&pid,NULL,procesarRespuestaSET,args);
 			break;
 
 
 		case GET:
 			;
-			char* clave = recibirGet(paquete);
-			procesarGET(clave,*socketCliente);
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+
+			pthread_create(&pid,NULL,procesarGET,args);
 			break;
 
 		case STORE:
-
-				char* clave = recibirStore(paquete);
-				//El Coordinador colabora con el Planificador avisando de este recurso
-				procesarSTORE(clave,*socketCliente);
-				//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
+			;
+			pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
+			args->paquete = paquete;
+			args->socket = socketCliente;
+			//El Coordinador colabora con el Planificador avisando de este recurso
+			pthread_create(&pid,NULL,procesarSTORE,args);
+			//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 			break;
 
 		default:
@@ -135,11 +157,14 @@ void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta){
 }
 
 
-void procesarHandshake(t_paquete* paquete,int socketCliente){
+void procesarHandshake(pthreadArgs_t* args){
+
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
 
 	switch(recibirHandshake(paquete)){
 		case PLANIFICADOR:
-			agregarConexion(g_diccionarioConexiones,"planificador",socketCliente);
+			agregarConexion(g_diccionarioConexiones,"planificador",*socketCliente);
 		break;
 
 		case ESI:
@@ -152,48 +177,101 @@ void procesarHandshake(t_paquete* paquete,int socketCliente){
 
 	}
 
+	free(paquete);
+	free(args);
+
 }
 
 
-void procesarSET(t_claveValor* sentencia, int socketCliente){
+void procesarSET(pthreadArgs_t* args){
+
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	t_claveValor* sentencia = recibirSet(paquete);
 
 	t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 	sleep(g_configuracion.retardo);
 	enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
 	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR SET planificador clave: %s\n",clave);
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
+
+
+	free(paquete);
+	free(args);
 }
 
-void procesarRespuestaSET(int respuesta,int socketCliente){
+void procesarRespuestaSET(pthreadArgs_t* args){
 
-	t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,socketCliente);
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	int respuesta = recibirRespuesta(paquete);
+
+
+	t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,*socketCliente);
 	logearRespuesta(respuesta,instanciaRespuesta);
+
+
+	free(paquete);
+	free(args);
+
 }
 
-void procesarGET(char* clave,int socketCliente){
+void procesarGET(pthreadArgs_t* args){
+
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	char* clave = recibirGet(paquete);
 
 	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
 	enviarGet(socketDelPlanificador,clave);
 	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR GET planificador clave: %s\n",clave);
+
+	free(paquete);
+	free(args);
+
+
 }
 
-void procesarSTORE(char* clave,int socketCliente){
+void procesarSTORE(pthreadArgs_t* args){
+
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	char* clave = recibirStore(paquete);
 
 	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
 	enviarStore(socketDelPlanificador,clave);
 	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR STORE planificador clave: %s\n",clave);
+
+	free(paquete);
+	free(args);
 }
 
-void procesarNombreInstancia(char* nombre, int socketCliente){
+void procesarNombreInstancia(pthreadArgs_t* args){
 
-	t_instancia*  instanciaNueva = crearInstancia(nombre, socketCliente);
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	char* nombre = recibirNombreInstancia(paquete);
+
+	t_instancia*  instanciaNueva = crearInstancia(nombre, *socketCliente);
 	agregarInstancia(g_tablaDeInstancias,instanciaNueva);
 	distribuirKeys(g_tablaDeInstancias);
-	enviarInfoInstancia(socketCliente,g_configuracion.cantidadEntradas,g_configuracion.tamanioEntradas);
+	enviarInfoInstancia(*socketCliente,g_configuracion.cantidadEntradas,g_configuracion.tamanioEntradas);
+
+	free(paquete);
+	free(args);
 }
 
-void procesarNombreESI(char* nombreESI, int socketCliente){
+void procesarNombreESI(pthreadArgs_t* args){
+
+	t_paquete* paquete = args->paquete;
+	int* socketCliente = args->socketCliente;
+	char* nombreESI = recibirNombreEsi(paquete);
+
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
+
+	free(paquete);
+	free(args);
+
 }
 
 void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format,...){
