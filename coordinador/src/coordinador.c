@@ -132,8 +132,10 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* clave, t_l
 
 		//TODO algoritmo key explicit "KE"
 
-		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
-			return buscarInstancia(tablaDeInstancias,NULL,(int)string_substring(clave,0,1),0);
+		if(string_equals_ignore_case(algoritmoDePlanificacion,"KE")){
+			int keyDeClave = (int) string_substring(clave,0,1);
+			return buscarInstancia(tablaDeInstancias,NULL,keyDeClave,0);
+		}
 
 		return NULL;
 
