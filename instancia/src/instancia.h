@@ -34,7 +34,7 @@ t_list * tablaEntradas;
 
 /*------------------------Estructuras-------------------------*/
 typedef struct {
-	char * clave;
+	char clave[40];
 	void * entrada;
 	int tamanio;
 	int inexComienzo;

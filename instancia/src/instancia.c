@@ -104,7 +104,6 @@ void crearTablaEntradas(void) {
 
 void destruirTablaEntradas(void) {
 	void eliminarEntrada(t_tabla_entradas * entrada) {
-		free(entrada->clave);
 		free(entrada);
 	}
 
@@ -125,7 +124,7 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 void agregarClave(char * clave) {
 	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
-	registroEntrada->clave = strdup(clave);
+	strncpy(registroEntrada->clave, clave, sizeof(registroEntrada->clave) - 1);
 
 	registroEntrada->tamanio = 0;
 
@@ -154,7 +153,6 @@ void eliminarClave(char * clave) {
 			for (i = 0; i < entradaBuscada->tamanio; i++)
 				liberarIndex(entradaBuscada->inexComienzo + i);
 		}
-		free(entradaBuscada->clave);
 		free(entradaBuscada);
 	}
 }
@@ -185,7 +183,7 @@ int agregarClaveValor(char * clave, void * valor) {
 	} else {
 		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
-		registroEntrada->clave = strdup(clave);
+		strncpy(registroEntrada->clave, clave, sizeof(registroEntrada->clave) - 1);
 
 		registroEntrada->entrada = respuesta;
 
