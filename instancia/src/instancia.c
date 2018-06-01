@@ -1,6 +1,6 @@
 #include "instancia.h"
 
-int main(void) {
+/*int main(void) {
 	//Creo archivo de log
 	logInstancia = log_create("log_Instancia.log", "instancia", true,
 			LOG_LEVEL_TRACE);
@@ -23,7 +23,7 @@ int main(void) {
 	log_destroy(logInstancia);
 
 	return EXIT_SUCCESS;
-}
+}*/
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -202,6 +202,8 @@ int agregarClaveValor(char * clave, void * valor) {
 
 void * buscarValorSegunClave(char * clave) {
 	t_tabla_entradas * entrada = buscarEntrada(clave);
+
+	if(entrada == NULL)return NULL;
 
 	char * respuesta = malloc(entrada->tamanio + 1);
 
