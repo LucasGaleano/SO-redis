@@ -1,6 +1,6 @@
 #include "instancia.h"
 
-int main(void) {
+/*int main(void) {
  //Creo archivo de log
  logInstancia = log_create("log_Instancia.log", "instancia", true,
  LOG_LEVEL_TRACE);
@@ -23,7 +23,7 @@ int main(void) {
  log_destroy(logInstancia);
 
  return EXIT_SUCCESS;
- }
+ }*/
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -234,7 +234,6 @@ void mostrarEntrada(char * clave) {
 	free(respuesta);
 }
 
-
 /*-------------------------BitMap del Storage-------------------------*/
 void crearBitMap(void) {
 	bitMap = malloc(sizeof(bool) * cantEntradas);
@@ -421,4 +420,26 @@ void compactar(void) {
 		}
 
 	}
+}
+
+void dump(void) {
+	void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
+		char * rutaArchivo = string_new();
+		string_append(&rutaArchivo, puntoMontaje);
+		string_append(&rutaArchivo, "/");
+		string_append(&rutaArchivo, registroEntrada->clave);
+
+		FILE* file = fopen(rutaArchivo, "w+b");
+
+		void * valor = buscarValorSegunClave(registroEntrada->clave);
+
+		fwrite(valor, sizeof(void), registroEntrada->tamanio, file);
+
+		fclose(file);
+
+		free(rutaArchivo);
+		free(valor);
+	}
+
+	list_iterate(tablaEntradas, (void*) almacenarEnMemoriaSecundaria);
 }

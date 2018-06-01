@@ -7,6 +7,7 @@
 #include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 /*------------------------Constantes-------------------------*/
 #define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
@@ -75,5 +76,6 @@ void 				destruirStorage				(void);
 void * 				guardarEnStorage			(void * valor, int * index);
 void * 				guardarEnStorageEnIndex		(void * valor, int index);
 void 				compactar					(void);
+void 				dump						(void);
 
 #endif /* INSTANCIA_H_ */
