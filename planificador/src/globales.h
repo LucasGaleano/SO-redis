@@ -28,6 +28,10 @@ typedef struct {
 	t_infoListos* data;
 }t_infoBloqueo;
 
+typedef struct {
+ 	char* clave;
+ }t_infoClavesBloqueadas;
+
 static pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutexBloqueo = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutexListo = PTHREAD_MUTEX_INITIALIZER;
@@ -36,6 +40,7 @@ static pthread_cond_t ESIentrada = PTHREAD_COND_INITIALIZER;
 
 t_dictionary* g_listos;
 t_dictionary* g_bloq;
+t_dictionary* g_clavesBloqueadas;
 
 t_log* g_logger;
 t_config* g_con;

@@ -19,7 +19,8 @@
 #include "globales.h"
 
 /*------------------------------Globales-----------------------------*/
-char* g_idComparar;
+char* g_idESIComparar;
+bool g_estaBloqueado;
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -43,11 +44,13 @@ bool 				estaListo								(char*);
 bool 				estaBloqueadaLaClave					(char*);
 bool 				sonIguales								(t_infoBloqueo*);
 bool 				estaBloqueadoPorLaClave					(char*, char*);
+void 				estaESIBloqueado						(char*, t_list*);
 bool				estaBloqueado							(char*);
 void				eliminarT_infoBloqueo					(t_infoBloqueo*);
-void        siEstaBloqueadaPorClaveEliminar(char*, t_list*);
-void        desbloqueoClave(char*, t_list*);
-void        eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas*);
+void        		siEstaBloqueadaPorClaveEliminar			(char*, t_list*);
+void        		desbloqueoClave							(char*, t_list*);
+void        		eliminarT_infoClavesBloqueadas			(t_infoClavesBloqueadas*);
+void 				mostrarPorConsola						(t_respuestaStatus*);
 
 
 

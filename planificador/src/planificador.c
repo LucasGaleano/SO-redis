@@ -4,7 +4,7 @@ int main(void) {
 
 	g_listos = dictionary_create();
 	g_bloq = dictionary_create();
-	// g_clavesBloqueadas = dictionary_create();
+	g_clavesBloqueadas = dictionary_create();
 
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
 	g_logger = log_create("", "Planificador", 1, LOG_LEVEL_TRACE);
@@ -63,13 +63,13 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_lock(&modificacion);
 		g_huboModificacion = 1;
 		pthread_mutex_unlock(&modificacion);
-/*
+
 		break;
 
-		case ENVIAR_RESPUESTA_STATUS:
+		case RESPUESTA_STATUS:
 			 t_respuestaStatus* respuestaStatus = recibirRespuestaStatus(unPaquete);
 			 mostrarPorConsola(respuestaStatus);
-*/
+
 	}
 	destruirPaquete(unPaquete);
 }
