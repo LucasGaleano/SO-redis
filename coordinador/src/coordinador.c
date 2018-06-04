@@ -7,8 +7,7 @@ void* imprimir(void* paquete);
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
-
-  g_diccionarioConexiones = crearDiccionarioESI();
+  g_diccionarioConexiones = crearDiccionarioConexiones();
 
 	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
 
@@ -17,47 +16,41 @@ int main(void) {
 
 	sem_init(&g_mutexLog,0,1); //TODO destrur semaphore
 
-	iniciarServer(configuracion.puertoConexion, (void*)procesarPaquete, g_logger);
-
+	iniciarServer(g_configuracion.puertoConexion, (void*)procesarPaquete, g_logger);
 	return 0;
 }
 
 void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paquetes
 
 	pthread_t pid;
-	 switch(paquete->codigoOperacion){
+	switch(paquete->codigoOperacion){
 
-		 case HANDSHAKE:
+		case HANDSHAKE:
 
-		 		procesarHandshake(paquete, *socketCliente);
+		 	procesarHandshake(paquete, *socketCliente);
 
+		break;
+
+		case ENVIAR_NOMBRE_ESI:
+			;
+
+			char* nombreESI = recibirNombreEsi(paquete);
+			procesarNombreESI(nombreESI,*socketCliente);
 			break;
 
-			case ENVIAR_NOMBRE_ESI:
 
-				;
-
-				char* nombreESI = recibirNombreEsi(paquete);
-				procesarNombreESI(nombreESI,*socketCliente);
-
-
-
-		 	break;
-
-
-			case ENVIAR_NOMBRE_INSTANCIA:
-				;
-				char* nombre = recibirNombreEsi(paquete);
-				procesarNombreInstancia(nombre,*socketCliente);
+		case ENVIAR_NOMBRE_INSTANCIA:
+			;
+			char* nombre = recibirNombreEsi(paquete);
+			procesarNombreInstancia(nombre,*socketCliente);
 			break;
 
-		 	case SET:
+	 	case SET:
 		 	;
 
 		  	//TODO crear hilo para procesar la conexion
-				t_claveValor* sentencia = recibirSET(paquete);
-				procesarSET(sentencia,*socketCliente);
-
+			t_claveValor* sentencia = recibirSet(paquete);
+			procesarSET(sentencia,*socketCliente);
 			break;
 
 
@@ -65,22 +58,23 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 			;
 			//El Coordinador logea la respuesta y envía al ESI
 			int respuesta = recibirRespuesta(paquete);
-
 			procesarRespuestaSET(respuesta,*socketCliente);
 			break;
 
 
 		case GET:
 			;
-			//Envio clave a bloquear al planificador
-			enviarGet();
+			char* clave = recibirGet(paquete);
+			procesarGET(clave,*socketCliente);
 			break;
 
-			case STORE:
+		case STORE:
 
+				char* clave = recibirStore(paquete);
 				//El Coordinador colabora con el Planificador avisando de este recurso
-				//avisa si hubo error o no por instanica que se desconecto pero tenia la clave
-				break;
+				procesarSTORE(clave,*socketCliente);
+				//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
+			break;
 
 		default:
 
@@ -117,29 +111,27 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* clave, t_l
 		//TODO algoritmo key explicit "KE"
 
 		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
-			return buscarInstancia(tablaDeInstancias,NULL,(int)string_substring(clave,0,1),NULL);
+			return buscarInstancia(tablaDeInstancias,NULL,(int)string_substring(clave,0,1),0);
 
 		return NULL;
 
 }
 
 
-void logearRespuesta(int respuesta, t_instancia* instancia){
+void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta){
 
 	switch(respuesta){
 
 			case OK:
 
-				log_seguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+				logTraceSeguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 
 			case ABORTO:
 
-				log_seguro(g_logger,g_mutexLog,"ABORTO nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+				logTraceSeguro(g_logger,g_mutexLog,"ERROR nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
 				break;
 	}
-
-
 }
 
 
@@ -168,6 +160,7 @@ void procesarSET(t_claveValor* sentencia, int socketCliente){
 	t_instancia* instanciaElegida = PlanificarInstancia( g_configuracion.algoritmoDist, sentencia->clave, g_tablaDeInstancias);
 	sleep(g_configuracion.retardo);
 	enviarSet(instanciaElegida->socket,sentencia->clave,sentencia->valor);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR SET planificador clave: %s\n",clave);
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 }
 
@@ -175,6 +168,20 @@ void procesarRespuestaSET(int respuesta,int socketCliente){
 
 	t_instancia* instanciaRespuesta = buscarInstancia(g_tablaDeInstancias,NULL,0,socketCliente);
 	logearRespuesta(respuesta,instanciaRespuesta);
+}
+
+void procesarGET(char* clave,int socketCliente){
+
+	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
+	enviarGet(socketDelPlanificador,clave);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR GET planificador clave: %s\n",clave);
+}
+
+void procesarSTORE(char* clave,int socketCliente){
+
+	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,"planificador");
+	enviarStore(socketDelPlanificador,clave);
+	void logTraceSeguro(g_logger, g_mutexLog, "ENVIAR STORE planificador clave: %s\n",clave);
 }
 
 void procesarNombreInstancia(char* nombre, int socketCliente){
@@ -189,43 +196,12 @@ void procesarNombreESI(char* nombreESI, int socketCliente){
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
 }
 
-void log_seguro(t_log* logger,sem_t mutex,char* format,...){
+void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format,...){
 
 	va_list ap;
 	va_start(ap,format);
 	char* mensaje = string_from_vformat(format,ap);
-	sem_wait($mutex);
+	sem_wait(&mutexLog);
 	log_trace(logger,mensaje);
-	sem_post($mutex);
-}
-
-void  DistribuirKeys (g_tablaDeInstancias)
-{  //abecedario en ascci - 97(a) - 122(z)
-   int cantidadInstanciasDisponibles = 0;
-	 int letrasAbecedario = 27;
-	 int primerLetra = 97;
-	 int ultimaLetraAbecedario = 122;
-	 int ultimaLetra = 0;
-
-	 for (size_t i = 0; i <  list_size(g_tablaDeInstancias); i++) {
-		if (g_tablaDeInstancias[i]->disponible == true) {
-			   cantidadInstanciasDisponibles++;
-		}
-	 }
-	 int letrasPorInstancia = (int)letrasAbecedario/cantidadInstanciasDisponibles;
-	 int resto = letrasAbecedario - (letrasPorInstancia * cantidadInstanciasDisponibles);
-	 letrasPorInstancias = resto == 0 ? letrasPorInstancias: letrasPorInstancias + 1;
-	 for (size_t i = 0; i < list_size(g_tablaDeInstancias); i++) {
-		if (g_tablaDeInstancias[i]->disponible == true) {
-	 	g_tablaDeInstancias[i]-> primeraLetra = primerLetra;
-	  ultimaLetra = (primerLetra + letrasPorInstancia) >= ultimaLetraAbecedario ? ultimaLetraAbecedario: primerLetra + letrasPorInstancia;
-		g_tablaDeInstancias[i]-> ultimaLetra = ultimaLetra;
-		primerLetra = ultimaLetra + 1;
-	 }
- 	}
-}
-
-
-
-
+	sem_post(&mutexLog);
 }
