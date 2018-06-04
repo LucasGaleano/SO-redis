@@ -26,12 +26,8 @@ int g_huboModificacion;
 char* g_claveGET;
 char* g_idESIactual;
 
-void planificarSinDesalojo(char*);
-char* calcularSiguiente(double (*calculadorProx) (double, double, double), int(*ponderacion)(int, int));
-void bloquear(t_infoListos * bloq, int nuevoReal, char* key);
-char* asignarID(int val, char* ret);
-int esMenor(int comp1, int comp2);
-int esMayor(int comp1, int comp2);
+extern void planificarSinDesalojo(char*);
+extern void planificarConDesalojo(void);
 
 
 #endif /* ALGORITMOS_H_ */

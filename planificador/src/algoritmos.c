@@ -1,33 +1,33 @@
 #include "algoritmos.h"
 
-double calcularProximaRafaga(double estimadoAnterior, double realAnterior, double arg) {
+static double calcularProximaRafaga(double estimadoAnterior,
+		double realAnterior, double arg) {
 	return estimadoAnterior * g_alfa + realAnterior * (1 - g_alfa);
 }
 
-double calcularRR(double estimadoAnterior,
-		double realAnterior, double tEnEspera) {
+static double calcularRR(double estimadoAnterior, double realAnterior,
+		double tEnEspera) {
 	return (1
-			+ tEnEspera / calcularProximaRafaga(estimadoAnterior, realAnterior, 0));
+			+ tEnEspera
+					/ calcularProximaRafaga(estimadoAnterior, realAnterior, 0));
 }
 
-int esMenor(int comp1, int comp2)
-{
-	return comp1<comp2;
+static int esMenor(int comp1, int comp2) {
+	return comp1 < comp2;
 }
 
-int esMayor(int comp1, int comp2)
-{
-	return comp1>comp2;
+static int esMayor(int comp1, int comp2) {
+	return comp1 > comp2;
 }
 
-char* asignarID(int val, char* ret) {
+static char* asignarID(int val, char* ret) {
 	char* num = string_itoa(val);
 	ret = malloc(strlen(num) + 3);
 	strcpy(ret, "ESI");
 	return strcat(ret, num);
 }
 
-void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
+static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	bloq->estAnterior = calcularProximaRafaga(bloq->estAnterior,
 			bloq->realAnterior, 0);
 	bloq->realAnterior = nuevoReal;
@@ -43,9 +43,12 @@ void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 		dictionary_put(g_bloq, g_claveGET, aux);
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
+	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", key, g_claveGET);
+	pthread_mutex_unlock(&mutexLog);
 }
 
-char* calcularSiguiente(double (*calculadorProx) (double, double, double), int(*ponderacion)(int, int)) {
+static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
+		int (*ponderacion)(int, int)) {
 	t_infoListos *actual;
 	double unValor;
 
@@ -67,15 +70,15 @@ char* calcularSiguiente(double (*calculadorProx) (double, double, double), int(*
 			strcpy(key, auxKey);
 		}
 	}
-
+	log_trace(g_logger, "Se ejecuta %s", key);
 	return key;
 }
 
-void envejecer(char* key, t_infoListos* data) {
+static void envejecer(char* key, t_infoListos* data) {
 	data->tEnEspera += g_tEjecucion;
 }
 
-void planificarSinDesalojo(char* algoritmo) {
+extern void planificarSinDesalojo(char* algoritmo) {
 
 	int cont;
 	t_infoListos *aEjecutar;
@@ -85,9 +88,10 @@ void planificarSinDesalojo(char* algoritmo) {
 		sem_wait(&ESIentrada);
 		pthread_mutex_lock(&mutexListo);
 		if (strcmp(algoritmo, "SJF-SD") == 0)
-			key = calcularSiguiente((void*) calcularProximaRafaga, (void*) esMayor);
+			key = calcularSiguiente((void*) calcularProximaRafaga,
+					(void*) esMayor);
 		if (strcmp(algoritmo, "HRRN") == 0)
-			key = calcularSiguiente((void*) calcularRR, (void*)esMenor);
+			key = calcularSiguiente((void*) calcularRR, (void*) esMenor);
 
 		g_idESIactual = strdup(key);
 		aEjecutar = dictionary_remove(g_listos, key);
@@ -110,6 +114,7 @@ void planificarSinDesalojo(char* algoritmo) {
 		if (g_termino) {
 			g_termino = 0;
 			free(aEjecutar);
+			log_trace(g_logger, "%s ha terminado su ejecucion", key);
 		}
 		if (strcmp(algoritmo, "HRRN") == 0) {
 			g_tEjecucion = cont;
@@ -121,7 +126,7 @@ void planificarSinDesalojo(char* algoritmo) {
 	}
 }
 
-void planificarConDesalojo(void) {
+extern void planificarConDesalojo(void) {
 	int cont;
 	t_infoListos *aEjecutar = NULL;
 	char* key;
@@ -139,11 +144,13 @@ void planificarConDesalojo(void) {
 				dictionary_put(g_listos, key, aEjecutar);
 				pthread_mutex_unlock(&mutexListo);
 				sem_post(&ESIentrada);
+				log_trace(g_logger, "Se desaloja %s para replanificar", key);
 			}
 			cont = 0;
 			sem_wait(&ESIentrada);
 			pthread_mutex_lock(&mutexListo);
-			key = calcularSiguiente((void*) calcularProximaRafaga, (void*) esMayor);
+			key = calcularSiguiente((void*) calcularProximaRafaga,
+					(void*) esMayor);
 			g_idESIactual = strdup(key);
 			aEjecutar = dictionary_remove(g_listos, key);
 			pthread_mutex_unlock(&mutexListo);

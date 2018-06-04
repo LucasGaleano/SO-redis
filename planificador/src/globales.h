@@ -30,6 +30,7 @@ pthread_mutex_t mutexConsola;
 pthread_mutex_t mutexBloqueo;
 pthread_mutex_t mutexListo;
 pthread_mutex_t modificacion;
+pthread_mutex_t mutexLog;
 sem_t ESIentrada;
 sem_t continua;
 

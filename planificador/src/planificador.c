@@ -7,7 +7,7 @@ int main(void) {
 	g_clavesTomadas = dictionary_create();
 
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
-	g_logger = log_create("", "Planificador", 1, LOG_LEVEL_TRACE);
+	g_logger = log_create("", "Planificador", 0, LOG_LEVEL_TRACE);
 
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 
@@ -22,6 +22,7 @@ int main(void) {
 	pthread_mutex_init(&mutexConsola, NULL);
 	pthread_mutex_init(&mutexListo, NULL);
 	pthread_mutex_init(&modificacion, NULL);
+	pthread_mutex_init(&mutexLog, NULL);
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
 
@@ -71,6 +72,10 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_lock(&modificacion);
 		g_huboModificacion = 1;
 		pthread_mutex_unlock(&modificacion);
+		pthread_mutex_lock(&mutexLog);
+		log_info(g_logger, "Se conecto exitosamente el %s",
+				recibirNombreEsi(unPaquete));
+		pthread_mutex_unlock(&mutexLog);
 		break;
 	case SET:
 		sem_post(&continua);
@@ -85,9 +90,18 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 			g_huboModificacion = 1;
 			pthread_mutex_unlock(&modificacion);
 		} else {
-			aux = list_create();
-			list_add(aux, g_claveGET);
-			dictionary_put(g_clavesTomadas, g_idESIactual, aux);
+			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
+				list_add(dictionary_get(g_clavesTomadas, g_idESIactual),
+						g_claveGET);
+			} else {
+				aux = list_create();
+				list_add(aux, g_claveGET);
+				dictionary_put(g_clavesTomadas, g_idESIactual, aux);
+			}
+			pthread_mutex_lock(&mutexLog);
+			log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
+					g_idESIactual, g_claveGET);
+			pthread_mutex_unlock(&mutexLog);
 		}
 		sem_post(&continua);
 		break;
@@ -101,9 +115,16 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 			pthread_mutex_lock(&modificacion);
 			g_huboModificacion = 1;
 			pthread_mutex_unlock(&modificacion);
+			pthread_mutex_lock(&mutexLog);
+			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
+					g_idESIactual, recibirStore(unPaquete));
+			pthread_mutex_unlock(&mutexLog);
 		} else {
 			g_termino = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
+			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
+					g_idESIactual);
+			pthread_mutex_unlock(&mutexLog);
 		}
 		sem_post(&continua);
 		break;
@@ -132,7 +153,7 @@ int condicionDeTomada(char* nodo) {
 }
 
 void claveEstaTomada(char* key, t_list* value) {
-	if (!g_claveTomada)
+	if (!g_claveTomada && strcmp(g_idESIactual, key) != 0)
 		g_claveTomada = list_any_satisfy(value, (void*) condicionDeTomada);
 }
 
