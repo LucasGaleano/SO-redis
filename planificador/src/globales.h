@@ -49,6 +49,6 @@ int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
 
-
 extern void liberarTodo(void);
+
 #endif /* GLOBALES_H_ */

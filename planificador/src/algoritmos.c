@@ -132,6 +132,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 }
 
 extern void planificarConDesalojo(void) {
+	pthread_cleanup_push((void*) liberarSalida, NULL);
 	int cont;
 	t_infoListos *aEjecutar = NULL;
 	char* key;
@@ -178,4 +179,5 @@ extern void planificarConDesalojo(void) {
 			free(aEjecutar);
 		}
 	}
+	pthread_cleanup_pop(1);
 }
