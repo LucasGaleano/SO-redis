@@ -72,6 +72,9 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		g_huboModificacion = 1;
 		pthread_mutex_unlock(&modificacion);
 		break;
+	case SET:
+		sem_post(&continua);
+		break;
 	case GET:
 		g_claveTomada = 0;
 		g_claveGET = recibirGet(unPaquete);
@@ -104,7 +107,7 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		}
 		sem_post(&continua);
 		break;
-	case ABORTO:
+	case RESPUESTA_SOLICITUD:
 		g_termino = 1;
 		enviarRespuesta(ABORTO, g_socketEnEjecucion);
 		sem_post(&continua);
