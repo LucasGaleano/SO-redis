@@ -32,7 +32,7 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 			bloq->realAnterior, 0);
 	bloq->realAnterior = nuevoReal;
 	t_infoBloqueo* insert = malloc(sizeof(t_infoBloqueo));
-	insert->idESI = strdup(key);
+	insert->idESI = key;
 	insert->data = bloq;
 	pthread_mutex_lock(&mutexBloqueo);
 	if (dictionary_has_key(g_bloq, g_claveGET)) {
@@ -45,6 +45,11 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	pthread_mutex_unlock(&mutexBloqueo);
 	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", key, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
+}
+
+static liberarSalida(void* arg) {
+	free(g_claveGET);
+	free(g_idESIactual);
 }
 
 static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
@@ -79,10 +84,10 @@ static void envejecer(char* key, t_infoListos* data) {
 }
 
 extern void planificarSinDesalojo(char* algoritmo) {
-
 	int cont;
 	t_infoListos *aEjecutar;
 	char* key;
+	pthread_cleanup_push((void*) liberarSalida, NULL);
 	while (1) {
 		cont = 0;
 		sem_wait(&ESIentrada);
@@ -122,8 +127,8 @@ extern void planificarSinDesalojo(char* algoritmo) {
 			dictionary_iterator(g_listos, (void*) envejecer);
 			pthread_mutex_unlock(&mutexListo);
 		}
-		free(key);
 	}
+	pthread_cleanup_pop(1);
 }
 
 extern void planificarConDesalojo(void) {
@@ -172,6 +177,5 @@ extern void planificarConDesalojo(void) {
 			g_termino = 0;
 			free(aEjecutar);
 		}
-		free(key);
 	}
 }

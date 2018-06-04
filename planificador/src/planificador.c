@@ -2,6 +2,12 @@
 
 int main(void) {
 
+	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
+	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
+	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
+	free(ip);
+	//TODO preguntar si se pudo conectar. loguear y abortar si no se pudo
+
 	g_listos = dictionary_create();
 	g_bloq = dictionary_create();
 	g_clavesTomadas = dictionary_create();
@@ -12,8 +18,6 @@ int main(void) {
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
-	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
-	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
@@ -25,11 +29,6 @@ int main(void) {
 	pthread_mutex_init(&mutexLog, NULL);
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
-
-	pthread_t hiloServidor;
-	pthread_t hiloAlgoritmos;
-
-	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
 
 	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor, &puertoLocal);
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);

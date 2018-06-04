@@ -26,6 +26,9 @@ typedef struct {
 	t_infoListos* data;
 }t_infoBloqueo;
 
+pthread_t hiloServidor;
+pthread_t hiloAlgoritmos;
+
 pthread_mutex_t mutexConsola;
 pthread_mutex_t mutexBloqueo;
 pthread_mutex_t mutexListo;
@@ -46,4 +49,6 @@ int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
 
+
+extern void liberarTodo(void);
 #endif /* GLOBALES_H_ */
