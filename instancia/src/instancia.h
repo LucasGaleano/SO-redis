@@ -40,7 +40,8 @@ typedef struct {
 	char clave[40];
 	void * entrada;
 	int tamanio;
-	int inexComienzo;
+	int indexComienzo;
+	int tiempoReferenciado;
 } t_tabla_entradas;
 
 /*-------------------------Conexion-------------------------*/

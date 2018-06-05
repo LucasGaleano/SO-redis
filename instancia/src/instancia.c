@@ -131,7 +131,7 @@ void agregarClave(char * clave) {
 
 	registroEntrada->tamanio = 0;
 
-	registroEntrada->inexComienzo = -1;
+	registroEntrada->indexComienzo = -1;
 
 	list_add(tablaEntradas, registroEntrada);
 }
@@ -152,7 +152,7 @@ void eliminarClave(char * clave) {
 					entradaBuscada->tamanio);
 
 			for (i = 0; i < cantidadEntradasABorar; i++)
-				liberarIndex(entradaBuscada->inexComienzo + i);
+				liberarIndex(entradaBuscada->indexComienzo + i);
 		}
 		free(entradaBuscada);
 	}
@@ -167,7 +167,7 @@ void mostrarTablaEntradas(void) {
 	for (i = 0; i < tablaEntradas->elements_count; i++) {
 		t_tabla_entradas * entrada = list_get(tablaEntradas, i);
 		printf("%s			%d			%d \n", entrada->clave, entrada->tamanio,
-				entrada->inexComienzo);
+				entrada->indexComienzo);
 	}
 	printf("\n");
 }
@@ -191,7 +191,7 @@ int agregarClaveValor(char * clave, void * valor) {
 
 		registroEntrada->tamanio = tamValor;
 
-		registroEntrada->inexComienzo = index;
+		registroEntrada->indexComienzo = index;
 
 		list_add(tablaEntradas, registroEntrada);
 
@@ -216,7 +216,7 @@ void * buscarValorSegunClave(char * clave) {
 
 t_tabla_entradas * buscarEntradaSegunIndex(int index) {
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
-		return (entrada->inexComienzo == index);
+		return (entrada->indexComienzo == index);
 	}
 
 	t_tabla_entradas * registroEntrada = list_find(tablaEntradas,
@@ -406,7 +406,7 @@ void compactar(void) {
 			if (entrada->tamanio % tamanioEntrada != 0)
 				cantidadEntradas++;
 
-			entrada->inexComienzo = primeraEntradaLibre;
+			entrada->indexComienzo = primeraEntradaLibre;
 
 			void * valor = buscarValorSegunClave(entrada->clave);
 
@@ -523,10 +523,10 @@ int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
 		if (registro2 == NULL) {
 			entradaAReemplazar = 0;
 		} else {
-			entradaAReemplazar = registro2->inexComienzo;
+			entradaAReemplazar = registro2->indexComienzo;
 		}
 
-		liberarIndex(registro->inexComienzo);
+		liberarIndex(registro->indexComienzo);
 
 		int index = buscarCantidadIndexLibres(
 				entradasNecesariaParaUnTamanio(string_length(valor)));
@@ -544,7 +544,7 @@ int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
 
 			registroEntrada->tamanio = string_length(valor);
 
-			registroEntrada->inexComienzo = index;
+			registroEntrada->indexComienzo = index;
 
 			list_add(tablaEntradas, registroEntrada);
 
@@ -578,14 +578,14 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 
 	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
 			t_tabla_entradas * entradaMenor) {
-		return entrada->inexComienzo < entradaMenor->inexComienzo;
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
 	}
 
 	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunIndex);
 
 	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
 
-		return (registroTabla->inexComienzo >= entradaAReemplazar);
+		return (registroTabla->indexComienzo >= entradaAReemplazar);
 	}
 
 	t_list * mayoresAReemplazar = list_filter(entradasAtomicas,
@@ -593,7 +593,7 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 
 	bool menoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
 
-		return (registroTabla->inexComienzo < entradaAReemplazar);
+		return (registroTabla->indexComienzo < entradaAReemplazar);
 	}
 
 	t_list * menoresAReemplazar = list_filter(entradasAtomicas,
@@ -644,14 +644,14 @@ t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
 
 	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
 			t_tabla_entradas * entradaMenor) {
-		return entrada->inexComienzo < entradaMenor->inexComienzo;
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
 	}
 
 	list_sort(entradasEmpatadas, (void*) ordenarMenorMayorSegunIndex);
 
 	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
 
-		return (registroTabla->inexComienzo >= entradaAReemplazar);
+		return (registroTabla->indexComienzo >= entradaAReemplazar);
 	}
 
 	t_list * mayoresAReemplazar = list_filter(entradasEmpatadas,
@@ -659,7 +659,7 @@ t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
 
 	bool menoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
 
-		return (registroTabla->inexComienzo < entradaAReemplazar);
+		return (registroTabla->indexComienzo < entradaAReemplazar);
 	}
 
 	t_list * menoresAReemplazar = list_filter(entradasEmpatadas,
@@ -750,7 +750,7 @@ t_list * filtrarEntradasAtomicas(void) {
 
 	bool ordenarMenorMayor(t_tabla_entradas * entrada,
 			t_tabla_entradas * entradaMenor) {
-		return entrada->inexComienzo < entradaMenor->inexComienzo;
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
 	}
 
 	list_sort(listaFiltrada, (void*) ordenarMenorMayor);
