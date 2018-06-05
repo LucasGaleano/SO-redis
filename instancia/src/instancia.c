@@ -147,13 +147,10 @@ void eliminarClave(char * clave) {
 	if (entradaBuscada != NULL) {
 		if (entradaBuscada->tamanio != 0) {
 			int i;
-			int cantidadEntradasABorar = entradaBuscada->tamanio
-					/ tamanioEntrada;
 
-			if (entradaBuscada->tamanio % tamanioEntrada != 0)
-				cantidadEntradasABorar++;
+			int cantidadEntradasABorar = entradasNecesariaParaUnTamanio(entradaBuscada->tamanio);
 
-			for (i = 0; i < entradaBuscada->tamanio; i++)
+			for (i = 0; i < cantidadEntradasABorar; i++)
 				liberarIndex(entradaBuscada->inexComienzo + i);
 		}
 		free(entradaBuscada);
@@ -372,21 +369,16 @@ void * guardarEnStorage(void * valor, int * index) {
 void * guardarEnStorageEnIndex(void * valor, int index) {
 	int tamValor = strlen(valor);
 
-	int entradasNecesaria = tamValor / tamanioEntrada;
-
-	int resto = tamValor % tamanioEntrada;
-
-	if (resto != 0)
-		entradasNecesaria++;
+	int entradasNecesaria = entradasNecesariaParaUnTamanio(tamValor);
 
 	int i;
 
 	for (i = 0; i < entradasNecesaria; i++)
 		ocuparIndex(index + i);
 
-	memcpy(storage + index, valor, tamValor);
+	memcpy(storage + (index*tamanioEntrada), valor, tamValor);
 
-	return storage + index;
+	return storage + (index*tamanioEntrada);
 }
 
 void compactar(void) {
@@ -580,12 +572,12 @@ int algoritmoReemplazoCircular(char * clave, void * valor) {
 t_list * ordenarEntradasAtomicasParaCircular(void) {
 	t_list * entradasAtomicas = filtrarEntradasAtomicas();
 
-	bool ordenarMenorMayor(t_tabla_entradas * entrada,
+	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
 			t_tabla_entradas * entradaMenor) {
 		return entrada->inexComienzo < entradaMenor->inexComienzo;
 	}
 
-	list_sort(entradasAtomicas, (void*) ordenarMenorMayor);
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunIndex);
 
 	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
 
@@ -610,6 +602,73 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 
 	return mayoresAReemplazar;
 
+}
+
+int algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
+
+	int i;
+
+	bool logreGuardar = false;
+
+	int resultado;
+
+	for (i = 0; i < entradasAtomicas->elements_count; i++) {
+		t_tabla_entradas * registro = list_get(entradasAtomicas, i);
+
+		liberarIndex(registro->inexComienzo);
+
+		int index = buscarCantidadIndexLibres(
+				entradasNecesariaParaUnTamanio(string_length(valor)));
+
+		eliminarClave(registro->clave);
+
+		if (index != -1) {
+			t_tabla_entradas * registroEntrada = malloc(
+					sizeof(t_tabla_entradas));
+
+			strncpy(registroEntrada->clave, clave,
+					sizeof(registroEntrada->clave) - 1);
+
+			registroEntrada->entrada = guardarEnStorageEnIndex(valor, index);
+
+			registroEntrada->tamanio = string_length(valor);
+
+			registroEntrada->inexComienzo = index;
+
+			list_add(tablaEntradas, registroEntrada);
+
+			logreGuardar = true;
+
+			resultado = 0;
+
+			break;
+
+		}
+	}
+
+	if (!logreGuardar) {
+		compactar();
+		resultado = agregarClaveValor(clave, valor);
+	}
+
+	list_destroy(entradasAtomicas);
+
+	return resultado;
+
+}
+
+t_list * ordenarEntradasAtomicasParaBSU(void) {
+	t_list * entradasAtomicas = filtrarEntradasAtomicas();
+
+	bool ordenarMenorMayorSegunTamanio(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMayor) {
+		return entrada->tamanio > entradaMayor->tamanio;
+	}
+
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTamanio);
+
+	return entradasAtomicas;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
