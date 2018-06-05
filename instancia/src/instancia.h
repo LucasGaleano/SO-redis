@@ -88,13 +88,14 @@ void 				almacenamientoContinuo			(void);
 void 				crearAlmacenamientoContinuo		(void);
 void 				recuperarInformacionDeInstancia	(void);
 
-
 /*-------------------------Algoritmos de reemplazo-------------------------*/
 int 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
 int 				algoritmoReemplazoCircular			(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaCircular	(void);
 int 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaBSU		(void);
+int 				algoritmoReemplazoLeastRecentlyUsed	(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaLRU		(void);
 t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
 
 /*-------------------------Funciones auxiliares-------------------------*/

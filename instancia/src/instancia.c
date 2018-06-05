@@ -1,6 +1,6 @@
 #include "instancia.h"
 
-/*int main(void) {
+int main(void) {
  //Creo archivo de log
  logInstancia = log_create("log_Instancia.log", "instancia", true,
  LOG_LEVEL_TRACE);
@@ -23,7 +23,7 @@
  log_destroy(logInstancia);
 
  return EXIT_SUCCESS;
- }*/
+ }
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -133,6 +133,8 @@ void agregarClave(char * clave) {
 
 	registroEntrada->indexComienzo = -1;
 
+	registroEntrada->tiempoReferenciado = 0;
+
 	list_add(tablaEntradas, registroEntrada);
 }
 
@@ -192,6 +194,8 @@ int agregarClaveValor(char * clave, void * valor) {
 		registroEntrada->tamanio = tamValor;
 
 		registroEntrada->indexComienzo = index;
+
+		registroEntrada->tiempoReferenciado = 0;
 
 		list_add(tablaEntradas, registroEntrada);
 
@@ -632,6 +636,34 @@ t_list * ordenarEntradasAtomicasParaBSU(void) {
 	}
 
 	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTamanio);
+
+	return entradasAtomicas;
+}
+
+int algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaLRU();
+
+	return reemplazar(clave, valor, entradasAtomicas);;
+}
+
+t_list * ordenarEntradasAtomicasParaLRU(void) {
+	t_list * entradasAtomicas = filtrarEntradasAtomicas();
+
+	bool ordenarMenorMayorSegunTiempoReferenciado(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMayor) {
+
+		if (entrada->tiempoReferenciado == entradaMayor->tiempoReferenciado) {
+			t_list * listaDesempate = desempate(entrada,entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate,1);
+			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			list_destroy(listaDesempate);
+			return resultado;
+		}
+
+		return entrada->tiempoReferenciado > entradaMayor->tiempoReferenciado;
+	}
+
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTiempoReferenciado);
 
 	return entradasAtomicas;
 }
