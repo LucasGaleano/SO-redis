@@ -33,6 +33,8 @@ bool * bitMap;
 
 t_list * tablaEntradas;
 
+int entradaAReemplazar;
+
 /*------------------------Estructuras-------------------------*/
 typedef struct {
 	char clave[40];
@@ -85,8 +87,15 @@ void 				almacenamientoContinuo			(void);
 void 				crearAlmacenamientoContinuo		(void);
 void 				recuperarInformacionDeInstancia	(void);
 
+
+/*-------------------------Algoritmos de reemplazo-------------------------*/
+int 				algoritmoReemplazoCircular			(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaCircular	(void);
+
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 				abrirArchivo					(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
 t_list * 			listarArchivosDeMismaCarpeta	(char * ruta);
+int 				entradasNecesariaParaUnTamanio	(int tamanio);
+t_list * 			filtrarEntradasAtomicas			(void);
 
 #endif /* INSTANCIA_H_ */
