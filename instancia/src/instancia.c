@@ -1,29 +1,29 @@
 #include "instancia.h"
 
-/*int main(void) {
-	//Creo archivo de log
-	logInstancia = log_create("log_Instancia.log", "instancia", true,
-			LOG_LEVEL_TRACE);
-	log_trace(logInstancia, "Inicio el proceso instancia \n");
+int main(void) {
+ //Creo archivo de log
+ logInstancia = log_create("log_Instancia.log", "instancia", true,
+ LOG_LEVEL_TRACE);
+ log_trace(logInstancia, "Inicio el proceso instancia \n");
 
-	//Conecto instancia con coordinador
-	conectarInstancia();
+ //Conecto instancia con coordinador
+ conectarInstancia();
 
-	//Quedo a la espera de solicitudes
-	recibirSolicitudes = true;
-	while (recibirSolicitudes) {
-		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
-				logInstancia);
-	}
+ //Quedo a la espera de solicitudes
+ recibirSolicitudes = true;
+ while (recibirSolicitudes) {
+ gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+ logInstancia);
+ }
 
-	//Termina esi
-	log_trace(logInstancia, "Termino el proceso instancia \n");
+ //Termina esi
+ log_trace(logInstancia, "Termino el proceso instancia \n");
 
-	//Destruyo archivo de log
-	log_destroy(logInstancia);
+ //Destruyo archivo de log
+ log_destroy(logInstancia);
 
-	return EXIT_SUCCESS;
-}*/
+ return EXIT_SUCCESS;
+ }
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -131,7 +131,9 @@ void agregarClave(char * clave) {
 
 	registroEntrada->tamanio = 0;
 
-	registroEntrada->inexComienzo = -1;
+	registroEntrada->indexComienzo = -1;
+
+	registroEntrada->tiempoReferenciado = 0;
 
 	list_add(tablaEntradas, registroEntrada);
 }
@@ -147,14 +149,12 @@ void eliminarClave(char * clave) {
 	if (entradaBuscada != NULL) {
 		if (entradaBuscada->tamanio != 0) {
 			int i;
-			int cantidadEntradasABorar = entradaBuscada->tamanio
-					/ tamanioEntrada;
 
-			if (entradaBuscada->tamanio % tamanioEntrada != 0)
-				cantidadEntradasABorar++;
+			int cantidadEntradasABorar = entradasNecesariaParaUnTamanio(
+					entradaBuscada->tamanio);
 
-			for (i = 0; i < entradaBuscada->tamanio; i++)
-				liberarIndex(entradaBuscada->inexComienzo + i);
+			for (i = 0; i < cantidadEntradasABorar; i++)
+				liberarIndex(entradaBuscada->indexComienzo + i);
 		}
 		free(entradaBuscada);
 	}
@@ -169,7 +169,7 @@ void mostrarTablaEntradas(void) {
 	for (i = 0; i < tablaEntradas->elements_count; i++) {
 		t_tabla_entradas * entrada = list_get(tablaEntradas, i);
 		printf("%s			%d			%d \n", entrada->clave, entrada->tamanio,
-				entrada->inexComienzo);
+				entrada->indexComienzo);
 	}
 	printf("\n");
 }
@@ -186,13 +186,16 @@ int agregarClaveValor(char * clave, void * valor) {
 	} else {
 		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
-		strncpy(registroEntrada->clave, clave, sizeof(registroEntrada->clave) - 1);
+		strncpy(registroEntrada->clave, clave,
+				sizeof(registroEntrada->clave) - 1);
 
 		registroEntrada->entrada = respuesta;
 
 		registroEntrada->tamanio = tamValor;
 
-		registroEntrada->inexComienzo = index;
+		registroEntrada->indexComienzo = index;
+
+		registroEntrada->tiempoReferenciado = 0;
 
 		list_add(tablaEntradas, registroEntrada);
 
@@ -203,7 +206,8 @@ int agregarClaveValor(char * clave, void * valor) {
 void * buscarValorSegunClave(char * clave) {
 	t_tabla_entradas * entrada = buscarEntrada(clave);
 
-	if(entrada == NULL)return NULL;
+	if (entrada == NULL)
+		return NULL;
 
 	char * respuesta = malloc(entrada->tamanio + 1);
 
@@ -216,7 +220,7 @@ void * buscarValorSegunClave(char * clave) {
 
 t_tabla_entradas * buscarEntradaSegunIndex(int index) {
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
-		return (entrada->inexComienzo == index);
+		return (entrada->indexComienzo == index);
 	}
 
 	t_tabla_entradas * registroEntrada = list_find(tablaEntradas,
@@ -370,21 +374,16 @@ void * guardarEnStorage(void * valor, int * index) {
 void * guardarEnStorageEnIndex(void * valor, int index) {
 	int tamValor = strlen(valor);
 
-	int entradasNecesaria = tamValor / tamanioEntrada;
-
-	int resto = tamValor % tamanioEntrada;
-
-	if (resto != 0)
-		entradasNecesaria++;
+	int entradasNecesaria = entradasNecesariaParaUnTamanio(tamValor);
 
 	int i;
 
 	for (i = 0; i < entradasNecesaria; i++)
 		ocuparIndex(index + i);
 
-	memcpy(storage + index, valor, tamValor);
+	memcpy(storage + (index * tamanioEntrada), valor, tamValor);
 
-	return storage + index;
+	return storage + (index * tamanioEntrada);
 }
 
 void compactar(void) {
@@ -411,7 +410,7 @@ void compactar(void) {
 			if (entrada->tamanio % tamanioEntrada != 0)
 				cantidadEntradas++;
 
-			entrada->inexComienzo = primeraEntradaLibre;
+			entrada->indexComienzo = primeraEntradaLibre;
 
 			void * valor = buscarValorSegunClave(entrada->clave);
 
@@ -458,7 +457,7 @@ void dump(void) {
 }
 
 void almacenamientoContinuo(void) {
-	while(true){
+	while (true) {
 		sleep(intervaloDump);
 		dump();
 	}
@@ -467,7 +466,8 @@ void almacenamientoContinuo(void) {
 void crearAlmacenamientoContinuo(void) {
 	pthread_t threadAlmacenamientoContinuo;
 
-	if (pthread_create(&threadAlmacenamientoContinuo, NULL, (void*) almacenamientoContinuo, NULL)) {
+	if (pthread_create(&threadAlmacenamientoContinuo, NULL,
+			(void*) almacenamientoContinuo, NULL)) {
 		perror("Error el crear el thread almacenamientoContinuo.");
 		exit(EXIT_FAILURE);
 	}
@@ -476,7 +476,8 @@ void crearAlmacenamientoContinuo(void) {
 void recuperarInformacionDeInstancia(void) {
 	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
 
-	if(listaArchivos == NULL)return;
+	if (listaArchivos == NULL)
+		return;
 
 	void guardarArchivoEnEstructurasAdministrativas(char * rutaArchivo) {
 		size_t tamArch;
@@ -508,6 +509,200 @@ void recuperarInformacionDeInstancia(void) {
 			(void*) guardarArchivoEnEstructurasAdministrativas);
 
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
+}
+
+/*-------------------------Algoritmos de reemplazo-------------------------*/
+int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
+	int i;
+
+	bool logreGuardar = false;
+
+	int resultado;
+
+	for (i = 0; i < entradasAtomicas->elements_count; i++) {
+		t_tabla_entradas * registro = list_get(entradasAtomicas, i);
+
+		t_tabla_entradas * registro2 = list_get(entradasAtomicas, i + 1);
+
+		if (registro2 == NULL) {
+			entradaAReemplazar = 0;
+		} else {
+			entradaAReemplazar = registro2->indexComienzo;
+		}
+
+		liberarIndex(registro->indexComienzo);
+
+		int index = buscarCantidadIndexLibres(
+				entradasNecesariaParaUnTamanio(string_length(valor)));
+
+		eliminarClave(registro->clave);
+
+		if (index != -1) {
+			t_tabla_entradas * registroEntrada = malloc(
+					sizeof(t_tabla_entradas));
+
+			strncpy(registroEntrada->clave, clave,
+					sizeof(registroEntrada->clave) - 1);
+
+			registroEntrada->entrada = guardarEnStorageEnIndex(valor, index);
+
+			registroEntrada->tamanio = string_length(valor);
+
+			registroEntrada->indexComienzo = index;
+
+			list_add(tablaEntradas, registroEntrada);
+
+			logreGuardar = true;
+
+			resultado = 0;
+
+			break;
+
+		}
+	}
+
+	if (!logreGuardar) {
+		compactar();
+		resultado = agregarClaveValor(clave, valor);
+	}
+
+	list_destroy(entradasAtomicas);
+
+	return resultado;
+}
+
+int algoritmoReemplazoCircular(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaCircular();
+
+	return reemplazar(clave, valor, entradasAtomicas);
+}
+
+t_list * ordenarEntradasAtomicasParaCircular(void) {
+	t_list * entradasAtomicas = filtrarEntradasAtomicas();
+
+	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMenor) {
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
+	}
+
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunIndex);
+
+	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->indexComienzo >= entradaAReemplazar);
+	}
+
+	t_list * mayoresAReemplazar = list_filter(entradasAtomicas,
+			(void*) mayoresAEntradaAReemplazar);
+
+	bool menoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->indexComienzo < entradaAReemplazar);
+	}
+
+	t_list * menoresAReemplazar = list_filter(entradasAtomicas,
+			(void*) menoresAEntradaAReemplazar);
+
+	list_add_all(mayoresAReemplazar, menoresAReemplazar);
+
+	list_destroy(entradasAtomicas);
+	list_destroy(menoresAReemplazar);
+
+	return mayoresAReemplazar;
+
+}
+
+int algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
+
+	return reemplazar(clave, valor, entradasAtomicas);;
+}
+
+t_list * ordenarEntradasAtomicasParaBSU(void) {
+	t_list * entradasAtomicas = filtrarEntradasAtomicas();
+
+	bool ordenarMenorMayorSegunTamanio(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMayor) {
+
+		if (entrada->tamanio == entradaMayor->tamanio) {
+			t_list * listaDesempate = desempate(entrada,entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate,1);
+			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			list_destroy(listaDesempate);
+			return resultado;
+		}
+
+		return entrada->tamanio > entradaMayor->tamanio;
+	}
+
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTamanio);
+
+	return entradasAtomicas;
+}
+
+int algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaLRU();
+
+	return reemplazar(clave, valor, entradasAtomicas);;
+}
+
+t_list * ordenarEntradasAtomicasParaLRU(void) {
+	t_list * entradasAtomicas = filtrarEntradasAtomicas();
+
+	bool ordenarMenorMayorSegunTiempoReferenciado(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMayor) {
+
+		if (entrada->tiempoReferenciado == entradaMayor->tiempoReferenciado) {
+			t_list * listaDesempate = desempate(entrada,entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate,1);
+			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			list_destroy(listaDesempate);
+			return resultado;
+		}
+
+		return entrada->tiempoReferenciado > entradaMayor->tiempoReferenciado;
+	}
+
+	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTiempoReferenciado);
+
+	return entradasAtomicas;
+}
+
+t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
+	t_list * entradasEmpatadas = list_create();
+
+	list_add(entradasEmpatadas, entrada);
+	list_add(entradasEmpatadas, entrada2);
+
+	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMenor) {
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
+	}
+
+	list_sort(entradasEmpatadas, (void*) ordenarMenorMayorSegunIndex);
+
+	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->indexComienzo >= entradaAReemplazar);
+	}
+
+	t_list * mayoresAReemplazar = list_filter(entradasEmpatadas,
+			(void*) mayoresAEntradaAReemplazar);
+
+	bool menoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->indexComienzo < entradaAReemplazar);
+	}
+
+	t_list * menoresAReemplazar = list_filter(entradasEmpatadas,
+			(void*) menoresAEntradaAReemplazar);
+
+	list_add_all(mayoresAReemplazar, menoresAReemplazar);
+
+	list_destroy(entradasEmpatadas);
+	list_destroy(menoresAReemplazar);
+
+	return mayoresAReemplazar;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
@@ -544,7 +739,8 @@ t_list * listarArchivosDeMismaCarpeta(char * ruta) {
 
 	dir = opendir(ruta);
 
-	if(dir == NULL)return NULL;
+	if (dir == NULL)
+		return NULL;
 
 	t_list * listaArchivos = list_create();
 
@@ -561,4 +757,35 @@ t_list * listarArchivosDeMismaCarpeta(char * ruta) {
 	closedir(dir);
 
 	return listaArchivos;
+}
+
+int entradasNecesariaParaUnTamanio(int tamanio) {
+	int entradasNecesaria = tamanio / tamanioEntrada;
+
+	if (tamanio % tamanioEntrada != 0)
+		entradasNecesaria++;
+
+	return entradasNecesaria;
+}
+
+t_list * filtrarEntradasAtomicas(void) {
+	bool entradaAtomica(t_tabla_entradas * registroTabla) {
+		int entradasNecesarias = registroTabla->tamanio / tamanioEntrada;
+
+		if (registroTabla->tamanio % tamanioEntrada != 0)
+			entradasNecesarias++;
+
+		return (entradasNecesarias == 1);
+	}
+
+	t_list * listaFiltrada = list_filter(tablaEntradas, (void*) entradaAtomica);
+
+	bool ordenarMenorMayor(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMenor) {
+		return entrada->indexComienzo < entradaMenor->indexComienzo;
+	}
+
+	list_sort(listaFiltrada, (void*) ordenarMenorMayor);
+
+	return listaFiltrada;
 }
