@@ -148,7 +148,8 @@ void eliminarClave(char * clave) {
 		if (entradaBuscada->tamanio != 0) {
 			int i;
 
-			int cantidadEntradasABorar = entradasNecesariaParaUnTamanio(entradaBuscada->tamanio);
+			int cantidadEntradasABorar = entradasNecesariaParaUnTamanio(
+					entradaBuscada->tamanio);
 
 			for (i = 0; i < cantidadEntradasABorar; i++)
 				liberarIndex(entradaBuscada->inexComienzo + i);
@@ -376,9 +377,9 @@ void * guardarEnStorageEnIndex(void * valor, int index) {
 	for (i = 0; i < entradasNecesaria; i++)
 		ocuparIndex(index + i);
 
-	memcpy(storage + (index*tamanioEntrada), valor, tamValor);
+	memcpy(storage + (index * tamanioEntrada), valor, tamValor);
 
-	return storage + (index*tamanioEntrada);
+	return storage + (index * tamanioEntrada);
 }
 
 void compactar(void) {
@@ -507,9 +508,7 @@ void recuperarInformacionDeInstancia(void) {
 }
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
-int algoritmoReemplazoCircular(char * clave, void * valor) {
-	t_list * entradasAtomicas = ordenarEntradasAtomicasParaCircular();
-
+int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
 	int i;
 
 	bool logreGuardar = false;
@@ -566,7 +565,12 @@ int algoritmoReemplazoCircular(char * clave, void * valor) {
 	list_destroy(entradasAtomicas);
 
 	return resultado;
+}
 
+int algoritmoReemplazoCircular(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaCircular();
+
+	return reemplazar(clave, valor, entradasAtomicas);
 }
 
 t_list * ordenarEntradasAtomicasParaCircular(void) {
@@ -607,55 +611,7 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 int algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
 	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
 
-	int i;
-
-	bool logreGuardar = false;
-
-	int resultado;
-
-	for (i = 0; i < entradasAtomicas->elements_count; i++) {
-		t_tabla_entradas * registro = list_get(entradasAtomicas, i);
-
-		liberarIndex(registro->inexComienzo);
-
-		int index = buscarCantidadIndexLibres(
-				entradasNecesariaParaUnTamanio(string_length(valor)));
-
-		eliminarClave(registro->clave);
-
-		if (index != -1) {
-			t_tabla_entradas * registroEntrada = malloc(
-					sizeof(t_tabla_entradas));
-
-			strncpy(registroEntrada->clave, clave,
-					sizeof(registroEntrada->clave) - 1);
-
-			registroEntrada->entrada = guardarEnStorageEnIndex(valor, index);
-
-			registroEntrada->tamanio = string_length(valor);
-
-			registroEntrada->inexComienzo = index;
-
-			list_add(tablaEntradas, registroEntrada);
-
-			logreGuardar = true;
-
-			resultado = 0;
-
-			break;
-
-		}
-	}
-
-	if (!logreGuardar) {
-		compactar();
-		resultado = agregarClaveValor(clave, valor);
-	}
-
-	list_destroy(entradasAtomicas);
-
-	return resultado;
-
+	return reemplazar(clave, valor, entradasAtomicas);;
 }
 
 t_list * ordenarEntradasAtomicasParaBSU(void) {
@@ -663,12 +619,58 @@ t_list * ordenarEntradasAtomicasParaBSU(void) {
 
 	bool ordenarMenorMayorSegunTamanio(t_tabla_entradas * entrada,
 			t_tabla_entradas * entradaMayor) {
+
+		if (entrada->tamanio == entradaMayor->tamanio) {
+			t_list * listaDesempate = desempate(entrada,entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate,1);
+			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			list_destroy(listaDesempate);
+			return resultado;
+		}
+
 		return entrada->tamanio > entradaMayor->tamanio;
 	}
 
 	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTamanio);
 
 	return entradasAtomicas;
+}
+
+t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
+	t_list * entradasEmpatadas = list_create();
+
+	list_add(entradasEmpatadas, entrada);
+	list_add(entradasEmpatadas, entrada2);
+
+	bool ordenarMenorMayorSegunIndex(t_tabla_entradas * entrada,
+			t_tabla_entradas * entradaMenor) {
+		return entrada->inexComienzo < entradaMenor->inexComienzo;
+	}
+
+	list_sort(entradasEmpatadas, (void*) ordenarMenorMayorSegunIndex);
+
+	bool mayoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->inexComienzo >= entradaAReemplazar);
+	}
+
+	t_list * mayoresAReemplazar = list_filter(entradasEmpatadas,
+			(void*) mayoresAEntradaAReemplazar);
+
+	bool menoresAEntradaAReemplazar(t_tabla_entradas * registroTabla) {
+
+		return (registroTabla->inexComienzo < entradaAReemplazar);
+	}
+
+	t_list * menoresAReemplazar = list_filter(entradasEmpatadas,
+			(void*) menoresAEntradaAReemplazar);
+
+	list_add_all(mayoresAReemplazar, menoresAReemplazar);
+
+	list_destroy(entradasEmpatadas);
+	list_destroy(menoresAReemplazar);
+
+	return mayoresAReemplazar;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/

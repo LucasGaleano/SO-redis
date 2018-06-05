@@ -89,10 +89,12 @@ void 				recuperarInformacionDeInstancia	(void);
 
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
+int 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
 int 				algoritmoReemplazoCircular			(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaCircular	(void);
 int 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaBSU		(void);
+t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 				abrirArchivo					(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
