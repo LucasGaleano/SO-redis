@@ -19,10 +19,12 @@ void 							enviarMensaje				(int server_socket, char * mensaje);
 void 							enviarArchivo				(int server_socket, char * rutaArchivo);
 void 							enviarSolicitudEjecucion	(int server_socket);
 void 							enviarNombreEsi				(int server_socket, char * nombre);
+void 							enviarEjecucionTerminada	(int server_socket);
 void 							enviarNombreInstancia		(int server_socket, char * nombre);
 void 							enviarGet					(int server_socket, char * clave);
 void 							enviarSet					(int server_socket, char * clave, char * valor);
 void 							enviarStore					(int server_socket, char * clave);
+void 							enviarSolicitusStatus		(int server_socket);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada);
 

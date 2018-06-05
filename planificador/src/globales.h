@@ -8,13 +8,11 @@
 #ifndef GLOBALES_H_
 #define GLOBALES_H_
 
+#include <pthread.h>
+#include <commons/collections/dictionary.h>
 #include <commons/config.h>
 #include <commons/log.h>
-#include <commons/collections/dictionary.h>
-#include <pthread.h>
-#include <biblioteca/sockets.h>
-#include <biblioteca/paquetes.h>
-#include <biblioteca/estructuras.h>
+#include <semaphore.h>
 
 typedef struct {
 	int socketESI;
@@ -28,14 +26,20 @@ typedef struct {
 	t_infoListos* data;
 }t_infoBloqueo;
 
-static pthread_mutex_t mutexConsola = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t mutexBloqueo = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t mutexListo = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t modificacion = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t ESIentrada = PTHREAD_COND_INITIALIZER;
+pthread_t hiloServidor;
+pthread_t hiloAlgoritmos;
+
+pthread_mutex_t mutexConsola;
+pthread_mutex_t mutexBloqueo;
+pthread_mutex_t mutexListo;
+pthread_mutex_t modificacion;
+pthread_mutex_t mutexLog;
+sem_t ESIentrada;
+sem_t continua;
 
 t_dictionary* g_listos;
 t_dictionary* g_bloq;
+t_dictionary* g_clavesTomadas;
 
 t_log* g_logger;
 t_config* g_con;
@@ -44,5 +48,7 @@ double g_est;
 int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
+
+extern void liberarTodo(void);
 
 #endif /* GLOBALES_H_ */

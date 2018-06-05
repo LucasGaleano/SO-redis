@@ -197,6 +197,16 @@ void enviarSolicitudEjecucion(int server_socket) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
+void enviarEjecucionTerminada(int server_socket) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = TERMINO_ESI;
+
+	serializarNumero(unPaquete, 0);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
 void enviarNombreEsi(int server_socket, char * nombre){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
