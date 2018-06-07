@@ -19,8 +19,18 @@
 #include "globales.h"
 
 /*------------------------------Globales-----------------------------*/
-char* g_idESIComparar;
+char* g_idESI;
 bool g_estaBloqueado;
+int **g_matrizAsignacion;
+int **g_matrizEspera;
+bool g_estaBloqueado;
+int g_indiceESI;
+t_dictionary* g_clavesDeadlock;
+t_dictionary* g_ESIsDeadlock;
+
+typedef struct {
+	int indice;
+} t_infoIndiceDeadlock;
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -47,6 +57,18 @@ bool 				estaBloqueadoPorLaClave					(char*, char*);
 void 				estaESIBloqueado						(char*, t_list*);
 bool				estaBloqueado							(char*);
 void				eliminarT_infoBloqueo					(t_infoBloqueo*);
+int 				indice									(char*, t_dictionary*);
+int **				crearMatriz								(int, int);
+void 				ponerMatrizTodoNulo						(int **, int, int);
+void 				creoElementoEnPosibleDeadlockAsignacion	(char* idESI, t_list* clavesBloqueadas);
+void 				creoElementosEnPosibleDeadlockAsignacion(t_infoClavesBloqueadas*);
+void 				creoElementoEnPosibleDeadlockEspera		(char*, t_list*);
+void 				creoElementosEnPosibleDeadlockEspera	(t_infoBloqueo*);
+void 				creoMatrizAsignacion					(char*, t_list*);
+void 				creoMatrizEspera						(char*, t_list*);
+void 				asignarEnMatrizEspera					(t_infoBloqueo*);
+void 				esiIndice								(char*, t_infoIndiceDeadlock*);
+char* 				esiQueTieneIndice						(int);
 void        		siEstaBloqueadaPorClaveEliminar			(char*, t_list*);
 void        		desbloqueoClave							(char*, t_list*);
 void        		eliminarT_infoClavesBloqueadas			(t_infoClavesBloqueadas*);
