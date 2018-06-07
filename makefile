@@ -1,6 +1,6 @@
 
 
-all: so-commons-library biblioteca parsi
+all: so-commons-library parsi biblioteca
 	@tput setaf 2
 	@echo "Terminado"
 	@tput sgr0
@@ -32,7 +32,7 @@ biblioteca:
 	cp -u ./biblioteca-propia/Debug/libbiblioteca-propia.so /usr/lib/libbiblioteca-propia.so
 	cp -u ./biblioteca-propia/biblioteca/*.h /usr/include/biblioteca
 	@tput setaf 2
-	@echo "Biblioteca Intalada"
+	@echo "Biblioteca Instalada"
 	@tput sgr0
 	
 clean:
@@ -42,6 +42,6 @@ clean:
 	rm -rf /usr/lib/libbiblioteca-propia.so
 	rm -rf ../parsi
 	@tput setaf 2
-	@echo "Desintalado"
+	@echo "Desinstalado"
 	@tput sgr0
 
