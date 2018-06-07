@@ -207,7 +207,7 @@ void enviarEjecucionTerminada(int server_socket) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarNombreEsi(int server_socket, char * nombre){
+void enviarNombreEsi(int server_socket, char * nombre) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = ENVIAR_NOMBRE_ESI;
@@ -217,7 +217,7 @@ void enviarNombreEsi(int server_socket, char * nombre){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarNombreInstancia(int server_socket, char * nombre){
+void enviarNombreInstancia(int server_socket, char * nombre) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = ENVIAR_NOMBRE_INSTANCIA;
@@ -227,7 +227,7 @@ void enviarNombreInstancia(int server_socket, char * nombre){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarGet(int server_socket, char * clave){
+void enviarGet(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = GET;
@@ -237,7 +237,7 @@ void enviarGet(int server_socket, char * clave){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSet(int server_socket, char * clave, char * valor){
+void enviarSet(int server_socket, char * clave, char * valor) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SET;
@@ -247,7 +247,17 @@ void enviarSet(int server_socket, char * clave, char * valor){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarStore(int server_socket, char * clave){
+void enviarSetDefinitivo(int server_socket, char * clave, char * valor) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = SET_DEFINITIVO;
+
+	serializarClaveValor(unPaquete, clave, valor);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarStore(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = STORE;
@@ -257,8 +267,7 @@ void enviarStore(int server_socket, char * clave){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarRespuesta(int codRespuesta, int server_socket)
-{
+void enviarRespuesta(int server_socket, int codRespuesta) {
 	t_paquete* unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = RESPUESTA_SOLICITUD;
@@ -268,32 +277,65 @@ void enviarRespuesta(int codRespuesta, int server_socket)
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitusStatus(int server_socket){
+void enviarSolicitusStatus(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;
+
+	serializarMensaje(unPaquete, clave);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarRespuestaStatus(int server_socket, char* valor,
+		char * nomInstanciaActual, char * nomIntanciaPosible) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = RESPUESTA_STATUS;
+
+	serializarRespuestaStatus(unPaquete, valor, nomInstanciaActual,
+			nomIntanciaPosible);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarInfoInstancia(int server_socket, int cantEntradas,
+		int tamanioEntrada) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = ENVIAR_INFO_INSTANCIA;
+
+	serializarInfoInstancia(unPaquete, cantEntradas, tamanioEntrada);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarCompactacion(int server_socket) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = COMPACTAR;
 
 	serializarNumero(unPaquete, 0);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarRespuestaStatus(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible){
+void enviarSolicitudValor(int server_socket, char * clave){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = RESPUESTA_STATUS;
+	unPaquete->codigoOperacion = SOLICITAR_VALOR;
 
-	serializarRespuestaStatus(unPaquete, valor, nomInstanciaActual, nomIntanciaPosible);
+	serializarMensaje(unPaquete, clave);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarInfoInstancia(int server_socket, int cantEntradas, int tamanioEntrada){
+void enviarRespSolicitudValor(int server_socket, bool claveExistente, char * valor){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = ENVIAR_INFO_INSTANCIA;
+	unPaquete->codigoOperacion = RESPUESTA_SOLICITAR_VALOR;
 
-	serializarInfoInstancia(unPaquete, cantEntradas, tamanioEntrada);
+	serializarExistenciaClaveValor(unPaquete, claveExistente, valor);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
@@ -311,34 +353,50 @@ void* recibirArchivo(t_paquete * unPaquete) {
 	return deserializarArchivo(unPaquete->buffer);
 }
 
-char * recibirNombreEsi(t_paquete * unPaquete){
+char * recibirNombreEsi(t_paquete * unPaquete) {
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-char * recibirNombreInstancia(t_paquete * unPaquete){
+char * recibirNombreInstancia(t_paquete * unPaquete) {
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-t_claveValor* recibirSet(t_paquete* unPaquete){
+t_claveValor* recibirSet(t_paquete* unPaquete) {
 	return deserializarClaveValor(unPaquete->buffer);
 }
 
-char * recibirGet(t_paquete* unPaquete){
+t_claveValor* recibirSetDefinitivo(t_paquete* unPaquete) {
+	return deserializarClaveValor(unPaquete->buffer);
+}
+
+char * recibirGet(t_paquete* unPaquete) {
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-char * recibirStore(t_paquete* unPaquete){
+char * recibirStore(t_paquete* unPaquete) {
 	return deserializarMensaje(unPaquete->buffer);
 }
 
-int recibirRespuesta(t_paquete* unPaquete){
+int recibirRespuesta(t_paquete* unPaquete) {
 	return deserializarNumero(unPaquete->buffer);
 }
 
-t_respuestaStatus * recibirRespuestaStatus(t_paquete* unPaquete){
+char * recibirSolicitusStatus(t_paquete * unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
+}
+
+t_respuestaStatus * recibirRespuestaStatus(t_paquete* unPaquete) {
 	return deserializarRespuestaStatus(unPaquete->buffer);
 }
 
-t_infoInstancia * recibirInfoInstancia(t_paquete * unPaquete){
+t_infoInstancia * recibirInfoInstancia(t_paquete * unPaquete) {
 	return deserializarInfoInstancia(unPaquete->buffer);
+}
+
+char * recibirSolicitudValor(t_paquete * unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
+}
+
+t_respuestaValor * recibirRespSolicitudValor(t_paquete * unPaquete){
+	return deserializarExistenciaClaveValor(unPaquete->buffer);
 }

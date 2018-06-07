@@ -44,7 +44,9 @@ enum cod_op {
 
 	SOLICITAR_STATUS, RESPUESTA_STATUS,
 
-	SET_DEFINITIVO,
+	SET_DEFINITIVO, COMPACTAR,
+
+	SOLICITAR_VALOR, RESPUESTA_SOLICITAR_VALOR,
 };
 
 enum cod_respuesta {
@@ -62,6 +64,11 @@ typedef struct {
 	int cantEntradas;
 	int tamanioEntrada;
 } t_infoInstancia;
+
+typedef struct {
+	bool existenciaClave;
+	void * valor;
+} t_respuestaValor;
 
 //------------------------------Estructuras de comunicacion Consola Instancia------------------------------//
 typedef struct {

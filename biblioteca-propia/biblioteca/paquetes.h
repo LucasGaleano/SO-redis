@@ -23,10 +23,15 @@ void 							enviarEjecucionTerminada	(int server_socket);
 void 							enviarNombreInstancia		(int server_socket, char * nombre);
 void 							enviarGet					(int server_socket, char * clave);
 void 							enviarSet					(int server_socket, char * clave, char * valor);
+void 							enviarSetDefinitivo			(int server_socket, char * clave, char * valor);
 void 							enviarStore					(int server_socket, char * clave);
-void 							enviarSolicitusStatus		(int server_socket);
+void 							enviarSolicitusStatus		(int server_socket, char * clave);
+void 							enviarRespuesta				(int server_socket, int codRespuesta);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada);
+void 							enviarCompactacion			(int server_socket);
+void 							enviarSolicitudValor		(int server_socket, char * clave);
+void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, char * valor);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);
@@ -35,9 +40,13 @@ void * 					  		recibirArchivo				(t_paquete * unPaquete);
 char * 					  		recibirNombreEsi			(t_paquete * unPaquete);
 char * 					  		recibirNombreInstancia		(t_paquete * unPaquete);
 t_claveValor *					recibirSet					(t_paquete * unPaquete);
+t_claveValor *					recibirSetDefinitivo		(t_paquete * unPaquete);
 char* 					  		recibirGet					(t_paquete * unPaquete);
 char* 					  		recibirSTore				(t_paquete * unPaquete);
+char *							recibirSolicitusStatus		(t_paquete * unPaquete);
 t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
 t_infoInstancia * 				recibirInfoInstancia		(t_paquete * unPaquete);
+char *							recibirSolicitudValor		(t_paquete * unPaquete);
+t_respuestaValor *				recibirRespSolicitudValor	(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */
