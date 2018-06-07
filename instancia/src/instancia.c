@@ -1,30 +1,30 @@
 #include "instancia.h"
-
+/*
 int main(void) {
- //Creo archivo de log
- logInstancia = log_create("log_Instancia.log", "instancia", true,
- LOG_LEVEL_TRACE);
- log_trace(logInstancia, "Inicio el proceso instancia \n");
+	//Creo archivo de log
+	logInstancia = log_create("log_Instancia.log", "instancia", true,
+			LOG_LEVEL_TRACE);
+	log_trace(logInstancia, "Inicio el proceso instancia \n");
 
- //Conecto instancia con coordinador
- conectarInstancia();
+	//Conecto instancia con coordinador
+	conectarInstancia();
 
- //Quedo a la espera de solicitudes
- recibirSolicitudes = true;
- while (recibirSolicitudes) {
- gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
- logInstancia);
- }
+	//Quedo a la espera de solicitudes
+	recibirSolicitudes = true;
+	while (recibirSolicitudes) {
+		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+				logInstancia);
+	}
 
- //Termina esi
- log_trace(logInstancia, "Termino el proceso instancia \n");
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
 
- //Destruyo archivo de log
- log_destroy(logInstancia);
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
 
- return EXIT_SUCCESS;
- }
-
+	return EXIT_SUCCESS;
+}
+*/
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
 	//Leo la configuracion del esi
@@ -67,6 +67,21 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case ENVIAR_INFO_INSTANCIA:
 		procesarEnviarInfoInstancia(unPaquete);
 		break;
+	case SET:
+		procesarSet(unPaquete, *client_socket);
+		break;
+	case SET_DEFINITIVO:
+		procesarSetDefinitivo(unPaquete, *client_socket);
+		break;
+	case GET:
+		procesarGet(unPaquete, *client_socket);
+		break;
+	case COMPACTAR:
+		procesarCompactacion(unPaquete, *client_socket);
+		break;
+	case SOLICITAR_VALOR:
+		procesarSolicitudValor(unPaquete, *client_socket);
+		break;
 	default:
 		break;
 	}
@@ -98,6 +113,96 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Libero memoria
 	free(info);
 
+}
+
+void procesarSet(t_paquete * unPaquete, int client_socket) {
+	t_claveValor * claveValor = recibirSet(unPaquete);
+
+	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+
+	switch (respuesta) {
+	case ENTRADA_INEXISTENTE:
+		enviarRespuesta(client_socket,ERROR_CLAVE_NO_IDENTIFICADA);
+		break;
+	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
+		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+		break;
+	default:
+		enviarRespuesta(OK, client_socket);
+		break;
+	}
+
+	free(claveValor->clave);
+	free(claveValor->valor);
+	free(claveValor);
+
+}
+
+void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
+	t_claveValor * claveValor = recibirSetDefinitivo(unPaquete);
+
+	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+
+	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
+		if (string_equals_ignore_case(algoritmoReemplazo, "CIRC")) {
+			algoritmoReemplazoCircular(claveValor->clave, claveValor->valor);
+		}
+
+		if (string_equals_ignore_case(algoritmoReemplazo, "LRU")) {
+			algoritmoReemplazoLeastRecentlyUsed(claveValor->clave,
+					claveValor->valor);
+		}
+
+		if (string_equals_ignore_case(algoritmoReemplazo, "BSU")) {
+			algoritmoReemplazoBiggestSpaceUsed(claveValor->clave,
+					claveValor->valor);
+		}
+	}
+
+	free(claveValor->clave);
+	free(claveValor->valor);
+	free(claveValor);
+
+	enviarRespuesta(OK, client_socket);
+
+}
+
+void procesarGet(t_paquete * unPaquete, int client_socket) {
+	char * clave = recibirGet(unPaquete);
+
+	void * resultado = buscarValorSegunClave(clave);
+
+	if (resultado == NULL) {
+		agregarClave(clave);
+	}
+
+	enviarRespuesta(client_socket, OK);
+
+	if (resultado != NULL)
+		free(resultado);
+	free(clave);
+}
+
+void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
+	compactar();
+	enviarCompactacion(client_socket);
+}
+
+void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
+	char * clave = recibirSolicitudValor(unPaquete);
+
+	t_tabla_entradas * respuesta = buscarEntrada(clave);
+
+	if (respuesta == NULL) {
+		enviarRespSolicitudValor(client_socket, false, NULL);
+		free(clave);
+		return;
+	}
+
+	enviarRespSolicitudValor(client_socket, true, respuesta->entrada);
+
+	free(respuesta);
+	free(clave);
 }
 
 /*-------------------------Tabla de entradas-------------------------*/
@@ -174,7 +279,12 @@ void mostrarTablaEntradas(void) {
 	printf("\n");
 }
 
-int agregarClaveValor(char * clave, void * valor) {
+int agregarValorAClave(char * clave, void * valor) {
+	t_tabla_entradas * registroEntrada = buscarEntrada(clave);
+
+	if (registroEntrada == NULL)
+		return ENTRADA_INEXISTENTE;
+
 	int tamValor = string_length(valor);
 
 	int index = -1;
@@ -182,9 +292,8 @@ int agregarClaveValor(char * clave, void * valor) {
 	void * respuesta = guardarEnStorage(valor, &index);
 
 	if (respuesta == NULL) {
-		return -1;
+		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
-		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
 
 		strncpy(registroEntrada->clave, clave,
 				sizeof(registroEntrada->clave) - 1);
@@ -317,18 +426,13 @@ int buscarCantidadIndexLibres(int cantidad) {
 	for (i = 0; !loEncontre && i < cantEntradas; i++) {
 		if (!bitMap[i]) {
 			candidato = i;
-			//printf("El candidato es: %d \n", candidato);
 			contador = 1;
-			//printf("El contador es: %d \n", contador);
 
 			while (contador < cantidad && (i + 1) < cantEntradas
 					&& !bitMap[i + 1]) {
 				i++;
 				contador++;
-				//printf("El contador es: %d \n", contador);
 			}
-
-			//printf("El contador definitivo es: %d \n",contador);
 
 			if (contador == cantidad)
 				loEncontre = true;
@@ -336,7 +440,7 @@ int buscarCantidadIndexLibres(int cantidad) {
 	}
 
 	if (!loEncontre)
-		candidato = -1;
+		candidato = CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 
 	return candidato;
 }
@@ -362,7 +466,7 @@ void * guardarEnStorage(void * valor, int * index) {
 
 	*index = buscarCantidadIndexLibres(entradasNecesaria);
 
-	if ((*index) != -1) {
+	if ((*index) != CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 
 		return guardarEnStorageEnIndex(valor, *index);
 
@@ -492,7 +596,8 @@ void recuperarInformacionDeInstancia(void) {
 		for (i = 0; spliteado[i] != NULL; i++)
 			;
 
-		agregarClaveValor(spliteado[i - 1], archivo);
+		agregarClave(spliteado[i - 1]);
+		agregarValorAClave(spliteado[i - 1], archivo);
 
 		for (i = 0; spliteado[i] != NULL; ++i) {
 			free(spliteado[i]);
@@ -512,12 +617,10 @@ void recuperarInformacionDeInstancia(void) {
 }
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
-int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
+void reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
 	int i;
 
 	bool logreGuardar = false;
-
-	int resultado;
 
 	for (i = 0; i < entradasAtomicas->elements_count; i++) {
 		t_tabla_entradas * registro = list_get(entradasAtomicas, i);
@@ -552,29 +655,18 @@ int reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
 
 			list_add(tablaEntradas, registroEntrada);
 
-			logreGuardar = true;
-
-			resultado = 0;
-
 			break;
 
 		}
 	}
 
-	if (!logreGuardar) {
-		compactar();
-		resultado = agregarClaveValor(clave, valor);
-	}
-
 	list_destroy(entradasAtomicas);
-
-	return resultado;
 }
 
-int algoritmoReemplazoCircular(char * clave, void * valor) {
+void algoritmoReemplazoCircular(char * clave, void * valor) {
 	t_list * entradasAtomicas = ordenarEntradasAtomicasParaCircular();
 
-	return reemplazar(clave, valor, entradasAtomicas);
+	reemplazar(clave, valor, entradasAtomicas);
 }
 
 t_list * ordenarEntradasAtomicasParaCircular(void) {
@@ -612,10 +704,10 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 
 }
 
-int algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
+void algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
 	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
 
-	return reemplazar(clave, valor, entradasAtomicas);;
+	reemplazar(clave, valor, entradasAtomicas);;
 }
 
 t_list * ordenarEntradasAtomicasParaBSU(void) {
@@ -625,9 +717,10 @@ t_list * ordenarEntradasAtomicasParaBSU(void) {
 			t_tabla_entradas * entradaMayor) {
 
 		if (entrada->tamanio == entradaMayor->tamanio) {
-			t_list * listaDesempate = desempate(entrada,entradaMayor);
-			t_tabla_entradas * primera = list_get(listaDesempate,1);
-			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			t_list * listaDesempate = desempate(entrada, entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate, 1);
+			bool resultado = string_equals_ignore_case(primera->clave,
+					entradaMayor->clave);
 			list_destroy(listaDesempate);
 			return resultado;
 		}
@@ -640,10 +733,10 @@ t_list * ordenarEntradasAtomicasParaBSU(void) {
 	return entradasAtomicas;
 }
 
-int algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
+void algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
 	t_list * entradasAtomicas = ordenarEntradasAtomicasParaLRU();
 
-	return reemplazar(clave, valor, entradasAtomicas);;
+	reemplazar(clave, valor, entradasAtomicas);;
 }
 
 t_list * ordenarEntradasAtomicasParaLRU(void) {
@@ -653,9 +746,10 @@ t_list * ordenarEntradasAtomicasParaLRU(void) {
 			t_tabla_entradas * entradaMayor) {
 
 		if (entrada->tiempoReferenciado == entradaMayor->tiempoReferenciado) {
-			t_list * listaDesempate = desempate(entrada,entradaMayor);
-			t_tabla_entradas * primera = list_get(listaDesempate,1);
-			bool resultado = string_equals_ignore_case(primera->clave,entradaMayor->clave);
+			t_list * listaDesempate = desempate(entrada, entradaMayor);
+			t_tabla_entradas * primera = list_get(listaDesempate, 1);
+			bool resultado = string_equals_ignore_case(primera->clave,
+					entradaMayor->clave);
 			list_destroy(listaDesempate);
 			return resultado;
 		}
@@ -663,7 +757,8 @@ t_list * ordenarEntradasAtomicasParaLRU(void) {
 		return entrada->tiempoReferenciado > entradaMayor->tiempoReferenciado;
 	}
 
-	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTiempoReferenciado);
+	list_sort(entradasAtomicas,
+			(void*) ordenarMenorMayorSegunTiempoReferenciado);
 
 	return entradasAtomicas;
 }
@@ -707,7 +802,7 @@ t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
-	//Abro el archivo
+//Abro el archivo
 	*archivo = fopen(rutaArchivo, "r");
 
 	if (*archivo == NULL) {
@@ -716,15 +811,15 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 		exit(EXIT_FAILURE);
 	}
 
-	//Copio informacion del archivo
+//Copio informacion del archivo
 	struct stat statArch;
 
 	stat(rutaArchivo, &statArch);
 
-	//Tamaño del archivo que voy a leer
+//Tamaño del archivo que voy a leer
 	*tamArc = statArch.st_size;
 
-	//Leo el total del archivo y lo asigno al buffer
+//Leo el total del archivo y lo asigno al buffer
 	int fd = fileno(*archivo);
 	void * dataArchivo = mmap(0, *tamArc, PROT_READ, MAP_SHARED, fd, 0);
 

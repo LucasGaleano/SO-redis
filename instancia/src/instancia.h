@@ -44,6 +44,11 @@ typedef struct {
 	int tiempoReferenciado;
 } t_tabla_entradas;
 
+enum errores {
+	ENTRADA_INEXISTENTE, CANTIDAD_INDEX_LIBRES_INEXISTENTES,
+};
+
+
 /*-------------------------Conexion-------------------------*/
 void 		conectarInstancia	(void);
 t_config* 	leerConfiguracion	(void);
@@ -51,6 +56,11 @@ t_config* 	leerConfiguracion	(void);
 /*-------------------------Procesamiento paquetes-------------------------*/
 void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
+void 		procesarSet					(t_paquete * unPaquete, int client_socket);
+void 		procesarSetDefinitivo		(t_paquete * unPaquete, int client_socket);
+void 		procesarGet					(t_paquete * unPaquete, int client_socket);
+void 		procesarCompactacion		(t_paquete * unPaquete, int client_socket);
+void 		procesarSolicitudValor		(t_paquete * unPaquete, int client_socket);
 
 /*-------------------------Tabla de entradas-------------------------*/
 void 				crearTablaEntradas		(void);
@@ -59,7 +69,7 @@ t_tabla_entradas * 	buscarEntrada			(char * clave);
 void 				agregarClave			(char * clave);
 void 				eliminarClave			(char * clave);
 void 				mostrarTablaEntradas	(void);
-int 				agregarClaveValor		(char * clave, void * valor);
+int 				agregarValorAClave		(char * clave, void * valor);
 void * 				buscarValorSegunClave	(char * clave);
 t_tabla_entradas *	buscarEntradaSegunIndex	(int index);
 void 				mostrarEntrada			(char * clave);
@@ -89,12 +99,12 @@ void 				crearAlmacenamientoContinuo		(void);
 void 				recuperarInformacionDeInstancia	(void);
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
-int 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
-int 				algoritmoReemplazoCircular			(char * clave, void * valor);
+void 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
+void 				algoritmoReemplazoCircular			(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaCircular	(void);
-int 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
+void 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaBSU		(void);
-int 				algoritmoReemplazoLeastRecentlyUsed	(char * clave, void * valor);
+void 				algoritmoReemplazoLeastRecentlyUsed	(char * clave, void * valor);
 t_list * 			ordenarEntradasAtomicasParaLRU		(void);
 t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
 
