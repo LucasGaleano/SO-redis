@@ -46,7 +46,7 @@ enum cod_op {
 };
 
 enum cod_respuesta {
-	OK = 200, ABORTO, ERROR_TAMANIO_CLAVE, ERROR_CLAVE_NO_IDENTIFICADA, ERROR_CLAVE_INACCESIBLE, ERROR_CLAVE_NO_TOMADA,
+	OK = 200, ABORTO, ERROR_TAMANIO_CLAVE, ERROR_CLAVE_NO_IDENTIFICADA, ERROR_CLAVE_INACCESIBLE, ERROR_CLAVE_NO_TOMADA, ERROR_ESPACIO_INSUFICIENTE,
 };
 
 //------------------------------Estructuras de comunicacion ESI Coordinador Instancia------------------------------//
