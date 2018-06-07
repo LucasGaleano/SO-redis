@@ -50,16 +50,8 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	case SET:
 		;
 
-		//TODO crear hilo para procesar la conexion
 		t_claveValor* sentencia = recibirSet(paquete);
 		procesarSET(sentencia, *socketCliente);
-		break;
-
-	case RESPUESTA_SOLICITUD:
-		;
-		//El Coordinador logea la respuesta y envía al ESI
-		int respuesta = recibirRespuesta(paquete);
-		procesarRespuestaSET(respuesta, *socketCliente);
 		break;
 
 	case GET:
@@ -76,6 +68,49 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 		//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 		break;
 
+
+	case RESPUESTA_SOLICITUD:
+		;
+		//El Coordinador logea la respuesta y envía al ESI
+		//TODO SWICTH a por el enum de errores
+		switch(){
+
+		case ERROR_ESPACIO_INSUFICIENTE:
+			/*
+			 * TODO
+			 * esperamos que todas las ejecuciones terminen.
+			 * las bloqueamos.
+			 * mandamos a hacer la compactacion a todas las instancias.
+			 * a la instancia que devolvio error por espacio insuficiente le enviamos
+			 * otra vez trabajo actual como SET_DEFINITIVO
+			 * reanudamos.
+			 *
+			 * */
+
+			break;
+
+
+		case ERROR_CLAVE_NO_IDENTIFICADA:
+			//TODO mandamos error a planificador
+
+			break;
+
+		}
+
+		int respuesta = recibirRespuesta(paquete);
+		procesarRespuestaSET(respuesta, *socketCliente);
+		break;
+/*
+ *
+ * 	case:SET_DEFINITIVO:
+ *
+ * 	case:RESPUESTA_SET:
+ *
+ * 	//respuesta de la compactacion de una instancia.
+	case COMPACTACION:
+		//TODO cuando todas las instancias respondan que terminaron la compactacion, reanudo.
+
+*/
 	default:
 
 		break;
