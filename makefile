@@ -1,6 +1,6 @@
 
 
-all: so-commons-library biblioteca
+all: so-commons-library biblioteca parsi
 	@tput setaf 2
 	@echo "Terminado"
 	@tput sgr0
@@ -13,6 +13,17 @@ so-commons-library:
 	@tput setaf 2
 	@echo "Commons instaladas"
 	@tput sgr0
+
+
+parsi:
+	$(call mostrarTitulo,$@)
+	cd .. ; git clone https://github.com/sisoputnfrba/parsi
+	cd ../parsi; sudo make install
+	@tput setaf 2
+	@echo "parsi  instalada"
+	@tput sgr0
+
+
 
 biblioteca:
 	$(call mostrarTitulo,$@)
@@ -29,6 +40,7 @@ clean:
 	rm -rf ../so-commons-library
 	rm -rf /usr/include/biblioteca
 	rm -rf /usr/lib/libbiblioteca-propia.so
+	rm -rf ../parsi
 	@tput setaf 2
 	@echo "Desintalado"
 	@tput sgr0
