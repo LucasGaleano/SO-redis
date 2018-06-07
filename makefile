@@ -1,6 +1,6 @@
 
 
-all: so-commons-library biblioteca
+all: so-commons-library parsi biblioteca
 	@tput setaf 2
 	@echo "Terminado"
 	@tput sgr0
@@ -14,6 +14,17 @@ so-commons-library:
 	@echo "Commons instaladas"
 	@tput sgr0
 
+
+parsi:
+	$(call mostrarTitulo,$@)
+	cd .. ; git clone https://github.com/sisoputnfrba/parsi
+	cd ../parsi; sudo make install
+	@tput setaf 2
+	@echo "parsi  instalada"
+	@tput sgr0
+
+
+
 biblioteca:
 	$(call mostrarTitulo,$@)
 	cd biblioteca-propia/Debug; make all
@@ -21,7 +32,7 @@ biblioteca:
 	cp -u ./biblioteca-propia/Debug/libbiblioteca-propia.so /usr/lib/libbiblioteca-propia.so
 	cp -u ./biblioteca-propia/biblioteca/*.h /usr/include/biblioteca
 	@tput setaf 2
-	@echo "Biblioteca Intalada"
+	@echo "Biblioteca Instalada"
 	@tput sgr0
 	
 clean:
@@ -29,7 +40,8 @@ clean:
 	rm -rf ../so-commons-library
 	rm -rf /usr/include/biblioteca
 	rm -rf /usr/lib/libbiblioteca-propia.so
+	rm -rf ../parsi
 	@tput setaf 2
-	@echo "Desintalado"
+	@echo "Desinstalado"
 	@tput sgr0
 

@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/coordinador.c 
+../src/coordinador.c \
+../src/tablasAdministrativas.c 
 
 OBJS += \
-./src/coordinador.o 
+./src/coordinador.o \
+./src/tablasAdministrativas.o 
 
 C_DEPS += \
-./src/coordinador.d 
+./src/coordinador.d \
+./src/tablasAdministrativas.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

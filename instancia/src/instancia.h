@@ -7,6 +7,9 @@
 #include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <dirent.h>
 
 /*------------------------Constantes-------------------------*/
 #define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
@@ -30,13 +33,21 @@ bool * bitMap;
 
 t_list * tablaEntradas;
 
+int entradaAReemplazar;
+
 /*------------------------Estructuras-------------------------*/
 typedef struct {
-	char * clave;
+	char clave[40];
 	void * entrada;
 	int tamanio;
-	int inexComienzo;
+	int indexComienzo;
+	int tiempoReferenciado;
 } t_tabla_entradas;
+
+enum errores {
+	ENTRADA_INEXISTENTE, CANTIDAD_INDEX_LIBRES_INEXISTENTES,
+};
+
 
 /*-------------------------Conexion-------------------------*/
 void 		conectarInstancia	(void);
@@ -45,15 +56,20 @@ t_config* 	leerConfiguracion	(void);
 /*-------------------------Procesamiento paquetes-------------------------*/
 void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
+void 		procesarSet					(t_paquete * unPaquete, int client_socket);
+void 		procesarSetDefinitivo		(t_paquete * unPaquete, int client_socket);
+void 		procesarGet					(t_paquete * unPaquete, int client_socket);
+void 		procesarCompactacion		(t_paquete * unPaquete, int client_socket);
+void 		procesarSolicitudValor		(t_paquete * unPaquete, int client_socket);
 
 /*-------------------------Tabla de entradas-------------------------*/
 void 				crearTablaEntradas		(void);
-void 				destruirTabla			(void);
+void 				destruirTablaEntradas	(void);
 t_tabla_entradas * 	buscarEntrada			(char * clave);
 void 				agregarClave			(char * clave);
 void 				eliminarClave			(char * clave);
-void 				mostrarTabla			(void);
-int 				agregarClaveValor		(char * clave, void * valor);
+void 				mostrarTablaEntradas	(void);
+int 				agregarValorAClave		(char * clave, void * valor);
 void * 				buscarValorSegunClave	(char * clave);
 t_tabla_entradas *	buscarEntradaSegunIndex	(int index);
 void 				mostrarEntrada			(char * clave);
@@ -75,5 +91,27 @@ void 				destruirStorage				(void);
 void * 				guardarEnStorage			(void * valor, int * index);
 void * 				guardarEnStorageEnIndex		(void * valor, int index);
 void 				compactar					(void);
+
+/*-------------------------Dump-------------------------*/
+void 				dump							(void);
+void 				almacenamientoContinuo			(void);
+void 				crearAlmacenamientoContinuo		(void);
+void 				recuperarInformacionDeInstancia	(void);
+
+/*-------------------------Algoritmos de reemplazo-------------------------*/
+void 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
+void 				algoritmoReemplazoCircular			(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaCircular	(void);
+void 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaBSU		(void);
+void 				algoritmoReemplazoLeastRecentlyUsed	(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaLRU		(void);
+t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
+
+/*-------------------------Funciones auxiliares-------------------------*/
+void * 				abrirArchivo					(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
+t_list * 			listarArchivosDeMismaCarpeta	(char * ruta);
+int 				entradasNecesariaParaUnTamanio	(int tamanio);
+t_list * 			filtrarEntradasAtomicas			(void);
 
 #endif /* INSTANCIA_H_ */

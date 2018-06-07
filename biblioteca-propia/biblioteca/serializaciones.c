@@ -115,6 +115,26 @@ void serializarInfoInstancia(t_paquete * unPaquete, int cantEntradas,
 			tamTamanioEntrada);
 }
 
+void serializarExistenciaClaveValor(t_paquete * unPaquete, bool claveExistente,
+		void * valor) {
+
+	int tamClaveExistente = sizeof(bool);
+	int tamValor = strlen(valor) + 1;
+	int tamTotal = tamClaveExistente + tamValor;
+
+	int desplazamiento = 0;
+
+	unPaquete->buffer = malloc(sizeof(t_stream));
+	unPaquete->buffer->data = malloc(tamTotal);
+	unPaquete->buffer->size = tamTotal;
+
+	memcpy(unPaquete->buffer->data + desplazamiento, &claveExistente,
+			tamClaveExistente);
+	desplazamiento += tamClaveExistente;
+
+	memcpy(unPaquete->buffer->data + desplazamiento, valor, tamValor);
+}
+
 /*-------------------------Deserializacion-------------------------*/
 int deserializarNumero(t_stream* buffer) {
 	return *(int*) (buffer->data);
@@ -184,6 +204,21 @@ t_infoInstancia * deserializarInfoInstancia(t_stream * buffer) {
 	memcpy(&info->tamanioEntrada, buffer->data + desplazamiento, tamNumero);
 
 	return info;
+}
+
+t_respuestaValor * deserializarExistenciaClaveValor(t_stream * buffer) {
+	t_respuestaValor * respuesta = malloc(sizeof(t_infoInstancia));
+
+	int tamExistenciaClave = sizeof(bool);
+
+	int desplazamiento = 0;
+
+	memcpy(&respuesta->existenciaClave, buffer->data + desplazamiento, tamExistenciaClave);
+	desplazamiento += tamExistenciaClave;
+
+	memcpy(respuesta->valor, buffer->data + desplazamiento, buffer->size-tamExistenciaClave);
+
+	return respuesta;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/

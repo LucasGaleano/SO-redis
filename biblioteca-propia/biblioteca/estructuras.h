@@ -36,17 +36,21 @@ enum emisor {
 enum cod_op {
 	HANDSHAKE = 100, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR,
 
-	SOLICITUD_EJECUCION,
+	SOLICITUD_EJECUCION, TERMINO_ESI,
 
 	ENVIAR_NOMBRE_ESI, ENVIAR_NOMBRE_INSTANCIA, ENVIAR_INFO_INSTANCIA,
 
 	RESPUESTA_SOLICITUD,
 
 	SOLICITAR_STATUS, RESPUESTA_STATUS,
+
+	SET_DEFINITIVO, COMPACTAR,
+
+	SOLICITAR_VALOR, RESPUESTA_SOLICITAR_VALOR,
 };
 
 enum cod_respuesta {
-	OK = 200, ABORTO,
+	OK = 200, ABORTO, ERROR_TAMANIO_CLAVE, ERROR_CLAVE_NO_IDENTIFICADA, ERROR_CLAVE_INACCESIBLE, ERROR_CLAVE_NO_TOMADA, ERROR_ESPACIO_INSUFICIENTE,
 };
 
 //------------------------------Estructuras de comunicacion ESI Coordinador Instancia------------------------------//
@@ -60,6 +64,11 @@ typedef struct {
 	int cantEntradas;
 	int tamanioEntrada;
 } t_infoInstancia;
+
+typedef struct {
+	bool existenciaClave;
+	void * valor;
+} t_respuestaValor;
 
 //------------------------------Estructuras de comunicacion Consola Instancia------------------------------//
 typedef struct {

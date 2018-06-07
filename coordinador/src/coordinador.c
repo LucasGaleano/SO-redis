@@ -1,32 +1,38 @@
 #include "coordinador.h"
 
 int recibirRespuesta(t_paquete* paquete);
-void procesarPaquete(t_paquete* paquete,int* socketCliente);
+void procesarPaquete(t_paquete* paquete, int* socketCliente);
 void* imprimir(void* paquete);
 
 int main(void) {
 
 	g_tablaDeInstancias = crearListaInstancias();
-  g_diccionarioConexiones = crearDiccionarioConexiones();
+	g_diccionarioConexiones = crearDiccionarioConexiones();
 
-	g_logger = log_create("coordinador.log","coordinador",true,LOG_LEVEL_TRACE);
+	g_logger = log_create("coordinador.log", "coordinador", true,
+			LOG_LEVEL_TRACE);
 
 	t_config* config = config_create(PATH_CONFIG);
 	g_configuracion = armarConfigCoordinador(config);
 
-	sem_init(&g_mutexLog,0,1); //TODO destrur semaphore
+	sem_init(&g_mutexLog, 0, 1); //TODO destrur semaphore
 
-	iniciarServer(g_configuracion.puertoConexion, (void*)procesarPaquete, g_logger);
+	iniciarServer(g_configuracion.puertoConexion, (void*) procesarPaquete,
+			g_logger);
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paquetes
+void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir paquetes
 
+	char* clave;
 	pthread_t pid;
+
 	pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
 	switch(paquete->codigoOperacion){
 
-		case HANDSHAKE:
+
+	case HANDSHAKE:
+
 
 
 			args->paquete = paquete;
@@ -34,10 +40,12 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 		 	pthread_create(&pid,NULL,procesarHandshake,args);
 
+
 		break;
 
-		case ENVIAR_NOMBRE_ESI:
-			;
+	case ENVIAR_NOMBRE_ESI:
+		;
+
 
 
 			args->paquete = paquete;
@@ -45,6 +53,13 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 
 			pthread_create(&pid,NULL,procesarNombreESI,args);
 			break;
+
+
+	case ENVIAR_NOMBRE_INSTANCIA:
+		;
+		char* nombre = recibirNombreEsi(paquete);
+		procesarNombreInstancia(nombre, *socketCliente);
+		break;
 
 
 		case ENVIAR_NOMBRE_INSTANCIA:
@@ -56,8 +71,9 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 			pthread_create(&pid,NULL,procesarNombreInstancia,args);
 			break;
 
-	 	case SET:
-		 	;
+	case SET:
+		;
+
 
 			args->paquete = paquete;
 			args->socket = socketCliente;
@@ -92,68 +108,111 @@ void procesarPaquete(t_paquete* paquete,int* socketCliente){//TODO destruir paqu
 			//El Coordinador colabora con el Planificador avisando de este recurso
 			pthread_create(&pid,NULL,procesarSTORE,args);
 			//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
+      break;
+
+	case RESPUESTA_SOLICITUD:
+		;
+		//El Coordinador logea la respuesta y envía al ESI
+		//TODO SWICTH a por el enum de errores
+		switch(){
+
+		case ERROR_ESPACIO_INSUFICIENTE:
+			/*
+			 * TODO
+			 * esperamos que todas las ejecuciones terminen.
+			 * las bloqueamos.
+			 * mandamos a hacer la compactacion a todas las instancias.
+			 * a la instancia que devolvio error por espacio insuficiente le enviamos
+			 * otra vez trabajo actual como SET_DEFINITIVO
+			 * reanudamos.
+			 *
+			 * */
+
 			break;
 
-		default:
 
+		case ERROR_CLAVE_NO_IDENTIFICADA:
+			//TODO mandamos error a planificador
 			break;
+
+		}
+
+/*
+ *
+ * 	case:SET_DEFINITIVO:
+ *
+ * 	case:RESPUESTA_SET:
+ *
+ * 	//respuesta de la compactacion de una instancia.
+	case COMPACTACION:
+		//TODO cuando todas las instancias respondan que terminaron la compactacion, reanudo.
+
+*/
+	default:
+
+		break;
 	}
 
 }
 
-
-
-t_configuraciones armarConfigCoordinador(t_config* archivoConfig){
+t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 	t_configuraciones configuracion;
 
-	configuracion.puertoConexion = config_get_int_value(archivoConfig,"PUERTO");
-	configuracion.algoritmoDist = config_get_string_value(archivoConfig,"ALGORITMO_DISTRIBUCION");
-	configuracion.cantidadEntradas = config_get_int_value(archivoConfig,"CANTIDAD_ENTRADAS");
-	configuracion.tamanioEntradas = config_get_int_value(archivoConfig,"TAMANIO_ENTRADA");
-	configuracion.retardo = config_get_int_value(archivoConfig,"RETARDO");
+	configuracion.puertoConexion = config_get_int_value(archivoConfig,
+			"PUERTO");
+	configuracion.algoritmoDist = config_get_string_value(archivoConfig,
+			"ALGORITMO_DISTRIBUCION");
+	configuracion.cantidadEntradas = config_get_int_value(archivoConfig,
+			"CANTIDAD_ENTRADAS");
+	configuracion.tamanioEntradas = config_get_int_value(archivoConfig,
+			"TAMANIO_ENTRADA");
+	configuracion.retardo = config_get_int_value(archivoConfig, "RETARDO");
 
 	return configuracion;
 
 }
 
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
+		t_list* tablaDeInstancias) {
 
-t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,char* clave, t_list* tablaDeInstancias){
+	if (string_equals_ignore_case(algoritmoDePlanificacion, "LSU"))
+		return traerInstanciaMasEspacioDisponible(tablaDeInstancias);
 
-		if(string_equals_ignore_case(algoritmoDePlanificacion,"LSU"))
-			return traerInstanciaMasEspacioDisponible(tablaDeInstancias);
+	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
+		return traerUltimaInstanciaUsada(tablaDeInstancias);
 
-		if(string_equals_ignore_case(algoritmoDePlanificacion,"EL"))
-			return traerUltimaInstanciaUsada(tablaDeInstancias);
-
-		//TODO algoritmo key explicit "KE"
-
+	//TODO algoritmo key explicit "KE"
+  
 		if(string_equals_ignore_case(algoritmoDePlanificacion,"KE")){
 			int keyDeClave = (int) string_substring(clave,0,1);
 			return buscarInstancia(tablaDeInstancias,NULL,keyDeClave,0);
 		}
 
-		return NULL;
+
+	return NULL;
 
 }
 
+void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta) {
 
-void logearRespuesta(int respuesta, t_instancia* instanciaRespuesta){
+	switch (respuesta) {
 
-	switch(respuesta){
+	case OK:
 
-			case OK:
+		logTraceSeguro(g_logger, g_mutexLog, "OK nombre: %s  trabajo: %s\n",
+				instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+		break;
 
-				logTraceSeguro(g_logger,g_mutexLog,"OK nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
-				break;
+	case ABORTO:
 
-			case ABORTO:
-
-				logTraceSeguro(g_logger,g_mutexLog,"ERROR nombre: %s  trabajo: %s\n",instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
-				break;
+		logTraceSeguro(g_logger, g_mutexLog, "ERROR nombre: %s  trabajo: %s\n",
+				instanciaRespuesta->nombre, instanciaRespuesta->trabajoActual);
+		break;
 	}
 }
 
+void procesarHandshake(t_paquete* paquete, int socketCliente) {
 
 void procesarHandshake(pthreadArgs_t* args){
 
@@ -163,13 +222,14 @@ void procesarHandshake(pthreadArgs_t* args){
 	switch(recibirHandshake(paquete)){
 		case PLANIFICADOR:
 			agregarConexion(g_diccionarioConexiones,"planificador",*socketCliente);
+
 		break;
 
-		case ESI:
-			//TODO que hacer aca?
+	case ESI:
+		//TODO que hacer aca?
 		break;
 
-		case INSTANCIA:
+	case INSTANCIA:
 
 		break;
 
@@ -179,6 +239,8 @@ void procesarHandshake(pthreadArgs_t* args){
 	free(args);
 
 }
+
+void procesarSET(t_claveValor* sentencia, int socketCliente) {
 
 
 void procesarSET(pthreadArgs_t* args){
@@ -269,15 +331,14 @@ void procesarNombreESI(pthreadArgs_t* args){
 
 	free(paquete);
 	free(args);
-
 }
 
-void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format,...){
+void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 
-	va_list ap;
-	va_start(ap,format);
-	char* mensaje = string_from_vformat(format,ap);
-	sem_wait(&mutexLog);
-	log_trace(logger,mensaje);
-	sem_post(&mutexLog);
+va_list ap;
+va_start(ap, format);
+char* mensaje = string_from_vformat(format, ap);
+sem_wait(&mutexLog);
+log_trace(logger, mensaje);
+sem_post(&mutexLog);
 }
