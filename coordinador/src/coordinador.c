@@ -55,13 +55,6 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 		procesarSET(sentencia, *socketCliente);
 		break;
 
-	case RESPUESTA_SOLICITUD:
-		;
-		//El Coordinador logea la respuesta y envía al ESI
-		int respuesta = recibirRespuesta(paquete);
-		procesarRespuestaSET(respuesta, *socketCliente);
-		break;
-
 	case GET:
 		;
 		clave = recibirGet(paquete);
@@ -76,6 +69,26 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 		//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 		break;
 
+
+	case RESPUESTA_SOLICITUD:
+		;
+		//El Coordinador logea la respuesta y envía al ESI
+		//TODO SWICTH a por el enum de errores
+
+		int respuesta = recibirRespuesta(paquete);
+		procesarRespuestaSET(respuesta, *socketCliente);
+		break;
+/*
+ *
+ * 	case:SET_DEFINITIVO:
+ *
+ * 	case:RESPUESTA_SET:
+ *
+ * 	//respuesta de la compactacion de una instancia.
+	case COMPACTACION:
+		//TODO cuando todas las instancias respondan que terminaron la compactacion, reanudo.
+
+*/
 	default:
 
 		break;
