@@ -43,6 +43,8 @@ enum cod_op {
 	RESPUESTA_SOLICITUD,
 
 	SOLICITAR_STATUS, RESPUESTA_STATUS,
+
+	SET_DEFINITIVO,
 };
 
 enum cod_respuesta {
