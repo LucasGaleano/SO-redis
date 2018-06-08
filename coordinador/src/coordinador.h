@@ -11,6 +11,7 @@
 #include <biblioteca/estructuras.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdlib.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
@@ -28,7 +29,7 @@ typedef struct t_configuracion{
 
 typedef struct {
 	t_paquete* paquete;
-	int* socket;
+	int socket;
 }pthreadArgs_t;
 
 
@@ -41,15 +42,15 @@ t_dictionary* g_diccionarioConexiones;
 sem_t g_mutexLog;
 
 
+
 /*------------------------FUNCIONES-------------------------*/
-void procesarHandshake(pthreadArgs_t* args);
-void procesarSET(pthreadArgs_t* args);
-void procesarGET(pthreadArgs_t* args);
-void procesarSTORE(pthreadArgs_t* args);
-void procesarNombreESI(pthreadArgs_t* args);
-void procesarNombreInstancia(pthreadArgs_t* args);
-void procesarRespuestaSET(pthreadArgs_t* args);
-void logearRespuesta(int respuesta, t_instancia* instancia);
+void* procesarHandshake(pthreadArgs_t* args);
+void* procesarSET(pthreadArgs_t* args);
+void* procesarGET(pthreadArgs_t* args);
+void* procesarSTORE(pthreadArgs_t* args);
+void* procesarNombreESI(pthreadArgs_t* args);
+void* procesarNombreInstancia(pthreadArgs_t* args);
+void* procesarRespuesta(pthreadArgs_t* args);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
