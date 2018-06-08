@@ -1,10 +1,10 @@
 #ifndef PLANIFICADOR_H_
 #define PLANIFICADOR_H_
 
-#include "consola.h"
+//#include "consola.h"
 #include "algoritmos.h"
 
-#define RUTA_CONFIGURACION_PLANIF "home/utnso/workspace/configuraciones/planificador.cfg"
+#define RUTA_CONFIGURACION_PLANIF "home/utnso/workspace/tp-2018-1c--0/configuraciones/planificador.cfg"
 
 #include <biblioteca/sockets.h>
 #include <biblioteca/paquetes.h>
@@ -19,6 +19,7 @@ void asignarBloquedas(char** codigos);
 void desbloquearESIs(t_infoBloqueo* nodo);
 int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
+void liberarClaves(void);
 
 
 #endif /* PLANIFICADOR_H_ */
