@@ -1,4 +1,5 @@
 #include "tablasAdministrativas.h"
+#include "coordinador.h"
 
 #define MAX_ENTRADAS 1000
 
@@ -11,7 +12,9 @@ t_list* crearListaInstancias(void){
 
 //TODO: ver de no agregar instancia ya existente (mismo nombre)
 void agregarInstancia(t_list * lista, t_instancia* instancia ){
-   list_add(lista, instancia);
+	sem_wait(&g_mutex_tablas);
+	list_add(lista, instancia);
+	sem_post(&g_mutex_tablas);
 }
 
 t_instancia* crearInstancia(char* nombre,int socket){
@@ -129,15 +132,25 @@ t_dictionary* crearDiccionarioConexiones(){
 }
 
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor ){
+	sem_wait(&g_mutex_tablas);
    if(!dictionary_has_key(diccionario,clave))
+	 log_debug(g_logger,"socket: %i",*valor);
      dictionary_put(diccionario, clave, *valor);
+
+   sem_post(&g_mutex_tablas);
 }
 
-int conseguirConexion(t_dictionary * diccionario, char * clave){
-  return (int)dictionary_get(diccionario,clave);
+int* conseguirConexion(t_dictionary * diccionario, char * clave){
+	sem_wait(&g_mutex_tablas);
+	int* aux = dictionary_get(diccionario,clave);
+	log_debug(g_logger,"socket: %i",dictionary_get(diccionario,clave));
+	sem_post(&g_mutex_tablas);
+	return aux;
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int letraAEncontrar,int socket){
+
+
 
   bool instanciaCumpleCon(t_instancia* instancia){
 
@@ -159,6 +172,25 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int letraAEn
 
   }
 
-  return list_find(tablaDeInstancias, (void*)instanciaCumpleCon );
+  sem_wait(&g_mutex_tablas);
+  t_instancia* instanciaAux = list_find(tablaDeInstancias, (void*)instanciaCumpleCon );
+  sem_wait(&g_mutex_tablas);
+  return instanciaAux;
+
 
 }
+
+void mostrarTablaInstancia(t_list* tablaDeInstancias){
+
+	for (size_t i = 0; i <  list_size(tablaDeInstancias); i++) {
+	    t_instancia* instanciaAux = list_get(tablaDeInstancias,i);
+				mostrarInstancia(instanciaAux);
+		 }
+
+}
+
+
+
+
+
+

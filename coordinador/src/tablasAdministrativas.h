@@ -7,6 +7,7 @@
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <time.h>
+#include <semaphore.h>
 
 /*TABLA DE INSTANCIAS
  *
@@ -30,6 +31,8 @@ typedef struct{
 
 t_dictionary *  g_ESI;
 
+sem_t g_mutex_tablas;
+
 /*-------------------FUNCIONES---------------------------*/
 
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias);
@@ -42,11 +45,12 @@ void agregarInstancia(t_list * lista, t_instancia* instancia );
 t_instancia* crearInstancia(char* nombre,int socket);
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
+void mostrarTablaInstancia(t_list* tablaDeInstancias);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAEncontrar,int socket);
 
 t_dictionary* crearDiccionarioConexiones(void);
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
-int conseguirConexion(t_dictionary * diccionario, char * clave);
+int* conseguirConexion(t_dictionary * diccionario, char * clave);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

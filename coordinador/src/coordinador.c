@@ -1,5 +1,6 @@
 #include "coordinador.h"
 //TODO hacer funcion logSeguro y reemplazar logTraceSeguro
+//TODO porque la tabla de instancia tiene socket si esta en el diccionario.
 int recibirRespuesta(t_paquete* paquete);
 void procesarPaquete(t_paquete* paquete, int* socketCliente);
 
@@ -15,6 +16,7 @@ int main(void) {
 	g_configuracion = armarConfigCoordinador(config);
 
 	sem_init(&g_mutexLog, 0, 1); //TODO destrur semaphore
+	sem_init(&g_mutex_tablas,0,1);
 
 
 	iniciarServer(g_configuracion.puertoConexion, (void*) procesarPaquete,
@@ -26,8 +28,10 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 
 	pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
 	args->paquete = paquete;
-	args->socket = socketCliente;
+	args->socket = *socketCliente;
 	pthread_t pid;
+	log_info("llego socket: %i", args->socket);
+	fflush(stdout);
 
 	switch (paquete->codigoOperacion) {
 
@@ -99,21 +103,24 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 		t_list* tablaDeInstancias) {
+	sem_wait(&g_mutex_tablas);
+	t_instancia* instanciaElegida = NULL;
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "LSU"))
-		return traerInstanciaMasEspacioDisponible(tablaDeInstancias);
+		instanciaElegida = traerInstanciaMasEspacioDisponible(tablaDeInstancias);
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
-		return traerUltimaInstanciaUsada(tablaDeInstancias);
+		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
 
 	//TODO algoritmo key explicit "KE"
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
-		return buscarInstancia(tablaDeInstancias, NULL, keyDeClave, 0);
+		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave, 0);
 	}
 
-	return NULL;
+
+	return instanciaElegida;
 
 }
 
@@ -150,11 +157,14 @@ void* procesarRespuesta(pthreadArgs_t* args) {
 void* procesarHandshake(pthreadArgs_t* args) {
 
 	t_paquete* paquete = args->paquete;
-	int* socketCliente = args->socket;
+	int* socketCliente = malloc(sizeof(int));
+	socketCliente = &(args->socket);
+
 
 	switch (recibirHandshake(paquete)) {
 	case PLANIFICADOR:
 		log_info(g_logger,"Se conecto el planificador");
+		log_debug(g_logger,"socket planificador: %i", *socketCliente);
 		agregarConexion(g_diccionarioConexiones, "planificador",
 				socketCliente);
 		break;
@@ -188,9 +198,11 @@ void* procesarSET(pthreadArgs_t* args) {
 
 
 	sleep(g_configuracion.retardo);
+	int* socketAux = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
-	enviarSet(instanciaElegida->socket, sentencia->clave, sentencia->valor);
-	logTraceSeguro(g_logger, g_mutexLog, "ENVIAR SET a %s clave: %s\n",instanciaElegida->nombre ,sentencia->clave);
+	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketAux,sentencia->clave, instanciaElegida->nombre);
+	enviarSet(*socketAux, sentencia->clave, sentencia->valor);
+
 
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
@@ -206,14 +218,17 @@ void* procesarGET(pthreadArgs_t* args) {
 
 	char* clave = recibirGet(paquete);
 
-	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,
+	int* socketDelPlanificador = conseguirConexion(g_diccionarioConexiones,
 			"planificador");
-	enviarGet(socketDelPlanificador, clave);
-	logTraceSeguro(g_logger, g_mutexLog, "ENVIAR GET planificador clave: %s\n",
-			clave);
 
-	free(paquete);
-	free(args);
+	//TODO clave innacesible y enviar a instancia si on hay error
+
+	logTraceSeguro(g_logger, g_mutexLog, "enviar GET al planificador: %i, clave: %s\n",*socketDelPlanificador ,clave);
+	enviarGet(*socketDelPlanificador, clave);
+
+
+	//free(paquete);
+	//free(args);
 	return 0;
 
 }
@@ -224,10 +239,10 @@ void* procesarSTORE(pthreadArgs_t* args) {
 
 	char* clave = recibirStore(paquete);
 
-	int socketDelPlanificador = conseguirConexion(g_diccionarioConexiones, "planificador");
+	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones, "planificador");
 	enviarStore(socketDelPlanificador, clave);
 	logTraceSeguro(g_logger, g_mutexLog,
-			"ENVIAR STORE planificador clave: %s\n", clave);
+			"ENVIAR STORE planificador %i, clave: %s\n",socketDelPlanificador , clave);
 
 	free(paquete);
 	free(args);
@@ -237,14 +252,15 @@ void* procesarSTORE(pthreadArgs_t* args) {
 void* procesarNombreInstancia(pthreadArgs_t* args) {
 
 	t_paquete* paquete = args->paquete;
-	int* socketCliente = args->socket;
+	int socketCliente = args->socket;
 	char* nombre = recibirNombreInstancia(paquete);
 
-	t_instancia* instanciaNueva = crearInstancia(nombre, *socketCliente);
+	t_instancia* instanciaNueva = crearInstancia(nombre, socketCliente);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	distribuirKeys(g_tablaDeInstancias);
-	enviarInfoInstancia(*socketCliente, g_configuracion.cantidadEntradas,
+	enviarInfoInstancia(socketCliente, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas);
+	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombre);
 
 	free(paquete);
 	free(args);
@@ -254,10 +270,11 @@ void* procesarNombreInstancia(pthreadArgs_t* args) {
 void* procesarNombreESI(pthreadArgs_t* args) {
 
 	t_paquete* paquete = args->paquete;
-	int* socketCliente = args->socket;
+	int socketCliente = args->socket;
 	char* nombreESI = recibirNombreEsi(paquete);
 
-	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
+	agregarConexion(g_diccionarioConexiones, nombreESI, &socketCliente);
+	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombreESI);
 
 	free(paquete);
 	free(args);

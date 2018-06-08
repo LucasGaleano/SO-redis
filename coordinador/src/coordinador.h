@@ -11,6 +11,7 @@
 #include <biblioteca/estructuras.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdlib.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
@@ -28,7 +29,7 @@ typedef struct t_configuracion{
 
 typedef struct {
 	t_paquete* paquete;
-	int* socket;
+	int socket;
 }pthreadArgs_t;
 
 
@@ -39,6 +40,7 @@ t_configuraciones g_configuracion;
 t_list* g_tablaDeInstancias;
 t_dictionary* g_diccionarioConexiones;
 sem_t g_mutexLog;
+
 
 
 /*------------------------FUNCIONES-------------------------*/
