@@ -62,6 +62,7 @@ void 		procesarSetDefinitivo		(t_paquete * unPaquete, int client_socket);
 void 		procesarGet					(t_paquete * unPaquete, int client_socket);
 void 		procesarCompactacion		(t_paquete * unPaquete, int client_socket);
 void 		procesarSolicitudValor		(t_paquete * unPaquete, int client_socket);
+void 		procesarError				(t_paquete * unPaquete);
 
 /*-------------------------Tabla de entradas-------------------------*/
 void 				crearTablaEntradas		(void);

@@ -1,29 +1,29 @@
 #include "instancia.h"
 
-int main(void) {
-	//Creo archivo de log
-	logInstancia = log_create("log_Instancia.log", "instancia", true,
-			LOG_LEVEL_TRACE);
-	log_trace(logInstancia, "Inicio el proceso instancia \n");
+/*int main(void) {
+ //Creo archivo de log
+ logInstancia = log_create("log_Instancia.log", "instancia", true,
+ LOG_LEVEL_TRACE);
+ log_trace(logInstancia, "Inicio el proceso instancia \n");
 
-	//Conecto instancia con coordinador
-	conectarInstancia();
+ //Conecto instancia con coordinador
+ conectarInstancia();
 
-	//Quedo a la espera de solicitudes
-	recibirSolicitudes = true;
-	while (recibirSolicitudes) {
-		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
-				logInstancia);
-	}
+ //Quedo a la espera de solicitudes
+ recibirSolicitudes = true;
+ while (recibirSolicitudes) {
+ gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+ logInstancia);
+ }
 
-	//Termina esi
-	log_trace(logInstancia, "Termino el proceso instancia \n");
+ //Termina esi
+ log_trace(logInstancia, "Termino el proceso instancia \n");
 
-	//Destruyo archivo de log
-	log_destroy(logInstancia);
+ //Destruyo archivo de log
+ log_destroy(logInstancia);
 
-	return EXIT_SUCCESS;
-}
+ return EXIT_SUCCESS;
+ }*/
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -82,6 +82,9 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case SOLICITAR_VALOR:
 		procesarSolicitudValor(unPaquete, *client_socket);
 		break;
+	case ENVIAR_ERROR:
+		procesarError(unPaquete);
+		break;
 	default:
 		break;
 	}
@@ -94,6 +97,10 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	//Setteo tam de entrada y cantidad
 	cantEntradas = info->cantEntradas;
 	tamanioEntrada = info->tamanioEntrada;
+
+	log_trace(logInstancia,
+			"La cantidad de entradas del Storage es: %d y el tamanio es: %d",
+			cantEntradas, tamanioEntrada);
 
 	//Creo el espacio de almacenamiento
 	crearStorage();
@@ -118,17 +125,27 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 void procesarSet(t_paquete * unPaquete, int client_socket) {
 	t_claveValor * claveValor = recibirSet(unPaquete);
 
+	log_trace(logInstancia,
+			"Me llego un SET con la clave: %s y con el valor: %s",
+			claveValor->clave, (char*) claveValor->valor);
+
 	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
 
 	switch (respuesta) {
 	case ENTRADA_INEXISTENTE:
 		enviarRespuesta(client_socket, ERROR_CLAVE_NO_IDENTIFICADA);
+		log_error(logInstancia, "Error clave no identiicada");
 		break;
 	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+		log_error(logInstancia, "Error espacio insuficiente");
 		break;
 	default:
-		enviarRespuesta(OK, client_socket);
+		enviarRespuesta(client_socket, OK);
+		void * valor = buscarValorSegunClave(claveValor->clave);
+		log_trace(logInstancia, "El valor de la clave guardada es: %s",
+				(char *) valor);
+		free(valor);
 		break;
 	}
 
@@ -141,9 +158,15 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	t_claveValor * claveValor = recibirSetDefinitivo(unPaquete);
 
+	log_trace(logInstancia,
+			"Me llego un SET_DEFINITIVO con la clave: %s y con el valor: %s",
+			claveValor->clave, (char*) claveValor->valor);
+
 	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
+		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo");
+
 		if (string_equals_ignore_case(algoritmoReemplazo, "CIRC")) {
 			algoritmoReemplazoCircular(claveValor->clave, claveValor->valor);
 		}
@@ -157,14 +180,22 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 			algoritmoReemplazoBiggestSpaceUsed(claveValor->clave,
 					claveValor->valor);
 		}
+
+		mostrarBitmap();
+
 	}
 
 	respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+		log_error(logInstancia, "Error espacio insuficiente");
 	} else {
-		enviarRespuesta(OK, client_socket);
+		enviarRespuesta(client_socket, OK);
+		void * valor = buscarValorSegunClave(claveValor->clave);
+		log_trace(logInstancia, "El valor de la clave guardada es: %s",
+				(char *) valor);
+		free(valor);
 	}
 
 	free(claveValor->clave);
@@ -175,10 +206,13 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 void procesarGet(t_paquete * unPaquete, int client_socket) {
 	char * clave = recibirGet(unPaquete);
 
+	log_trace(logInstancia, "Me llego un GET con la clave: %s", clave);
+
 	void * resultado = buscarValorSegunClave(clave);
 
 	if (resultado == NULL) {
 		agregarClave(clave);
+		log_warning(logInstancia, "La clave no existia y la creo");
 	}
 
 	enviarRespuesta(client_socket, OK);
@@ -186,11 +220,15 @@ void procesarGet(t_paquete * unPaquete, int client_socket) {
 	if (resultado != NULL)
 		free(resultado);
 	free(clave);
+
+	mostrarTablaEntradas();
 }
 
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
+	log_trace(logInstancia, "Me llego pedido de compactacion");
 	compactar();
 	enviarCompactacion(client_socket);
+	mostrarBitmap();
 }
 
 void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
@@ -210,9 +248,17 @@ void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
 	free(clave);
 }
 
+void procesarError(t_paquete * unPaquete) {
+	log_error(logInstancia,
+			"Me llego un error y dejo de recibir solicitudes \n");
+	recibirSolicitudes = false;
+}
+
 /*-------------------------Tabla de entradas-------------------------*/
 void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
+
+	log_trace(logInstancia, "Creo la tabla de entradas");
 }
 
 void destruirTablaEntradas(void) {
@@ -359,6 +405,8 @@ void crearBitMap(void) {
 	bitMap = malloc(sizeof(bool) * cantEntradas);
 
 	liberarBitMap();
+
+	log_trace(logInstancia, "Creo el bitMap");
 }
 
 void destruirBitMap(void) {
@@ -456,6 +504,7 @@ int cantidadIndexLibres(void) {
 /*-------------------------Storage-------------------------*/
 void crearStorage(void) {
 	storage = malloc(cantEntradas * tamanioEntrada);
+	log_trace(logInstancia, "Creo el Storage");
 }
 
 void destruirStorage(void) {
@@ -543,6 +592,9 @@ void dump(void) {
 	mkdir(puntoMontaje, 0777);
 
 	void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
+		if (registroEntrada->tamanio == 0)
+			return;
+
 		char * rutaArchivo = string_new();
 		string_append(&rutaArchivo, puntoMontaje);
 		string_append(&rutaArchivo, "/");
@@ -583,8 +635,11 @@ void crearAlmacenamientoContinuo(void) {
 void recuperarInformacionDeInstancia(void) {
 	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
 
-	if (listaArchivos == NULL)
+	if (listaArchivos == NULL) {
+		log_warning(logInstancia,
+				"No tengo archivos para recuperar inormacion de instancia anterior");
 		return;
+	}
 
 	void guardarArchivoEnEstructurasAdministrativas(char * rutaArchivo) {
 		size_t tamArch;
@@ -600,7 +655,9 @@ void recuperarInformacionDeInstancia(void) {
 			;
 
 		agregarClave(spliteado[i - 1]);
-		agregarValorAClave(spliteado[i - 1], archivo);
+
+		if (tamArch != 0)
+			agregarValorAClave(spliteado[i - 1], archivo);
 
 		for (i = 0; spliteado[i] != NULL; ++i) {
 			free(spliteado[i]);
@@ -615,6 +672,9 @@ void recuperarInformacionDeInstancia(void) {
 
 	list_iterate(listaArchivos,
 			(void*) guardarArchivoEnEstructurasAdministrativas);
+
+	log_trace(logInstancia,
+			"Tengo archivos para recuperar inormacion de instancia anterior");
 
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
 }

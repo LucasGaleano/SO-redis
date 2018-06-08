@@ -55,8 +55,6 @@ int recibirTamPaquete(int client_socket) {
 		if (recvd == -1) {
 			perror("recv");
 		}
-		printf("El socket %d ha producido un error "
-				"y ha sido desconectado.\n", client_socket);
 
 		//Cierro el socket
 		close(client_socket);

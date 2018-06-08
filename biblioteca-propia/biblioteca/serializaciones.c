@@ -169,7 +169,7 @@ t_claveValor* deserializarClaveValor(t_stream * buffer) {
 	ret->clave = strdup(buffer->data + desplazamiento);
 	desplazamiento += string_length(ret->clave);
 
-	ret->valor = strdup(buffer->data + desplazamiento);
+	ret->valor = strdup(buffer->data + desplazamiento + 1);
 	desplazamiento += string_length(ret->valor);
 
 	return ret;
