@@ -183,9 +183,10 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 
 		mostrarBitmap();
 
+		respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+
 	}
 
-	respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
