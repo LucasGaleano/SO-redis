@@ -13,6 +13,8 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <semaphore.h>
+#include <stdlib.h>
+#include <commons/collections/list.h>
 
 typedef struct {
 	int socketESI;

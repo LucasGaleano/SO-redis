@@ -2,6 +2,7 @@
 
 int main(void) {
 
+	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
@@ -12,14 +13,13 @@ int main(void) {
 	g_bloq = dictionary_create();
 	g_clavesTomadas = dictionary_create();
 
-	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
 	g_logger = log_create("", "Planificador", 0, LOG_LEVEL_TRACE);
 
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
-	char* algoritmo = config_get_string_value(g_con, "ALGORITMO");
+	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
 
 	pthread_mutex_init(&mutexBloqueo, NULL);
@@ -68,13 +68,13 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		dictionary_put(g_listos, recibirNombreEsi(unPaquete), dat);
 		pthread_mutex_unlock(&mutexListo);
 		sem_post(&ESIentrada);
-		pthread_mutex_lock(&modificacion);
-		g_huboModificacion = 1;
-		pthread_mutex_unlock(&modificacion);
 		pthread_mutex_lock(&mutexLog);
 		log_info(g_logger, "Se conecto exitosamente el %s",
 				recibirNombreEsi(unPaquete));
 		pthread_mutex_unlock(&mutexLog);
+		pthread_mutex_lock(&modificacion);
+		g_huboModificacion = 1;
+		pthread_mutex_unlock(&modificacion);
 		break;
 	case SET:
 		sem_post(&continua);
@@ -85,9 +85,6 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
 		if (g_claveTomada) {
 			g_bloqueo = 1;
-			pthread_mutex_lock(&modificacion);
-			g_huboModificacion = 1;
-			pthread_mutex_unlock(&modificacion);
 		} else {
 			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
 				list_add(dictionary_get(g_clavesTomadas, g_idESIactual),
@@ -111,9 +108,6 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 			list_iterate(aux, (void*) desbloquearESIs);
 			list_destroy(aux);
 			pthread_mutex_unlock(&mutexBloqueo);
-			pthread_mutex_lock(&modificacion);
-			g_huboModificacion = 1;
-			pthread_mutex_unlock(&modificacion);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
 					g_idESIactual, recibirStore(unPaquete));
@@ -121,6 +115,7 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		} else {
 			g_termino = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
+			liberarClaves();
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
 					g_idESIactual);
 			pthread_mutex_unlock(&mutexLog);
@@ -130,6 +125,7 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 	case RESPUESTA_SOLICITUD:
 		g_termino = 1;
 		enviarRespuesta(ABORTO, g_socketEnEjecucion);
+		liberarClaves();
 		sem_post(&continua);
 		break;
 	case TERMINO_ESI:
@@ -138,6 +134,11 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		break;
 	}
 	destruirPaquete(unPaquete);
+}
+
+void liberarClaves(void)
+{
+	list_destroy_and_destroy_elements(dictionary_remove(g_clavesTomadas, g_idESIactual), (void*)free);
 }
 
 void desbloquearESIs(t_infoBloqueo* nodo) {

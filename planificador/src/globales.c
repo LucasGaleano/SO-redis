@@ -1,16 +1,21 @@
 #include "globales.h"
 
-static void vaciarClaves(t_list* nodo)
-{
-	list_destroy_and_destroy_elements(nodo, (void*) free);
-}
-
-static void vaciarBloqueados(t_infoBloqueo* nodo)
+static void vaciarListaBloqueados(t_infoBloqueo* nodo)
 {
 	free(nodo->idESI);
-	vaciarClaves(nodo->data);
+	free(nodo->data);
+	free(nodo);
 }
 
+static void vaciarBloqueados(t_list* nodo)
+{
+	list_destroy_and_destroy_elements(nodo, (void*)vaciarListaBloqueados);
+}
+
+static void vaciarClaves(t_list* nodo)
+{
+	list_destroy_and_destroy_elements(nodo, (void*)free);
+}
 extern void liberarTodo(void)
 {
 	pthread_cancel(&hiloAlgoritmos);
@@ -31,8 +36,8 @@ extern void liberarTodo(void)
 	config_destroy(g_con);
 
 	dictionary_destroy_and_destroy_elements(g_listos, (void*) free);
-	dictionary_destroy_and_destroy_elements(g_listos, (void*) vaciarBloqueados);
-	dictionary_destroy_and_destroy_elements(g_listos, (void*) vaciarClaves);
+	dictionary_destroy_and_destroy_elements(g_bloq, (void*) vaciarBloqueados);
+	dictionary_destroy_and_destroy_elements(g_clavesTomadas, (void*) vaciarClaves);
 
 	exit(0);
 }
