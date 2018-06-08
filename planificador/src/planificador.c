@@ -13,12 +13,14 @@ int main(void) {
 	g_bloq = dictionary_create();
 	g_clavesTomadas = dictionary_create();
 
-	g_logger = log_create("", "Planificador", 0, LOG_LEVEL_TRACE);
+	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
 
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 
+	g_keyMaxima = 0;
+
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
-	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
+	//asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
 
@@ -30,10 +32,12 @@ int main(void) {
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
 
-	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor, &puertoLocal);
+	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor,
+			(void*) &puertoLocal);
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
+	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
 
-	iniciarConsola();
+	//iniciarConsola();
 
 	pthread_join(hiloServidor, NULL);
 
@@ -54,11 +58,15 @@ void asignarBloquedas(char** codigos) {
 void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 	t_infoListos *dat;
 	t_list* aux;
+	pthread_mutex_lock(&mutexLog);
+	log_debug(g_logger, "Me ha llegado una solicitud");
+	pthread_mutex_unlock(&mutexLog);
 	switch (unPaquete->codigoOperacion) {
 	case HANDSHAKE:
 		recibirHandshakePlanif(unPaquete, socketCliente);
 		break;
 	case ENVIAR_NOMBRE_ESI:
+		g_keyMaxima++;
 		dat = malloc(sizeof(t_infoListos));
 		dat->estAnterior = g_est;
 		dat->realAnterior = 0;
@@ -77,9 +85,15 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_unlock(&modificacion);
 		break;
 	case SET:
+		pthread_mutex_lock(&mutexLog);
+		log_debug(g_logger, "Me ha llegado un SET");
+		pthread_mutex_unlock(&mutexLog);
 		sem_post(&continua);
 		break;
 	case GET:
+		pthread_mutex_lock(&mutexLog);
+		log_debug(g_logger, "Me ha llegado un GET");
+		pthread_mutex_unlock(&mutexLog);
 		g_claveTomada = 0;
 		g_claveGET = recibirGet(unPaquete);
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
@@ -132,13 +146,23 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		g_termino = 1;
 		sem_post(&continua);
 		break;
+	case RESPUESTA_STATUS:
+		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
+		break;
 	}
 	destruirPaquete(unPaquete);
 }
 
-void liberarClaves(void)
-{
-	list_destroy_and_destroy_elements(dictionary_remove(g_clavesTomadas, g_idESIactual), (void*)free);
+void atenderCoordinador(void* arg) {
+	while (1) {
+		gestionarSolicitudes(g_socketCoordinador, (void*) procesarPaquete,
+				g_logger);
+	}
+}
+
+void liberarClaves(void) {
+	list_destroy_and_destroy_elements(
+			dictionary_remove(g_clavesTomadas, g_idESIactual), (void*) free);
 }
 
 void desbloquearESIs(t_infoBloqueo* nodo) {
@@ -168,8 +192,8 @@ void recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente) {
 	}
 }
 
-void iniciarServidor(int puerto) {
-	iniciarServer(puerto, (void*) procesarPaquete, g_logger);
+void iniciarServidor(void* puerto) {
+	iniciarServer(*(int*) puerto, (void*) procesarPaquete, g_logger);
 }
 
 void planificar(char* algoritmo) {

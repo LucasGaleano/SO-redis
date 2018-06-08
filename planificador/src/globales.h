@@ -30,6 +30,7 @@ typedef struct {
 
 pthread_t hiloServidor;
 pthread_t hiloAlgoritmos;
+pthread_t hiloCoordinador;
 
 pthread_mutex_t mutexConsola;
 pthread_mutex_t mutexBloqueo;
@@ -50,6 +51,7 @@ double g_est;
 int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
+int g_keyMaxima;
 
 extern void liberarTodo(void);
 

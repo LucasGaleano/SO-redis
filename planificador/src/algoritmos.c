@@ -45,6 +45,7 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 		dictionary_put(g_bloq, g_claveGET, aux);
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
+	pthread_mutex_lock(&mutexLog);
 	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", key, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
 }
@@ -58,17 +59,23 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 		int (*ponderacion)(int, int)) {
 	t_infoListos *actual;
 	double unValor;
-
+	char* auxKey;
 	int i = 0;
-	char* auxKey = asignarID(auxKey, i);
+	do {
+		auxKey = asignarID(auxKey, i);
+		i++;
+	} while (!dictionary_has_key(g_listos, auxKey));
 	char* key;
 	actual = dictionary_get(g_listos, auxKey);
 	unValor = calculadorProx(actual->estAnterior, actual->realAnterior,
 			actual->tEnEspera);
 	key = strdup(auxKey);
-	for (i++; i < dictionary_size(g_listos); i++) {
+	for (i++; i < g_keyMaxima; i++) {
 		free(auxKey);
-		auxKey = asignarID(auxKey, i);
+		do {
+			auxKey = asignarID(auxKey, i);
+			i++;
+		} while (!dictionary_has_key(g_listos, auxKey));
 		actual = dictionary_get(g_listos, auxKey);
 		double prox = calculadorProx(actual->estAnterior, actual->realAnterior,
 				actual->tEnEspera);
@@ -114,8 +121,8 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						cont++;
 						sem_wait(&continua);
 						if (!g_termino) {
-							sem_wait(&continua);
-						}
+						 sem_wait(&continua);
+						 }
 					}
 					if (g_bloqueo) {
 						g_bloqueo = 0;
@@ -140,56 +147,58 @@ extern void planificarSinDesalojo(char* algoritmo) {
 
 extern void planificarConDesalojo(void) {
 	pthread_cleanup_push((void*)liberarSalida, NULL)
-		;
-		int cont;
-		t_infoListos *aEjecutar = NULL;
-		char* key = NULL;
-		g_huboModificacion = 1;
-		while (1) {
-			cont = 0;
-			sem_wait(&ESIentrada);
-			pthread_mutex_lock(&mutexListo);
-			key = calcularSiguiente((void*) calcularProximaRafaga,
-					(void*) esMayor);
-			g_idESIactual = key;
-			aEjecutar = dictionary_remove(g_listos, key);
-			pthread_mutex_unlock(&mutexListo);
-			g_socketEnEjecucion = aEjecutar->socketESI;
+				;
+				int cont;
+				t_infoListos *aEjecutar = NULL;
+				char* key = NULL;
+				g_huboModificacion = 1;
+				while (1) {
+					cont = 0;
+					sem_wait(&ESIentrada);
+					pthread_mutex_lock(&mutexListo);
+					key = calcularSiguiente((void*) calcularProximaRafaga,
+							(void*) esMayor);
+					g_idESIactual = key;
+					aEjecutar = dictionary_remove(g_listos, key);
+					pthread_mutex_unlock(&mutexListo);
+					g_socketEnEjecucion = aEjecutar->socketESI;
 
-			do {
-				pthread_mutex_lock(&mutexConsola);
-				enviarSolicitudEjecucion(g_socketEnEjecucion);
-				cont++;
-				pthread_mutex_unlock(&mutexConsola);
-				sem_wait(&continua);
-				if (!g_termino) {
-					sem_wait(&continua);
+					do {
+						pthread_mutex_lock(&mutexConsola);
+						enviarSolicitudEjecucion(g_socketEnEjecucion);
+						cont++;
+						pthread_mutex_unlock(&mutexConsola);
+						sem_wait(&continua);
+						if (!g_termino) {
+							sem_wait(&continua);
+						}
+					} while (!g_termino && !g_bloqueo && !g_huboModificacion);
+					if (g_bloqueo) {
+						g_bloqueo = 0;
+						bloquear(aEjecutar, cont, key);
+						aEjecutar = NULL;
+					}
+					if (g_termino) {
+						g_termino = 0;
+						free(aEjecutar);
+						aEjecutar = NULL;
+					}
+					if (aEjecutar != NULL) {
+						aEjecutar->estAnterior = calcularProximaRafaga(
+								aEjecutar->estAnterior, aEjecutar->realAnterior,
+								0);
+						aEjecutar->realAnterior = cont;
+						pthread_mutex_lock(&mutexListo);
+						dictionary_put(g_listos, key, aEjecutar);
+						pthread_mutex_unlock(&mutexListo);
+						sem_post(&ESIentrada);
+						log_trace(g_logger, "Se desaloja %s para replanificar",
+								key);
+						pthread_mutex_lock(&modificacion);
+						g_huboModificacion = 0;
+						pthread_mutex_unlock(&modificacion);
+					}
+					free(key);
 				}
-			} while (!g_termino && !g_bloqueo && !g_huboModificacion);
-			if (g_bloqueo) {
-				g_bloqueo = 0;
-				bloquear(aEjecutar, cont, key);
-				aEjecutar = NULL;
-			}
-			if (g_termino) {
-				g_termino = 0;
-				free(aEjecutar);
-				aEjecutar = NULL;
-			}
-			if (aEjecutar != NULL) {
-				aEjecutar->estAnterior = calcularProximaRafaga(
-						aEjecutar->estAnterior, aEjecutar->realAnterior, 0);
-				aEjecutar->realAnterior = cont;
-				pthread_mutex_lock(&mutexListo);
-				dictionary_put(g_listos, key, aEjecutar);
-				pthread_mutex_unlock(&mutexListo);
-				sem_post(&ESIentrada);
-				log_trace(g_logger, "Se desaloja %s para replanificar", key);
-				pthread_mutex_lock(&modificacion);
-				g_huboModificacion = 0;
-				pthread_mutex_unlock(&modificacion);
-			}
-			free(key);
-		}
-		pthread_cleanup_pop(1);
+				pthread_cleanup_pop(1);
 }

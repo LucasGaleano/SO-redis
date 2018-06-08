@@ -4,7 +4,7 @@
 //#include "consola.h"
 #include "algoritmos.h"
 
-#define RUTA_CONFIGURACION_PLANIF "home/utnso/workspace/tp-2018-1c--0/configuraciones/planificador.cfg"
+#define RUTA_CONFIGURACION_PLANIF "/home/utnso/workspace/tp-2018-1c--0/configuraciones/planificador.cfg"
 
 #include <biblioteca/sockets.h>
 #include <biblioteca/paquetes.h>
@@ -13,13 +13,13 @@
 void procesarPaquete(t_paquete*, int*);
 void recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente);
 void planificar(char* algoritmo);
-void iniciarServidor(int puerto);
+void iniciarServidor(void* puerto);
 void procesarPaquete(t_paquete* unPaquete, int* socketCliente);
 void asignarBloquedas(char** codigos);
 void desbloquearESIs(t_infoBloqueo* nodo);
 int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void liberarClaves(void);
-
+void atenderCoordinador(void* arg);
 
 #endif /* PLANIFICADOR_H_ */

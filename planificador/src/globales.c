@@ -20,8 +20,10 @@ extern void liberarTodo(void)
 {
 	pthread_cancel(&hiloAlgoritmos);
 	pthread_cancel(&hiloServidor);
+	pthread_cancel(&hiloCoordinador);
 	pthread_join(&hiloAlgoritmos, NULL);
 	pthread_join(&hiloServidor, NULL);
+	pthread_join(&hiloCoordinador, NULL);
 
 	pthread_mutex_destroy(&mutexBloqueo);
 	pthread_mutex_destroy(&mutexConsola);
