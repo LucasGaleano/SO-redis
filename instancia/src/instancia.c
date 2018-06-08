@@ -159,12 +159,17 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 		}
 	}
 
+	respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+
+	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
+		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+	} else {
+		enviarRespuesta(OK, client_socket);
+	}
+
 	free(claveValor->clave);
 	free(claveValor->valor);
 	free(claveValor);
-
-	enviarRespuesta(OK, client_socket);
-
 }
 
 void procesarGet(t_paquete * unPaquete, int client_socket) {
