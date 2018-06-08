@@ -45,7 +45,8 @@ typedef struct {
 } t_tabla_entradas;
 
 enum errores {
-	ENTRADA_INEXISTENTE, CANTIDAD_INDEX_LIBRES_INEXISTENTES,
+	ENTRADA_INEXISTENTE = -10,
+	CANTIDAD_INDEX_LIBRES_INEXISTENTES,
 };
 
 
@@ -84,6 +85,7 @@ void 				ocuparIndex					(int index);
 int 				buscarIndexLibre			(void);
 void 				mostrarBitmap				(void);
 int 				buscarCantidadIndexLibres	(int cantidad);
+int					cantidadIndexLibres			(void);
 
 /*-------------------------Storage-------------------------*/
 void				crearStorage				(void);
@@ -99,13 +101,13 @@ void 				crearAlmacenamientoContinuo		(void);
 void 				recuperarInformacionDeInstancia	(void);
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
-void 				reemplazar							(char * clave, void * valor, t_list * entradasAtomicas);
 void 				algoritmoReemplazoCircular			(char * clave, void * valor);
-t_list * 			ordenarEntradasAtomicasParaCircular	(void);
 void 				algoritmoReemplazoBiggestSpaceUsed	(char * clave, void * valor);
-t_list * 			ordenarEntradasAtomicasParaBSU		(void);
 void 				algoritmoReemplazoLeastRecentlyUsed	(char * clave, void * valor);
+t_list * 			ordenarEntradasAtomicasParaCircular	(void);
+t_list * 			ordenarEntradasAtomicasParaBSU		(void);
 t_list * 			ordenarEntradasAtomicasParaLRU		(void);
+void 				eliminarEntradasParaReemplazo		(t_list * entradasAtomicas, void * valor);
 t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
 
 /*-------------------------Funciones auxiliares-------------------------*/

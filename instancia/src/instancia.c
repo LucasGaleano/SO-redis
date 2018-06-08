@@ -1,5 +1,5 @@
 #include "instancia.h"
-/*
+
 int main(void) {
 	//Creo archivo de log
 	logInstancia = log_create("log_Instancia.log", "instancia", true,
@@ -24,7 +24,7 @@ int main(void) {
 
 	return EXIT_SUCCESS;
 }
-*/
+
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
 	//Leo la configuracion del esi
@@ -122,7 +122,7 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 
 	switch (respuesta) {
 	case ENTRADA_INEXISTENTE:
-		enviarRespuesta(client_socket,ERROR_CLAVE_NO_IDENTIFICADA);
+		enviarRespuesta(client_socket, ERROR_CLAVE_NO_IDENTIFICADA);
 		break;
 	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
@@ -295,18 +295,11 @@ int agregarValorAClave(char * clave, void * valor) {
 		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
 
-		strncpy(registroEntrada->clave, clave,
-				sizeof(registroEntrada->clave) - 1);
-
 		registroEntrada->entrada = respuesta;
 
 		registroEntrada->tamanio = tamValor;
 
 		registroEntrada->indexComienzo = index;
-
-		registroEntrada->tiempoReferenciado = 0;
-
-		list_add(tablaEntradas, registroEntrada);
 
 		return 0;
 	}
@@ -445,6 +438,16 @@ int buscarCantidadIndexLibres(int cantidad) {
 	return candidato;
 }
 
+int cantidadIndexLibres(void) {
+	int i;
+	int cantidad = 0;
+	for (i = 0; i < cantEntradas; i++) {
+		if (!bitMap[i])
+			cantidad++;
+	}
+	return cantidad;
+}
+
 /*-------------------------Storage-------------------------*/
 void crearStorage(void) {
 	storage = malloc(cantEntradas * tamanioEntrada);
@@ -457,12 +460,7 @@ void destruirStorage(void) {
 void * guardarEnStorage(void * valor, int * index) {
 	int tamValor = strlen(valor);
 
-	int entradasNecesaria = tamValor / tamanioEntrada;
-
-	int resto = tamValor % tamanioEntrada;
-
-	if (resto != 0)
-		entradasNecesaria++;
+	int entradasNecesaria = entradasNecesariaParaUnTamanio(tamValor);
 
 	*index = buscarCantidadIndexLibres(entradasNecesaria);
 
@@ -617,56 +615,22 @@ void recuperarInformacionDeInstancia(void) {
 }
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
-void reemplazar(char * clave, void * valor, t_list * entradasAtomicas) {
-	int i;
-
-	bool logreGuardar = false;
-
-	for (i = 0; i < entradasAtomicas->elements_count; i++) {
-		t_tabla_entradas * registro = list_get(entradasAtomicas, i);
-
-		t_tabla_entradas * registro2 = list_get(entradasAtomicas, i + 1);
-
-		if (registro2 == NULL) {
-			entradaAReemplazar = 0;
-		} else {
-			entradaAReemplazar = registro2->indexComienzo;
-		}
-
-		liberarIndex(registro->indexComienzo);
-
-		int index = buscarCantidadIndexLibres(
-				entradasNecesariaParaUnTamanio(string_length(valor)));
-
-		eliminarClave(registro->clave);
-
-		if (index != -1) {
-			t_tabla_entradas * registroEntrada = malloc(
-					sizeof(t_tabla_entradas));
-
-			strncpy(registroEntrada->clave, clave,
-					sizeof(registroEntrada->clave) - 1);
-
-			registroEntrada->entrada = guardarEnStorageEnIndex(valor, index);
-
-			registroEntrada->tamanio = string_length(valor);
-
-			registroEntrada->indexComienzo = index;
-
-			list_add(tablaEntradas, registroEntrada);
-
-			break;
-
-		}
-	}
-
-	list_destroy(entradasAtomicas);
-}
-
 void algoritmoReemplazoCircular(char * clave, void * valor) {
 	t_list * entradasAtomicas = ordenarEntradasAtomicasParaCircular();
 
-	reemplazar(clave, valor, entradasAtomicas);
+	eliminarEntradasParaReemplazo(entradasAtomicas, valor);
+}
+
+void algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
+
+	eliminarEntradasParaReemplazo(entradasAtomicas, valor);
+}
+
+void algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
+	t_list * entradasAtomicas = ordenarEntradasAtomicasParaLRU();
+
+	eliminarEntradasParaReemplazo(entradasAtomicas, valor);
 }
 
 t_list * ordenarEntradasAtomicasParaCircular(void) {
@@ -704,12 +668,6 @@ t_list * ordenarEntradasAtomicasParaCircular(void) {
 
 }
 
-void algoritmoReemplazoBiggestSpaceUsed(char * clave, void * valor) {
-	t_list * entradasAtomicas = ordenarEntradasAtomicasParaBSU();
-
-	reemplazar(clave, valor, entradasAtomicas);;
-}
-
 t_list * ordenarEntradasAtomicasParaBSU(void) {
 	t_list * entradasAtomicas = filtrarEntradasAtomicas();
 
@@ -731,12 +689,6 @@ t_list * ordenarEntradasAtomicasParaBSU(void) {
 	list_sort(entradasAtomicas, (void*) ordenarMenorMayorSegunTamanio);
 
 	return entradasAtomicas;
-}
-
-void algoritmoReemplazoLeastRecentlyUsed(char * clave, void * valor) {
-	t_list * entradasAtomicas = ordenarEntradasAtomicasParaLRU();
-
-	reemplazar(clave, valor, entradasAtomicas);;
 }
 
 t_list * ordenarEntradasAtomicasParaLRU(void) {
@@ -761,6 +713,26 @@ t_list * ordenarEntradasAtomicasParaLRU(void) {
 			(void*) ordenarMenorMayorSegunTiempoReferenciado);
 
 	return entradasAtomicas;
+}
+
+void eliminarEntradasParaReemplazo(t_list * entradasAtomicas, void * valor) {
+	int entradasNecesarias = entradasNecesariaParaUnTamanio(
+			string_length(valor));
+
+	int i = 0;
+
+	for (int a = cantidadIndexLibres();
+			a < entradasNecesarias && a < entradasAtomicas->elements_count;
+			a++, i++) {
+		t_tabla_entradas * entrada = list_get(entradasAtomicas, i);
+		eliminarClave(entrada->clave);
+		entrada = list_get(entradasAtomicas, i + 1);
+		if (entrada != NULL)
+			entradaAReemplazar = entrada->indexComienzo;
+	}
+
+	list_destroy(entradasAtomicas);
+
 }
 
 t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
