@@ -42,14 +42,13 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
-void procesarHandshake(pthreadArgs_t* args);
-void procesarSET(pthreadArgs_t* args);
-void procesarGET(pthreadArgs_t* args);
-void procesarSTORE(pthreadArgs_t* args);
-void procesarNombreESI(pthreadArgs_t* args);
-void procesarNombreInstancia(pthreadArgs_t* args);
-void procesarRespuestaSET(pthreadArgs_t* args);
-void logearRespuesta(int respuesta, t_instancia* instancia);
+void* procesarHandshake(pthreadArgs_t* args);
+void* procesarSET(pthreadArgs_t* args);
+void* procesarGET(pthreadArgs_t* args);
+void* procesarSTORE(pthreadArgs_t* args);
+void* procesarNombreESI(pthreadArgs_t* args);
+void* procesarNombreInstancia(pthreadArgs_t* args);
+void* procesarRespuesta(pthreadArgs_t* args);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,

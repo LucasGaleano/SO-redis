@@ -128,13 +128,13 @@ t_dictionary* crearDiccionarioConexiones(){
 
 }
 
-void agregarConexion(t_dictionary * diccionario, char * clave , int valor ){
+void agregarConexion(t_dictionary * diccionario, char * clave , int* valor ){
    if(!dictionary_has_key(diccionario,clave))
-     dictionary_put(diccionario, clave, valor);
+     dictionary_put(diccionario, clave, *valor);
 }
 
-void* conseguirConexion(t_dictionary * diccionario, char * clave){
-  return dictionary_get(diccionario,clave);
+int conseguirConexion(t_dictionary * diccionario, char * clave){
+  return (int)dictionary_get(diccionario,clave);
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,char* nombre,int letraAEncontrar,int socket){

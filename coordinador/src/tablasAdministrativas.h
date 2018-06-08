@@ -45,8 +45,8 @@ void mostrarInstancia(t_instancia * instancia);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAEncontrar,int socket);
 
 t_dictionary* crearDiccionarioConexiones(void);
-void agregarConexion(t_dictionary * diccionario, char * clave , int valor);
-void* conseguirConexion(t_dictionary * diccionario, char * clave);
+void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
+int conseguirConexion(t_dictionary * diccionario, char * clave);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */
