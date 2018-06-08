@@ -46,6 +46,7 @@ void asignarBloquedas(char** codigos) {
 
 void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 	t_infoListos *dat;
+	t_respuestaStatus* respuestaStatus;
 	switch (unPaquete->codigoOperacion) {
 	case HANDSHAKE:
 		recibirHandshakePlanif(unPaquete, socketCliente);
@@ -67,7 +68,7 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		break;
 
 		case RESPUESTA_STATUS:
-			 t_respuestaStatus* respuestaStatus = recibirRespuestaStatus(unPaquete);
+			 respuestaStatus = recibirRespuestaStatus(unPaquete);
 			 mostrarPorConsola(respuestaStatus);
 
 	}
