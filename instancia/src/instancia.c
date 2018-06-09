@@ -1,29 +1,29 @@
 #include "instancia.h"
 
 int main(void) {
- //Creo archivo de log
- logInstancia = log_create("log_Instancia.log", "instancia", true,
- LOG_LEVEL_TRACE);
- log_trace(logInstancia, "Inicio el proceso instancia \n");
+	//Creo archivo de log
+	logInstancia = log_create("log_Instancia.log", "instancia", true,
+			LOG_LEVEL_TRACE);
+	log_trace(logInstancia, "Inicio el proceso instancia \n");
 
- //Conecto instancia con coordinador
- conectarInstancia();
+	//Conecto instancia con coordinador
+	conectarInstancia();
 
- //Quedo a la espera de solicitudes
- recibirSolicitudes = true;
- while (recibirSolicitudes) {
- gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
- logInstancia);
- }
+	//Quedo a la espera de solicitudes
+	recibirSolicitudes = true;
+	while (recibirSolicitudes) {
+		gestionarSolicitudes(socketCoordinador, (void*) procesarPaquete,
+				logInstancia);
+	}
 
- //Termina esi
- log_trace(logInstancia, "Termino el proceso instancia \n");
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
 
- //Destruyo archivo de log
- log_destroy(logInstancia);
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
 
- return EXIT_SUCCESS;
- }
+	return EXIT_SUCCESS;
+}
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
@@ -149,6 +149,9 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 		break;
 	}
 
+	mostrarBitmap();
+	mostrarTablaEntradas();
+
 	free(claveValor->clave);
 	free(claveValor->valor);
 	free(claveValor);
@@ -186,7 +189,6 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 		respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
 
 	}
-
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
@@ -235,18 +237,31 @@ void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
 void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
 	char * clave = recibirSolicitudValor(unPaquete);
 
+	log_trace(logInstancia, "Me llego solicitud de valor de la clave: %s",
+			clave);
+
 	t_tabla_entradas * respuesta = buscarEntrada(clave);
 
 	if (respuesta == NULL) {
+		log_warning(logInstancia, "La clave no existe");
 		enviarRespSolicitudValor(client_socket, false, NULL);
 		free(clave);
 		return;
 	}
 
-	enviarRespSolicitudValor(client_socket, true, respuesta->entrada);
+	char * valorRespuesta = buscarValorSegunClave(respuesta->clave);
+
+	if (!string_equals_ignore_case(valorRespuesta, "")) {
+		log_trace(logInstancia, "El valor pedido es: %s", valorRespuesta);
+		enviarRespSolicitudValor(client_socket, true, valorRespuesta);
+	} else {
+		log_warning(logInstancia, "El valor pedido es nulo");
+		enviarRespSolicitudValor(client_socket, true, NULL);
+	}
 
 	free(respuesta);
 	free(clave);
+	free(valorRespuesta);
 }
 
 void procesarError(t_paquete * unPaquete) {
@@ -619,7 +634,7 @@ void dump(void) {
 void almacenamientoContinuo(void) {
 	while (true) {
 		sleep(intervaloDump);
-		dump();
+		//dump();
 	}
 }
 

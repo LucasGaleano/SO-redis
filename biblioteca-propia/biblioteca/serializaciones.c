@@ -119,7 +119,15 @@ void serializarExistenciaClaveValor(t_paquete * unPaquete, bool claveExistente,
 		void * valor) {
 
 	int tamClaveExistente = sizeof(bool);
-	int tamValor = strlen(valor) + 1;
+
+	int tamValor;
+
+	if (valor != NULL) {
+		tamValor = strlen(valor) + 1;
+	} else {
+		tamValor = 0;
+	}
+
 	int tamTotal = tamClaveExistente + tamValor;
 
 	int desplazamiento = 0;
@@ -213,10 +221,20 @@ t_respuestaValor * deserializarExistenciaClaveValor(t_stream * buffer) {
 
 	int desplazamiento = 0;
 
-	memcpy(&respuesta->existenciaClave, buffer->data + desplazamiento, tamExistenciaClave);
+	memcpy(&respuesta->existenciaClave, buffer->data + desplazamiento,
+			tamExistenciaClave);
 	desplazamiento += tamExistenciaClave;
 
-	memcpy(respuesta->valor, buffer->data + desplazamiento, buffer->size-tamExistenciaClave);
+	int tamValor = buffer->size - tamExistenciaClave;
+
+	if (tamValor != 0) {
+		respuesta->valor = malloc(buffer->size - tamExistenciaClave);
+
+		memcpy(respuesta->valor, buffer->data + desplazamiento,
+				buffer->size - tamExistenciaClave);
+	} else {
+		respuesta->valor = NULL;
+	}
 
 	return respuesta;
 }
