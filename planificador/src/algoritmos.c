@@ -152,7 +152,7 @@ extern void planificarConDesalojo(void) {
 				int cont;
 				t_infoListos *aEjecutar = NULL;
 				char* key = NULL;
-				g_huboModificacion = 1;
+				g_huboModificacion = 0;
 				while (1) {
 					cont = 0;
 					sem_wait(&ESIentrada);
