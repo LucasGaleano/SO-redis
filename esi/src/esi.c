@@ -95,8 +95,13 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 
 void procesarSolicitudEjecucion() {
 	//Busco la sentencia a ejecutar
-	char * sentencia = proximaSentencia(archivo, &ip);
 
+	int termino = 0;
+
+	char * sentencia = proximaSentencia(archivo, &ip, &termino);
+
+	if (termino)
+			enviarEjecucionTerminada(socketPlanificador);
 	//Parceo la sentencia
 	t_esi_operacion parsed = parse(sentencia);
 
@@ -104,16 +109,19 @@ void procesarSolicitudEjecucion() {
 	if (parsed.valido) {
 		switch (parsed.keyword) {
 		case GET:
-			log_trace(logESI,"GET\tclave: <%s>\n", parsed.argumentos.GET.clave);
+			log_trace(logESI, "GET\tclave: <%s>\n",
+					parsed.argumentos.GET.clave);
 			enviarGet(socketCoordinador, parsed.argumentos.GET.clave);
 			break;
 		case SET:
-			log_trace(logESI,"SET\tclave: <%s>\tvalor: <%s>\n",
+			log_trace(logESI, "SET\tclave: <%s>\tvalor: <%s>\n",
 					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
-			enviarSet(socketCoordinador, parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+			enviarSet(socketCoordinador, parsed.argumentos.SET.clave,
+					parsed.argumentos.SET.valor);
 			break;
 		case STORE:
-			log_trace(logESI, "STORE\tclave: <%s>\n", parsed.argumentos.STORE.clave);
+			log_trace(logESI, "STORE\tclave: <%s>\n",
+					parsed.argumentos.STORE.clave);
 			enviarStore(socketCoordinador, parsed.argumentos.STORE.clave);
 			break;
 		default:
@@ -125,19 +133,19 @@ void procesarSolicitudEjecucion() {
 		log_error(logESI, "La linea <%s> no es valida\n", sentencia);
 		exit(EXIT_FAILURE);
 	}
-
 	//Libero memoria
 	free(sentencia);
 }
 
-void procesarError(){
+void procesarError() {
 	recibirSolicitudes = false;
 	log_error(logESI, "Se desconecto el servidor");
 }
 
-void procesarRespuestaSolicitud(){
+void procesarRespuestaSolicitud() {
 	recibirSolicitudes = false;
 	log_error(logESI, "Fallo critico");
+	exit(EXIT_FAILURE);
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
@@ -169,7 +177,7 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 	return dataArchivo;
 }
 
-char * proximaSentencia(char * archivo, int * ip) {
+char * proximaSentencia(char * archivo, int * ip, int * termino) {
 	char * archivoNoLeido = archivo + (*ip);
 
 	int i;
@@ -177,6 +185,9 @@ char * proximaSentencia(char * archivo, int * ip) {
 	for (i = 0; archivoNoLeido[i] != '\n' && string_length(archivoNoLeido) >= i;
 			++i)
 		;
+
+	if (string_length(archivoNoLeido) < i)
+		*termino = 1;
 
 	char * sentencia = malloc(sizeof(char) * i + 1);
 

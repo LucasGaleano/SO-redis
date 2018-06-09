@@ -33,6 +33,6 @@ void 		procesarRespuestaSolicitud	(void);
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 		abrirArchivo				(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
-char * 		proximaSentencia			(char * archivo, int * ip);
+char * 		proximaSentencia			(char * archivo, int * ip, int* termino);
 
 #endif /* ESI_H_ */
