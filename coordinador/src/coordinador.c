@@ -30,7 +30,7 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	args->paquete = paquete;
 	args->socket = *socketCliente;
 	pthread_t pid;
-	log_info("llego socket: %i", args->socket);
+
 	fflush(stdout);
 
 	switch (paquete->codigoOperacion) {
@@ -125,9 +125,9 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 }
 
 
-void* procesarRespuesta(pthreadArgs_t* args) {
+void* procesarRespuesta(void* args) {
 
-	int respuesta = recibirRespuesta(args->paquete);
+	int respuesta = recibirRespuesta(((pthreadArgs_t*)args)->paquete);
 
 	switch (respuesta) {
 
@@ -154,12 +154,14 @@ void* procesarRespuesta(pthreadArgs_t* args) {
 
 }
 
-void* procesarHandshake(pthreadArgs_t* args) {
+void* procesarHandshake(void* args) {
+
+	//pthreadArgs_t* argsAux = (pthreadArgs_t*) args;
 
 	log_debug(g_logger,"Entro al procesarHandshake");
-	t_paquete* paquete = args->paquete;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 	int* socketCliente = malloc(sizeof(int));
-	*socketCliente = args->socket;
+	*socketCliente = ((pthreadArgs_t*)args)->socket;
 
 
 	switch (recibirHandshake(paquete)) {
@@ -185,10 +187,10 @@ void* procesarHandshake(pthreadArgs_t* args) {
 
 }
 
-void* procesarSET(pthreadArgs_t* args) {
+void* procesarSET(void* args) {
 
 	log_debug(g_logger,"Entro al procesarSET");
-	t_paquete* paquete = args->paquete;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	t_claveValor* sentencia = recibirSet(paquete);
 
@@ -212,10 +214,10 @@ void* procesarSET(pthreadArgs_t* args) {
 }
 
 
-void* procesarGET(pthreadArgs_t* args) {
+void* procesarGET(void* args) {
 
 	log_debug(g_logger,"Entro al procesarGET");
-	t_paquete* paquete = args->paquete;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	char* clave = recibirGet(paquete);
 
@@ -225,7 +227,6 @@ void* procesarGET(pthreadArgs_t* args) {
 	//TODO clave innacesible y enviar a instancia si on hay error
 	log_debug(g_logger,"enviar GET al planificador: %i, clave: %s\n",socketDelPlanificador ,clave);
 
-	logTraceSeguro(g_logger, g_mutexLog, "enviar GET al planificador: %i, clave: %s\n",socketDelPlanificador ,clave);
 	enviarGet(socketDelPlanificador, clave);
 
 
@@ -235,10 +236,10 @@ void* procesarGET(pthreadArgs_t* args) {
 
 }
 
-void* procesarSTORE(pthreadArgs_t* args) {
+void* procesarSTORE(void* args) {
 
 	log_debug(g_logger,"Entro al procesarSTORE");
-	t_paquete* paquete = args->paquete;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	char* clave = recibirStore(paquete);
 
@@ -252,11 +253,11 @@ void* procesarSTORE(pthreadArgs_t* args) {
 	return 0;
 }
 
-void* procesarNombreInstancia(pthreadArgs_t* args) {
+void* procesarNombreInstancia(void* args) {
 
 	log_debug(g_logger,"Entro al procesarNombreInstancia");
-	t_paquete* paquete = args->paquete;
-	int socketCliente = args->socket;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
+	int socketCliente = ((pthreadArgs_t*)args)->socket;
 	char* nombre = recibirNombreInstancia(paquete);
 
 	t_instancia* instanciaNueva = crearInstancia(nombre, socketCliente);
@@ -271,13 +272,13 @@ void* procesarNombreInstancia(pthreadArgs_t* args) {
 	return 0;
 }
 
-void* procesarNombreESI(pthreadArgs_t* args) {
+void* procesarNombreESI(void* args) {
 
 	log_debug(g_logger,"Entro al procesarNombreEsi");
-	t_paquete* paquete = args->paquete;
+	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	int* socketCliente = malloc(sizeof(int));
-	*socketCliente = args->socket;
+	*socketCliente = ((pthreadArgs_t*)args)->socket;
 
 	char* nombreESI = recibirNombreEsi(paquete);
 
