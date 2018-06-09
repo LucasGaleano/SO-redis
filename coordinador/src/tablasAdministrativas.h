@@ -22,8 +22,8 @@ typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	int socket;
-	time_t ultimaModificacion;
+	int socket; //sacar socket???
+	time_t ultimaModificacion; // entero por codigo de operacion
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;

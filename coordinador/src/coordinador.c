@@ -205,14 +205,14 @@ void* procesarSET(void* args) {
 				"planificador");
 
 
+	usleep(g_configuracion.retardo*1000);
+	//sleep(g_configuracion.retardo); esto lo hacia en segundos
+	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
-	sleep(g_configuracion.retardo);
-	int* socketAux = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
+	log_debug("socket a instancia: %i y a planificacion: %i", *socketInstancia, socketDelPlanificador);
+	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketInstancia,sentencia->clave, instanciaElegida->nombre);
 
-	log_debug("socket a instancia: %i y a planificacion: %i", *socketAux, socketDelPlanificador);
-	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketAux,sentencia->clave, instanciaElegida->nombre);
-
-	enviarSet(*socketAux, sentencia->clave, sentencia->valor);
+	enviarSet(*socketInstancia, sentencia->clave, sentencia->valor);
 	enviarSet(socketDelPlanificador,sentencia->clave,sentencia->valor);
 
 
@@ -231,24 +231,12 @@ void* procesarGET(void* args) {
 
 	char* clave = recibirGet(paquete);
 
-	t_instancia* instanciaElegida = PlanificarInstancia(
-			g_configuracion.algoritmoDist, clave,
-			g_tablaDeInstancias);
-
-	mostrarInstancia(instanciaElegida);
-
-	int socketDeInstancia = *conseguirConexion(g_diccionarioConexiones,
-			instanciaElegida->nombre);
-
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
 			"planificador");
 
-	//TODO clave innacesible y enviar a instancia si on hay error
 	log_debug(g_logger,"enviar GET al planificador: %i, clave: %s\n",socketDelPlanificador ,clave);
 
-	//TODO enviarGet(socketDeInstancia, clave);//TODO fijarse si hay error antes de mandar a planificador
 	enviarGet(socketDelPlanificador, clave);
-
 
 	//free(paquete);
 	//free(args);
@@ -263,10 +251,30 @@ void* procesarSTORE(void* args) {
 
 	char* clave = recibirStore(paquete);
 
+	t_instancia* instanciaElegida = PlanificarInstancia(
+				g_configuracion.algoritmoDist, clave,
+				g_tablaDeInstancias);
+
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones, "planificador");
+
+	// Al planificar busco solo instancias disponibles por lo tanto puede devolver nulo si todavia no se recargo la tabla de instancias
+	if(instanciaElegida != NULL){
+
+	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
+				instanciaElegida->nombre);
+
+	enviarStore(*socketInstancia, clave);
+	//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
 	enviarStore(socketDelPlanificador, clave);
+
 	logTraceSeguro(g_logger, g_mutexLog,
 			"ENVIAR STORE planificador %i, clave: %s\n",socketDelPlanificador , clave);
+	}
+	else{
+
+		enviarRespuesta(socketDelPlanificador,ERROR_CLAVE_INACCESIBLE);
+
+	}
 
 	free(paquete);
 	free(args);
@@ -325,3 +333,7 @@ void logTraceSeguro(t_log* logger,sem_t mutexLog, char* format, ...) {
 	log_trace(logger, mensaje);
 	sem_post(&mutexLog);
 }
+
+
+
+
