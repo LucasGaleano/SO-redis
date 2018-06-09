@@ -37,6 +37,7 @@ pthread_mutex_t mutexBloqueo;
 pthread_mutex_t mutexListo;
 pthread_mutex_t modificacion;
 pthread_mutex_t mutexLog;
+pthread_mutex_t mutexClavesTomadas;
 sem_t ESIentrada;
 sem_t continua;
 

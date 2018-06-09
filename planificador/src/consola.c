@@ -5,22 +5,11 @@
  *      Author: utnso
  */
 
- /* asumo que en globales están
- typedef struct {
- 	char* clave;
- }t_infoClavesBloqueadas;
-
-
- t_dictionary* g_clavesBloqueadas;
-
-
-
- y en planificar.c
- g_clavesBloqueadas = dictionary_create();
-
- */
-
+// no puse semaforos de g_clavesTomadas
 #include "consola.h"
+
+#include <readline/readline.h>
+#include <readline/history.h>
 
 /*------------------------------Consola------------------------------*/
 void iniciarConsola() {
@@ -97,7 +86,7 @@ void ejecutarComando(char* linea, bool* ejecutar) {
 
 	// DEADLOCK
 	if (string_equals_ignore_case(linea, "deadlock")) {
-		deadlock();
+		//deadlock();
 		return;
 	}
 
@@ -111,7 +100,7 @@ void ejecutarComando(char* linea, bool* ejecutar) {
 	printf("No se ha encontrado el comando %s \n", linea);
 }
 
-/*------------------------------Comandos------------------------------*/
+/*-------------------------------Comandos------------------------------*/
 void ejecutarMan() {
 	printf("NAME \n");
 	printf("	consola \n\n");
@@ -140,7 +129,7 @@ void ejecutarMan() {
 	printf("	kill --> Finaliza el proceso ESI \n");
 	printf(
 			"	status -->  Brinda informacion sobre las instancias del sistema \n");
-	printf("	deadlock -->   \n"); // Ver
+	printf("	deadlock -->   Muestra los procesos ESI en deadlock\n");
 	printf("	exit --> Cierra la consola \n\n");
 }
 void salirConsola(bool* ejecutar) {
@@ -179,21 +168,51 @@ void bloquearESI(char* linea) {
 	}
 
 	// agrega al ESI a la lista de espera de esa clave
-	if (!dictionary_has_key(g_bloq, clave)) {
-		t_list* listaVacia = list_create();
-		dictionary_put(g_bloq, clave, listaVacia);
+
+	// Si la clave no estaba bloqueada, se bloquea para el idESI
+	if (!estaBloqueadaLaClave(clave)) {
+		// Se agrega al diccionario de clavesBloqueadas por el idESI la clave a bloquear
+		if (!dictionary_has_key(g_clavesTomadas, idESI)) {
+			t_list* listaVacia = list_create();
+
+			pthread_mutex_lock(&mutexClavesTomadas);
+			dictionary_put(g_clavesTomadas, idESI, listaVacia);
+			pthread_mutex_unlock(&mutexClavesTomadas);
+		}
+
+		pthread_mutex_lock(&mutexClavesTomadas);
+		list_add(dictionary_get(g_clavesTomadas, idESI), clave);
+		pthread_mutex_unlock(&mutexClavesTomadas);
 	}
 
-	t_infoBloqueo* infoBLoqueo = malloc(sizeof(t_infoBloqueo));
-	infoBLoqueo->idESI = idESI;
-	infoBLoqueo->data = dictionary_remove(g_listos, idESI);
+	// Si la clave esta bloqueada, se coloca al idESI en la lista de esis esperando a esa clave
+	else {
 
-	list_add(dictionary_get(g_bloq, clave), infoBLoqueo);
+		if (!dictionary_has_key(g_bloq, clave)) {
+			t_list* listaVacia = list_create();
+
+			pthread_mutex_lock(&mutexBloqueo);
+			dictionary_put(g_bloq, clave, listaVacia);
+			pthread_mutex_unlock(&mutexBloqueo);
+
+		}
+
+		// El ESI esta en Ready, hay que pasarlo a Bloqueados
+		t_infoBloqueo* infoBloqueo = malloc(sizeof(t_infoBloqueo));
+		infoBloqueo->idESI = idESI;
+		pthread_mutex_lock(&mutexListo);
+		infoBloqueo->data = dictionary_remove(g_listos, idESI);
+		pthread_mutex_unlock(&mutexListo);
+
+		pthread_mutex_lock(&mutexBloqueo);
+		list_add(dictionary_get(g_bloq, clave), infoBloqueo);
+		pthread_mutex_unlock(&mutexBloqueo);
+	}
 
 	// Libero memoria
 	free(clave);
 	free(idESI);
-	//free(infoBLoqueo);
+	//eliminarT_infoBLoqueo(infoBloqueo); // ver si se deja o no
 
 }
 
@@ -204,24 +223,50 @@ void desbloquearESI(char* linea) {
 	if (clave == NULL)
 		return;
 
-	// poner el esi en listos
-	t_infoBloqueo* infoBloqueoPrimero = list_remove(dictionary_get(g_bloq, clave), 0);
+	if (!estaBloqueadaLaClave(clave)) {
+		puts("No se puede desbloquear una clave que no esta bloqueada.");
+		return;
+	}
+
+	// Se saca al ESI que estaba bloqueando la clave esa clave
+
+	pthread_mutex_lock(&mutexClavesTomadas);
+	sacarClave(esiQueBloquea(clave), clave);
+	pthread_mutex_unlock(&mutexClavesTomadas);
+
+	// Se pone el primer esi en listos
+	pthread_mutex_lock(&mutexBloqueo);
+	t_infoBloqueo* infoBloqueoPrimero = list_remove(
+			dictionary_get(g_bloq, clave), 0);
+	pthread_mutex_unlock(&mutexBloqueo);
+
+	pthread_mutex_lock(&mutexListo);
 	dictionary_put(g_listos, infoBloqueoPrimero->idESI,
 			infoBloqueoPrimero->data);
+	pthread_mutex_unlock(&mutexListo);
 
-	// pongo la clave en el diccionario de claves bloqueadas
-	if(!dictionary_has_key(g_clavesBloqueadas, infoBloqueoPrimero->idESI)){
+	// Si no hay mas ESIs bloqueados se libera la clave
+	pthread_mutex_lock(&mutexBloqueo);
+	if (list_is_empty(dictionary_get(g_bloq, clave))) {
+		dictionary_remove_and_destroy(g_bloq, clave,
+				(void*) eliminarT_infoBloqueo);
+	}
+	pthread_mutex_unlock(&mutexBloqueo);
+
+	// Se pone la clave en el diccionario de claves bloqueadas
+	if (!dictionary_has_key(g_clavesTomadas, infoBloqueoPrimero->idESI)) {
 		t_list* listaVacia = list_create();
 		list_add(listaVacia, clave);
-		dictionary_put(g_clavesBloqueadas, infoBloqueoPrimero->idESI, listaVacia);
-		free(listaVacia);
-	}
-	list_add(dictionary_get(g_clavesBloqueadas, infoBloqueoPrimero->idESI), clave);
 
+		pthread_mutex_lock(&mutexClavesTomadas);
+		dictionary_put(g_clavesTomadas, infoBloqueoPrimero->idESI, listaVacia);
+		pthread_mutex_unlock(&mutexClavesTomadas);
+	}
+	list_add(dictionary_get(g_clavesTomadas, infoBloqueoPrimero->idESI), clave);
 
 	// Libero memoria
 	free(clave);
-	//free(infoBloqueoPrimero)
+	//eliminarT_infoBLoqueo(infoBloqueoPrimero); // ver si se deja o no
 }
 
 void listarProcesos(char* linea) {
@@ -230,10 +275,11 @@ void listarProcesos(char* linea) {
 	if (clave == NULL)
 		return;
 
-	printf("Claves de las ESIs bloqueadas por el recurso\n");
+	printf("Claves de las ESIs bloqueadas por la clave\n");
 
 	int i;
 
+	pthread_mutex_lock(&mutexBloqueo);
 	for (i = 0; i < g_bloq->elements_amount; i++) {
 
 		char* numero = string_itoa(i);
@@ -242,12 +288,13 @@ void listarProcesos(char* linea) {
 		string_append(&idESI, "ESI");
 		string_append(&idESI, numero);
 
-		if (estaBloqueadoPorElRecurso(idESI, clave)) {
+		if (estaBloqueadoPorLaClave(idESI, clave)) {
 			printf("	%s \n", idESI);
 		}
 
 		free(idESI);
 	}
+	pthread_mutex_unlock(&mutexBloqueo);
 
 	// Libero memoria
 	free(clave);
@@ -259,25 +306,31 @@ void killProceso(char* linea) {
 	if (idESI == NULL)
 		return;
 
-	// free(en el estado que este)
+	// Elimino ESI en el estado que este
+	pthread_mutex_lock(&mutexListo);
 	if (estaListo(idESI)) {
 		dictionary_remove_and_destroy(g_listos, idESI, (void*) free);
 	}
+	pthread_mutex_unlock(&mutexListo);
 
+	pthread_mutex_lock(&mutexBloqueo);
 	if (estaBloqueado(idESI)) {
 		// saco al ESI de todas las listas de ESIs que están esperando esa clave
-		g_idComparar = idESI;
-		dictionary_iterator(g_bloq, (void*)siEstaBloqueadaPorClaveEliminar);
+		g_idESI = idESI;
+		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);
 	}
+	pthread_mutex_unlock(&mutexBloqueo);
 
 	// Liberar recursos
-	if (dictionary_has_key(g_clavesBloqueadas, idESI)) {
+	pthread_mutex_lock(&mutexClavesTomadas);
+	if (dictionary_has_key(g_clavesTomadas, idESI)) {
 		// Asigno claves tomadas por otros ESIs al primer ESI que estaba esperando esa clave
-		dictionary_iterator(g_clavesBloqueadas, (void*)desbloqueoClave);
+		dictionary_iterator(g_clavesTomadas, (void*) desbloqueoClave);
 
 		// Lo elimino el idESI del diccionario de claves bloqueadas por ESI
-		dictionary_remove_and_destroy(g_clavesBloqueadas, idESI, (void*)eliminarT_infoClavesBloqueadas);
+		dictionary_remove_and_destroy(g_clavesTomadas, idESI, (void*) free);
 	}
+	pthread_mutex_unlock(&mutexClavesTomadas);
 
 	// Libero memoria
 	free(idESI);
@@ -290,10 +343,7 @@ void status(char* linea) {
 	if (clave == NULL)
 		return;
 
-	// comunicarse con el coordinador
-	// hablar con lucas
-
-	enviarSolicitudStatus(g_socketCoordinador, clave);
+	enviarSolicitusStatus(g_socketCoordinador, clave);
 
 	// muestro ESIs bloqueados a la espera de dicha clave
 	char* lineaExtra = string_new();
@@ -305,24 +355,76 @@ void status(char* linea) {
 	free(clave);
 	free(lineaExtra);
 }
-
-void deadlock() {
-	/*t_list** ESIsEnDeadlock = devolverEsisEnDeadlock()*/
-
-	/*
-	 * printf("ESIs en deadlock \n");
-	 *
-	 * while(termino de leer toda la lista)
-	 * {
-	 * 	printf("%s \n", claveESI);
-	 * }*/
-
-	// Ver en bloqueos enunciado (p 9)
-	// El Planificador lleva un registro de qué claves fueron bloqueadas por cada ESI en particular. Las cuales deberá liberar en cuanto reciba una operación STORE con dicha clave por parte de la ESI bloqueadora
-	// Esta liberación será de manera FIFO; el primer ESI que se encontraba bloqueado esperando esta clave será liberada (Esto no quiere decir que será inmediatamente tomado por este ESI; sino que estará disponible para ser planificado; y deberá re ejecutar la operación de GET al ser ejecutado).
-	// Cabe aclarar que la finalización de un ESI libera los recursos que este tenía tomados.
-}
-
+/*
+ void deadlock() {
+ int i, j, k;
+ int columEsperaFilasAsig, filasEsperaColumAsig;
+ g_clavesDeadlock = dictionary_create(); // eliminar estructura que hice
+ g_ESIsDeadlock = dictionary_create();
+ // Se calcula el numero de filas y columnas
+ dictionary_iterator(g_bloq, (void*) creoElementoEnPosibleDeadlockEspera);
+ dictionary_iterator(g_clavesTomadas,
+ (void*) creoElementoEnPosibleDeadlockAsignacion);
+ filasEsperaColumAsig = dictionary_size(g_ESIsDeadlock);
+ columEsperaFilasAsig = dictionary_size(g_clavesDeadlock);
+ // Se crea espacio ambas matrices y las pongo en 0
+ g_matrizEspera = crearMatriz(filasEsperaColumAsig, columEsperaFilasAsig);
+ g_matrizAsignacion = crearMatriz(columEsperaFilasAsig,
+ filasEsperaColumAsig);
+ ponerMatrizTodoNulo(g_matrizEspera, filasEsperaColumAsig,
+ columEsperaFilasAsig);
+ ponerMatrizTodoNulo(g_matrizAsignacion, columEsperaFilasAsig,
+ filasEsperaColumAsig);
+ // matrizEspera W: P -> R, los procesos P estan a la espera de recursos R
+ // Se pone en 1 los esis esperando en la matrizEspera
+ dictionary_iterator(g_bloq, (void*) creoMatrizEspera);
+ // matrizAsignacion A: R -> P, los recursos R estan a la espera de procesos P
+ // Se pone en 1 las claves asignadas en la matrizAsignacion
+ dictionary_iterator(g_clavesTomadas, (void*) creoMatrizAsignacion);
+ // Matriz de procesosAlaEsperaDeProcesos(T) es la composicion entre matrizEspera y matrizAsignacion () T=PxA T: P -> P
+ int procesosAlaEsperaDeProcesos[filasEsperaColumAsig][filasEsperaColumAsig];
+ for (i = 0; i < filasEsperaColumAsig; i++) {
+ for (j = 0; j < filasEsperaColumAsig; j++) {
+ procesosAlaEsperaDeProcesos[i][j] = 0;
+ for (k = 0; k < columEsperaFilasAsig; k++) {
+ if (g_matrizEspera[i][k] && g_matrizAsignacion[k][j]) {
+ procesosAlaEsperaDeProcesos[i][j] = 1;
+ k = columEsperaFilasAsig;
+ }
+ }
+ }
+ }
+ // Se calcula la matriz procesosAlaEsperaDeProcesos con cierre transitivo.
+ // Se calcula aplicandole el algoritmo Warshall a la matriz procesosAlaEsperaDeProcesos
+ for (k = 0; k < filasEsperaColumAsig; k++) {
+ for (i = 0; i < filasEsperaColumAsig; i++) {
+ for (j = 0; j < filasEsperaColumAsig; j++) {
+ procesosAlaEsperaDeProcesos[i][j] =
+ procesosAlaEsperaDeProcesos[i][j]
+ || (procesosAlaEsperaDeProcesos[i][k]
+ && procesosAlaEsperaDeProcesos[k][j]);
+ }
+ }
+ }
+ puts("\nProcesos que estan en deadlock por ciclo\n");
+ int cantDeadlock = 0;
+ for (i = 0; i < filasEsperaColumAsig; i++) {
+ if (procesosAlaEsperaDeProcesos[i][i]) {
+ printf("Ciclo: %d\n", cantDeadlock);
+ cantDeadlock++;
+ for (j = 0; j < filasEsperaColumAsig; j++) {
+ if (procesosAlaEsperaDeProcesos[i][j]) {
+ if (procesosAlaEsperaDeProcesos[j][j]) {
+ printf("%s\n", esiQueTieneIndice(j));
+ }
+ procesosAlaEsperaDeProcesos[j][j] = 0;
+ }
+ }
+ printf("\n");
+ }
+ }
+ }
+ */
 /*------------------------------Auxiliares------------------------------*/
 
 char* obtenerParametro(char* linea, int parametro) {
@@ -330,79 +432,195 @@ char* obtenerParametro(char* linea, int parametro) {
 	return palabras[parametro];
 }
 
-bool estaListo(char* siEstaBlooqueadaPorClaveElimina(char*,void*)id) {
-	return dictionary_has_key(g_listos, id);
+/*------------------------------Auxiliares-Estado de claves o ESI-----------------------------*/
+
+bool estaListo(char*idESI) {
+	return dictionary_has_key(g_listos, idESI);
 }
 
-bool estaBloqueadaLaClave(char* clave) {
-	return dictionary_has_key(clave);
-}
-
-bool sonIguales(t_infoBloqueo infoBloqueo) {
-	return string_equals_ignore_case(infoBloqueo->idESI, g_idComparar);
-}
-
-bool estaBloqueadoPorLaClave(char* id, char* clave) {
-	g_idComparar = id;
+bool estaBloqueadoPorLaClave(char* idESI, char* clave) {
+	g_idESI = idESI;
 	return list_any_satisfy(dictionary_get(g_bloq, clave), (void*) sonIguales);
 }
 
-bool estaBloqueado(char* id) { // estaMuyMAlESTO
-	int i;
-
-	for (i = 0; i < g_bloq->elements_amount; i++) {
-
-		char* numero = string_itoa(i); // repitiendo logica, arreglar desp
-		char* claveESI = string_new();
-
-		string_append(&claveESI, "ESI");
-		string_append(&claveESI, numero);
-
-		if (estaBloqueadoPorElRecurso(claveESI, claveRecurso)) {
-			return true;
-		}
-
-		free(claveESI);
-	}
-	return false;
+bool sonIguales(t_infoBloqueo* infoBloqueo) {
+	return string_equals_ignore_case(infoBloqueo->idESI, g_idESI);
 }
 
-void eliminarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
-	free(infoBloqueo->data);
-	free(infoBloqueo->idESI);
-	free(infoBloqueo);
+bool estaBloqueadaLaClave(char* clave) {
+//repito logica, arreglar despues
+	g_clave = clave;
+	g_estaBloqueado = 0;
+
+	dictionary_iterator(g_clavesTomadas, (void*) estaClaveBloqueada);
+
+	return g_estaBloqueado;
 }
 
-void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBoqueados){
-	if(estaBloqueadoPorLaClave(g_idComparar, clave)){
-		list_remove_and_destroy_by_condition(listaBloqueados, (void*)sonIguales, (void*)eliminarT_infoBloqueo);
+void estaClaveBloqueada(char* idESI, t_list* clavesBloqueadas) {
+	if (!g_estaBloqueado) {
+		g_estaBloqueado = estaBloqueadoPorElESI(g_idESI, idESI,
+				clavesBloqueadas);
 	}
 }
 
-void desbloqueoClave(char* idESI, t_list* listaBloqueadas){
+bool estaBloqueadoPorElESI(char* g_idESI, char* idESI, t_list* clavesBloqueadas) {
+	return list_any_satisfy(clavesBloqueadas, (void*) sonIgualesClavesTomadas);
+}
+
+bool sonIgualesClavesTomadas(char* clave) {
+	return string_equals_ignore_case(clave, g_clave);
+}
+
+bool estaBloqueado(char* idESI) {
+	g_idESI = idESI;
+	g_estaBloqueado = false;
+
+	dictionary_iterator(g_bloq, (void*) estaESIBloqueado);
+
+	return g_estaBloqueado;
+}
+
+void estaESIBloqueado(char* clave, t_list* esisBloqueados) {
+	if (g_estaBloqueado == false)
+		g_estaBloqueado = estaBloqueadoPorLaClave(g_idESI, clave);
+}
+
+/*------------------------------Auxiliares-desbloquear----------------------------*/
+char* esiQueBloquea(char* clave) {
+	g_clave = clave;
+	dictionary_iterator(g_clavesTomadas, (void*) decirESIQueBloqueaClave);
+	return g_idESI;
+}
+
+void decirESIQueBloqueaClave(char* idESI, char* clave) {
+	if (sonIgualesClavesTomadas(clave)) {
+		g_idESI = idESI;
+	}
+}
+
+void sacarClave(char* idESI, char* clave) {
+	g_idESI = clave;
+	list_remove_and_destroy_by_condition(dictionary_get(g_clavesTomadas, idESI),
+			(void*) sonIgualesClavesTomadas, (void*) free);
+}
+
+/*------------------------------Auxiliares-killProceso----------------------------*/
+void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBloqueados) {
+	if (estaBloqueadoPorLaClave(g_idESI, clave)) {
+		list_remove_and_destroy_by_condition(listaBloqueados,
+				(void*) sonIguales, (void*) eliminarT_infoBloqueo);
+	}
+}
+
+void desbloqueoClave(char* idESI, t_list* listaBloqueadas) {
 	int i;
-	int tamañoLista = list_size(listaBloqueadas);
-	for(i = 0; i < tamañoLista; i++){
+	int tamanioLista = list_size(listaBloqueadas);
+	for (i = 0; i < tamanioLista; i++) {
 		char* lineaExtra = string_new();
 		string_append(&lineaExtra, "desbloquear ");
-		string_append(&lineaExtra, list_get(listaBoqueadas, i));
+		string_append(&lineaExtra, list_get(listaBloqueadas, i));
 		desbloquearESI(lineaExtra);
 
 		free(lineaExtra);
 	}
 }
 
-void eliminarT_infoClavesBloqueadas(t_infoClavesBloqueadas* infoClavesBloqueadas){
-	free(infoClavesBloqueadas->clave);
-	free(infoClavesBloqueadas);
-}
-
-void respuestaStatus(t_respuestaStatus* respuestaStatus){
-	if(respuestaStatus->valor == " ")
+/*------------------------------Auxiliares-Status------------------------------*/
+void mostrarPorConsola(t_respuestaStatus* respuestaStatus) {
+	if (respuestaStatus->valor == NULL)
 		puts("No posee valor.");
 	else
-		puts("Valor: %s", respuestaStatus->valor);
+		printf("Valor: %s\n", respuestaStatus->valor);
 
-	puts("Instancia actual en donde esta clave: %s", respuestaStatus->nomInstanciaActual);
-	puts("Instancia en donde se guardaria clave: %s", respuestaStatus->nomIntanciaPosible;);
+	printf("Instancia actual en donde esta clave: %s\n",
+			respuestaStatus->nomInstanciaActual);
+	printf("Instancia en donde se guardaria clave: %s\n",
+			respuestaStatus->nomIntanciaPosible);
+}
+
+/*------------------------------Auxiliares-Deadlock------------------------------*/
+/*
+ int indice(char* elemento, t_dictionary* diccionario) {
+ // creo una clave nueva
+ t_infoIndiceDeadlock* infoElemento = malloc(sizeof(t_infoIndiceDeadlock));
+ if (!dictionary_has_key(diccionario, elemento)) {
+ infoElemento->indice = dictionary_size(diccionario);
+ dictionary_put(diccionario, elemento, infoElemento);
+ } else {
+ infoElemento = dictionary_get(diccionario, elemento);
+ }
+ return infoElemento->indice;
+ }
+ int **crearMatriz(int nroFilas, int nroColum) {
+ int **matriz = (int **) calloc(nroFilas, sizeof(int*));
+ int i;
+ for (i = 0; i < nroFilas; i++)
+ matriz[i] = (int *) calloc(nroColum, sizeof(int));
+ return matriz;
+ }
+ void ponerMatrizTodoNulo(int ** matriz, int nroFilas, int nroColum) {
+ int i, j;
+ for (i = 0; i < nroFilas; i++) {
+ for (j = 0; j < nroColum; j++) {
+ matriz[i][j] = 0;
+ printf("| %d |", matriz[i][j]);
+ }
+ printf("\n");
+ }
+ }
+ void creoElementoEnPosibleDeadlockAsignacion(char* idESI,
+ t_list* clavesBloqueadas) {
+ // repito logica
+ g_idESI = idESI;
+ list_iterate(clavesBloqueadas,
+ (void*) creoElementosEnPosibleDeadlockAsignacion);
+ }
+ void creoElementosEnPosibleDeadlockAsignacion(
+ char* clave) {
+ indice(clave, g_clavesDeadlock);
+ indice(g_idESI, g_ESIsDeadlock);
+ }
+ void creoElementoEnPosibleDeadlockEspera(char* idElemento,
+ t_list* clavesBloqueadas) {
+ // repito logica
+ g_idESI = idElemento;
+ list_iterate(clavesBloqueadas,
+ (void*) creoElementosEnPosibleDeadlockEspera);
+ }
+ void creoElementosEnPosibleDeadlockEspera(t_infoBloqueo* esiBloqueado) {
+ indice(g_idESI, g_clavesDeadlock);
+ indice(esiBloqueado->idESI, g_ESIsDeadlock);
+ }
+ void creoMatrizAsignacion(char* idESI, t_list* clavesBloqueadas) {
+ g_idESI = idESI;
+ list_iterate(clavesBloqueadas, (void*) asignarEnMatrizAsignacion);
+ }
+ void asignarEnMatrizAsignacion(char* clave) {
+ g_matrizAsignacion[indice(clave, g_clavesDeadlock)][indice(
+ g_idESI, g_ESIsDeadlock)] = 1;
+ }
+ void creoMatrizEspera(char* clave, t_list* esisBloqueados) {
+ g_idESI = clave;
+ list_iterate(esisBloqueados, (void*) asignarEnMatrizEspera);
+ }
+ void asignarEnMatrizEspera(t_infoBloqueo* infoESIBloqueado) {
+ g_matrizEspera[indice(infoESIBloqueado->idESI, g_ESIsDeadlock)][indice(
+ g_idESI, g_clavesDeadlock)] = 1;
+ }
+ void esiIndice(char* idESI, t_infoIndiceDeadlock* infoESI) {
+ if (g_indiceESI == infoESI->indice)
+ g_idESI = idESI;
+ }
+ char* esiQueTieneIndice(int indice) {
+ g_indiceESI = indice;
+ dictionary_iterator(g_ESIsDeadlock, (void*) esiIndice);
+ return g_idESI;
+ }
+ */
+/*------------------------------Auxiliares-Liberar Memoria------------------------------*/
+void eliminarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
+	free(infoBloqueo->data);
+	free(infoBloqueo->idESI);
+	free(infoBloqueo);
 }

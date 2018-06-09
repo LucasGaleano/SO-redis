@@ -30,6 +30,8 @@ extern void liberarTodo(void)
 	pthread_mutex_destroy(&mutexListo);
 	pthread_mutex_destroy(&mutexLog);
 	pthread_mutex_destroy(&modificacion);
+	pthread_mutex_destroy(&mutexClavesTomadas);
+
 	sem_destroy(&ESIentrada);
 	sem_destroy(&continua);
 

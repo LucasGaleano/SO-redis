@@ -29,6 +29,8 @@ int main(void) {
 	pthread_mutex_init(&mutexListo, NULL);
 	pthread_mutex_init(&modificacion, NULL);
 	pthread_mutex_init(&mutexLog, NULL);
+	pthread_mutex_init(&mutexClavesTomadas, NULL);//TODO usarlo en algun lado
+
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
 
@@ -37,7 +39,7 @@ int main(void) {
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
 
-	//iniciarConsola();
+	iniciarConsola();
 
 	pthread_join(hiloServidor, NULL);
 
