@@ -1,6 +1,6 @@
 #include "instancia.h"
 
-/*int main(void) {
+int main(void) {
  //Creo archivo de log
  logInstancia = log_create("log_Instancia.log", "instancia", true,
  LOG_LEVEL_TRACE);
@@ -23,7 +23,7 @@
  log_destroy(logInstancia);
 
  return EXIT_SUCCESS;
- }*/
+ }
 
 /*-------------------------Conexion-------------------------*/
 void conectarInstancia() {
