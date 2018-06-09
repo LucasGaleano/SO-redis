@@ -143,8 +143,10 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case TERMINO_ESI:
+		pthread_mutex_lock(&mutexLog);
+		log_debug(g_logger, "ESI me avisa que finalizo");
+		pthread_mutex_unlock(&mutexLog);
 		g_termino = 1;
-		sem_post(&continua);
 		break;
 	case RESPUESTA_STATUS:
 		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
@@ -197,7 +199,7 @@ void iniciarServidor(void* puerto) {
 }
 
 void planificar(char* algoritmo) {
-	if (strcmp(algoritmo, "SJF_SD") == 0 || strcmp(algoritmo, "HRRN") == 0)
+	if (strcmp(algoritmo, "SJF-SD") == 0 || strcmp(algoritmo, "HRRN") == 0)
 		planificarSinDesalojo(algoritmo);
 	else
 		planificarConDesalojo();

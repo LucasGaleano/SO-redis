@@ -120,9 +120,9 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						pthread_mutex_unlock(&mutexConsola);
 						cont++;
 						sem_wait(&continua);
-						if (!g_termino) {
-						 sem_wait(&continua);
-						 }
+						pthread_mutex_lock(&mutexLog);
+						log_debug(g_logger, "Sigo planificando");
+						pthread_mutex_unlock(&mutexLog);
 					}
 					if (g_bloqueo) {
 						g_bloqueo = 0;
@@ -130,6 +130,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					}
 					if (g_termino) {
 						g_termino = 0;
+						enviarRespuesta(g_socketEnEjecucion, OK);
 						free(aEjecutar);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
 								key);
@@ -169,9 +170,6 @@ extern void planificarConDesalojo(void) {
 						cont++;
 						pthread_mutex_unlock(&mutexConsola);
 						sem_wait(&continua);
-						if (!g_termino) {
-							sem_wait(&continua);
-						}
 					} while (!g_termino && !g_bloqueo && !g_huboModificacion);
 					if (g_bloqueo) {
 						g_bloqueo = 0;
