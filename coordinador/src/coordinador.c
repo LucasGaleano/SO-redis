@@ -31,7 +31,6 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	args->socket = *socketCliente;
 	pthread_t pid;
 
-	fflush(stdout);
 
 	switch (paquete->codigoOperacion) {
 
@@ -119,6 +118,8 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave, 0);
 	}
 
+	sem_post(&g_mutex_tablas);
+
 
 	return instanciaElegida;
 
@@ -198,12 +199,21 @@ void* procesarSET(void* args) {
 			g_configuracion.algoritmoDist, sentencia->clave,
 			g_tablaDeInstancias);
 
+	mostrarInstancia(instanciaElegida);
+
+	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
+				"planificador");
+
+
 
 	sleep(g_configuracion.retardo);
 	int* socketAux = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
+	log_debug("socket a instancia: %i y a planificacion: %i", *socketAux, socketDelPlanificador);
 	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketAux,sentencia->clave, instanciaElegida->nombre);
+
 	enviarSet(*socketAux, sentencia->clave, sentencia->valor);
+	enviarSet(socketDelPlanificador,sentencia->clave,sentencia->valor);
 
 
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
@@ -221,12 +231,22 @@ void* procesarGET(void* args) {
 
 	char* clave = recibirGet(paquete);
 
+	t_instancia* instanciaElegida = PlanificarInstancia(
+			g_configuracion.algoritmoDist, clave,
+			g_tablaDeInstancias);
+
+	mostrarInstancia(instanciaElegida);
+
+	int socketDeInstancia = *conseguirConexion(g_diccionarioConexiones,
+			instanciaElegida->nombre);
+
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
 			"planificador");
 
 	//TODO clave innacesible y enviar a instancia si on hay error
 	log_debug(g_logger,"enviar GET al planificador: %i, clave: %s\n",socketDelPlanificador ,clave);
 
+	//TODO enviarGet(socketDeInstancia, clave);//TODO fijarse si hay error antes de mandar a planificador
 	enviarGet(socketDelPlanificador, clave);
 
 
@@ -257,10 +277,15 @@ void* procesarNombreInstancia(void* args) {
 
 	log_debug(g_logger,"Entro al procesarNombreInstancia");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
-	int socketCliente = ((pthreadArgs_t*)args)->socket;
+
+	int* socketCliente = malloc(sizeof(int));
+	*socketCliente = ((pthreadArgs_t*)args)->socket;
+
 	char* nombre = recibirNombreInstancia(paquete);
 
-	t_instancia* instanciaNueva = crearInstancia(nombre, socketCliente);
+
+	t_instancia* instanciaNueva = crearInstancia(nombre, 0);//TODO no guardar socket aca
+	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,socketCliente);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(socketCliente, g_configuracion.cantidadEntradas,
