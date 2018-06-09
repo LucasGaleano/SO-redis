@@ -135,10 +135,12 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 	case ENTRADA_INEXISTENTE:
 		enviarRespuesta(client_socket, ERROR_CLAVE_NO_IDENTIFICADA);
 		log_error(logInstancia, "Error clave no identiicada");
+		aumentarTiempoReferenciadoATodos(tablaEntradas);
 		break;
 	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
 		log_error(logInstancia, "Error espacio insuficiente");
+		aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 		break;
 	default:
 		enviarRespuesta(client_socket, OK);
@@ -146,6 +148,7 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 		log_trace(logInstancia, "El valor de la clave guardada es: %s",
 				(char *) valor);
 		free(valor);
+		aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 		break;
 	}
 
@@ -166,6 +169,8 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 			claveValor->clave, (char*) claveValor->valor);
 
 	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+
+	aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo");
@@ -218,6 +223,8 @@ void procesarGet(t_paquete * unPaquete, int client_socket) {
 		log_warning(logInstancia, "La clave no existia y la creo");
 	}
 
+	aumentarTiempoReferenciadoMenosAClave(clave);
+
 	enviarRespuesta(client_socket, OK);
 
 	if (resultado != NULL)
@@ -230,6 +237,7 @@ void procesarGet(t_paquete * unPaquete, int client_socket) {
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
 	log_trace(logInstancia, "Me llego pedido de compactacion");
 	compactar();
+	aumentarTiempoReferenciadoATodos(tablaEntradas);
 	enviarCompactacion(client_socket);
 	mostrarBitmap();
 }
@@ -248,6 +256,8 @@ void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
 		free(clave);
 		return;
 	}
+
+	aumentarTiempoReferenciadoMenosAClave(clave);
 
 	char * valorRespuesta = buscarValorSegunClave(respuesta->clave);
 
@@ -414,6 +424,30 @@ void mostrarEntrada(char * clave) {
 	printf("Tamanio: %d \n\n", entrada->tamanio);
 
 	free(respuesta);
+}
+
+void aumentarTiempoReferenciado(t_tabla_entradas * entrada) {
+	entrada->tiempoReferenciado++;
+}
+
+void aumentarTiempoReferenciadoATodos(t_list * tabla) {
+	list_iterate(tabla, (void *) aumentarTiempoReferenciado);
+}
+
+void aumentarTiempoReferenciadoMenosAClave(char * clave) {
+	bool entradasMenosUna(t_tabla_entradas * entrada){
+		return !string_equals_ignore_case(entrada->clave,clave);
+	}
+
+	t_list * listaFiltrada = list_filter(tablaEntradas,(void *) entradasMenosUna);
+
+	aumentarTiempoReferenciadoATodos(listaFiltrada);
+
+	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
+
+	entradaBuscada->tiempoReferenciado = 0;
+
+	list_destroy(listaFiltrada);
 }
 
 /*-------------------------BitMap del Storage-------------------------*/

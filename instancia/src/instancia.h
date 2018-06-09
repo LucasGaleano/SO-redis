@@ -65,16 +65,19 @@ void 		procesarSolicitudValor		(t_paquete * unPaquete, int client_socket);
 void 		procesarError				(t_paquete * unPaquete);
 
 /*-------------------------Tabla de entradas-------------------------*/
-void 				crearTablaEntradas		(void);
-void 				destruirTablaEntradas	(void);
-t_tabla_entradas * 	buscarEntrada			(char * clave);
-void 				agregarClave			(char * clave);
-void 				eliminarClave			(char * clave);
-void 				mostrarTablaEntradas	(void);
-int 				agregarValorAClave		(char * clave, void * valor);
-void * 				buscarValorSegunClave	(char * clave);
-t_tabla_entradas *	buscarEntradaSegunIndex	(int index);
-void 				mostrarEntrada			(char * clave);
+void 				crearTablaEntradas						(void);
+void 				destruirTablaEntradas					(void);
+t_tabla_entradas * 	buscarEntrada							(char * clave);
+void 				agregarClave							(char * clave);
+void 				eliminarClave							(char * clave);
+void 				mostrarTablaEntradas					(void);
+int 				agregarValorAClave						(char * clave, void * valor);
+void * 				buscarValorSegunClave					(char * clave);
+t_tabla_entradas *	buscarEntradaSegunIndex					(int index);
+void 				mostrarEntrada							(char * clave);
+void 				aumentarTiempoReferenciado				(t_tabla_entradas * entrada);
+void 				aumentarTiempoReferenciadoATodos		(t_list * tabla);
+void				aumentarTiempoReferenciadoMenosAClave	(char * clave);
 
 /*-------------------------BitMap del Storage-------------------------*/
 void 				crearBitMap					(void);
