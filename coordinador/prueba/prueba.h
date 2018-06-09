@@ -9,8 +9,11 @@
 #include <biblioteca/paquetes.h>
 #include <biblioteca/estructuras.h>
 #include "../src/tablasAdministrativas.h"
+#include <stdarg.h>
+#include "commons/string.h"
+#include <semaphore.h>
 
-t_list * PruebaInstacias(t_list* tablaDeInstancias);
+void pruebaInstancias(t_list* tablaDeInstancias);
 
 
 

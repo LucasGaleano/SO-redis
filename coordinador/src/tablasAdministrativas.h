@@ -29,8 +29,6 @@ typedef struct{
 	char * trabajoActual;
 }t_instancia;
 
-t_dictionary *  g_ESI;
-
 sem_t g_mutex_tablas;
 
 /*-------------------FUNCIONES---------------------------*/

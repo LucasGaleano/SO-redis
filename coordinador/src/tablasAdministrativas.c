@@ -1,5 +1,4 @@
 #include "tablasAdministrativas.h"
-#include "coordinador.h"
 
 #define MAX_ENTRADAS 1000
 
@@ -47,8 +46,8 @@ void mostrarInstancia(t_instancia * instancia){
 	printf("disponible: %d\n", instancia->disponible);
 	printf("primerLetra: %d\n", instancia->primerLetra);
 	printf("ultimaLetra: %d\n", instancia->ultimaLetra);
-	printf("ultimaModificacion: %d\n", instancia->ultimaModificacion);
-  printf("\n");
+	printf("ultimaModificacion: %li\n", instancia->ultimaModificacion);
+	printf("\n");
 }
 
 
@@ -134,8 +133,7 @@ t_dictionary* crearDiccionarioConexiones(){
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor ){
 	sem_wait(&g_mutex_tablas);
    if(!dictionary_has_key(diccionario,clave))
-	 log_debug(g_logger,"socket: %i",*valor);
-     dictionary_put(diccionario, clave, *valor);
+     dictionary_put(diccionario, clave, valor);
 
    sem_post(&g_mutex_tablas);
 }
@@ -143,7 +141,6 @@ void agregarConexion(t_dictionary * diccionario, char * clave , int* valor ){
 int* conseguirConexion(t_dictionary * diccionario, char * clave){
 	sem_wait(&g_mutex_tablas);
 	int* aux = dictionary_get(diccionario,clave);
-	log_debug(g_logger,"socket: %i",dictionary_get(diccionario,clave));
 	sem_post(&g_mutex_tablas);
 	return aux;
 }

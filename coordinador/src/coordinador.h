@@ -11,7 +11,7 @@
 #include <biblioteca/estructuras.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <stdlib.h>
+#include <stdarg.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
