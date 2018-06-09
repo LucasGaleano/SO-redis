@@ -42,7 +42,7 @@ char * 					  		recibirNombreInstancia		(t_paquete * unPaquete);
 t_claveValor *					recibirSet					(t_paquete * unPaquete);
 t_claveValor *					recibirSetDefinitivo		(t_paquete * unPaquete);
 char* 					  		recibirGet					(t_paquete * unPaquete);
-char* 					  		recibirSTore				(t_paquete * unPaquete);
+char* 					  		recibirStore				(t_paquete * unPaquete);
 int 							recibirRespuesta			(t_paquete* unPaquete);
 char *							recibirSolicitusStatus		(t_paquete * unPaquete);
 t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
