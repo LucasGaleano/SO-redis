@@ -39,7 +39,9 @@ int main(void) {
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
 
+	log_debug(g_logger,"inicio consola");
 	iniciarConsola();
+
 
 	pthread_join(hiloServidor, NULL);
 
@@ -151,7 +153,7 @@ void procesarPaquete(t_paquete* unPaquete, int* socketCliente) {
 		g_termino = 1;
 		break;
 	case RESPUESTA_STATUS:
-		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
+		mostrarPorConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	}
 	destruirPaquete(unPaquete);

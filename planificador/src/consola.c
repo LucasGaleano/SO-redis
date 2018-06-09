@@ -36,68 +36,72 @@ void iniciarConsola() {
 
 void ejecutarComando(char* linea, bool* ejecutar) {
 
+	char* Comando = obtenerParametro(linea,0);
+
+
 	// MAN
-	if (string_equals_ignore_case(linea, "man")) {
+	if (string_equals_ignore_case(Comando, "man")) {
 		ejecutarMan();
 		return;
 	}
 
 	// PAUSAR PLANIFICACIÓN
-	if (string_equals_ignore_case(linea, "pausar")) {
+	if (string_equals_ignore_case(Comando, "pausar")) {
 		pausarPlanificacion();
 		return;
 	}
 
 	// CONTINUAR PLANIFICACIÓN
-	if (string_equals_ignore_case(linea, "continuar")) {
+	if (string_equals_ignore_case(Comando, "continuar")) {
 		continuarPlanificacion();
 		return;
 	}
 
 	// BLOQUEAR ESI
-	if (string_equals_ignore_case(linea, "bloquear")) {
+	if (string_equals_ignore_case(Comando, "bloquear")) {
 		bloquearESI(linea);
 		return;
 	}
 
 	// DESBLOQUEAR ESI
-	if (string_equals_ignore_case(linea, "desbloquear")) {
+	if (string_equals_ignore_case(Comando, "desbloquear")) {
 		desbloquearESI(linea);
 		return;
 	}
 
 	// LISTAR PROCESOS
-	if (string_equals_ignore_case(linea, "listar")) {
+	if (string_equals_ignore_case(Comando, "listar")) {
 		listarProcesos(linea);
 		return;
 	}
 
 	// KILL PROCESO
-	if (string_equals_ignore_case(linea, "kill")) {
+	if (string_equals_ignore_case(Comando, "kill")) {
 		killProceso(linea);
 		return;
 	}
 
 	// STATUS
-	if (string_equals_ignore_case(linea, "status")) {
+	if (string_equals_ignore_case(Comando, "status")) {
 		status(linea);
 		return;
 	}
 
 	// DEADLOCK
-	if (string_equals_ignore_case(linea, "deadlock")) {
+	if (string_equals_ignore_case(Comando, "deadlock")) {
 		//deadlock();
 		return;
 	}
 
 	// SALIR DE LA CONSOLA
-	if (string_equals_ignore_case(linea, "exit")) {
+	if (string_equals_ignore_case(Comando, "exit")) {
 		salirConsola(ejecutar);
+
 		return;
 	}
 
 	// NO RECONOCER COMANDO
-	printf("No se ha encontrado el comando %s \n", linea);
+	printf("No se ha encontrado el comando %s \n", Comando);
 }
 
 /*-------------------------------Comandos------------------------------*/
@@ -138,10 +142,13 @@ void salirConsola(bool* ejecutar) {
 }
 
 void pausarPlanificacion(void) {
+	printf("planificador pausado.\n");
 	pthread_mutex_lock(&mutexConsola);
+
 }
 
 void continuarPlanificacion(void) {
+	printf("planificador corriendo.\n");
 	pthread_mutex_unlock(&mutexConsola);
 }
 
@@ -266,7 +273,7 @@ void desbloquearESI(char* linea) {
 
 	// Libero memoria
 	free(clave);
-	//eliminarT_infoBLoqueo(infoBloqueoPrimero); // ver si se deja o no
+
 }
 
 void listarProcesos(char* linea) {
@@ -356,82 +363,83 @@ void status(char* linea) {
 	free(lineaExtra);
 }
 /*
- void deadlock() {
- int i, j, k;
- int columEsperaFilasAsig, filasEsperaColumAsig;
- g_clavesDeadlock = dictionary_create(); // eliminar estructura que hice
- g_ESIsDeadlock = dictionary_create();
- // Se calcula el numero de filas y columnas
- dictionary_iterator(g_bloq, (void*) creoElementoEnPosibleDeadlockEspera);
- dictionary_iterator(g_clavesTomadas,
- (void*) creoElementoEnPosibleDeadlockAsignacion);
- filasEsperaColumAsig = dictionary_size(g_ESIsDeadlock);
- columEsperaFilasAsig = dictionary_size(g_clavesDeadlock);
- // Se crea espacio ambas matrices y las pongo en 0
- g_matrizEspera = crearMatriz(filasEsperaColumAsig, columEsperaFilasAsig);
- g_matrizAsignacion = crearMatriz(columEsperaFilasAsig,
- filasEsperaColumAsig);
- ponerMatrizTodoNulo(g_matrizEspera, filasEsperaColumAsig,
- columEsperaFilasAsig);
- ponerMatrizTodoNulo(g_matrizAsignacion, columEsperaFilasAsig,
- filasEsperaColumAsig);
- // matrizEspera W: P -> R, los procesos P estan a la espera de recursos R
- // Se pone en 1 los esis esperando en la matrizEspera
- dictionary_iterator(g_bloq, (void*) creoMatrizEspera);
- // matrizAsignacion A: R -> P, los recursos R estan a la espera de procesos P
- // Se pone en 1 las claves asignadas en la matrizAsignacion
- dictionary_iterator(g_clavesTomadas, (void*) creoMatrizAsignacion);
- // Matriz de procesosAlaEsperaDeProcesos(T) es la composicion entre matrizEspera y matrizAsignacion () T=PxA T: P -> P
- int procesosAlaEsperaDeProcesos[filasEsperaColumAsig][filasEsperaColumAsig];
- for (i = 0; i < filasEsperaColumAsig; i++) {
- for (j = 0; j < filasEsperaColumAsig; j++) {
- procesosAlaEsperaDeProcesos[i][j] = 0;
- for (k = 0; k < columEsperaFilasAsig; k++) {
- if (g_matrizEspera[i][k] && g_matrizAsignacion[k][j]) {
- procesosAlaEsperaDeProcesos[i][j] = 1;
- k = columEsperaFilasAsig;
- }
- }
- }
- }
- // Se calcula la matriz procesosAlaEsperaDeProcesos con cierre transitivo.
- // Se calcula aplicandole el algoritmo Warshall a la matriz procesosAlaEsperaDeProcesos
- for (k = 0; k < filasEsperaColumAsig; k++) {
- for (i = 0; i < filasEsperaColumAsig; i++) {
- for (j = 0; j < filasEsperaColumAsig; j++) {
- procesosAlaEsperaDeProcesos[i][j] =
- procesosAlaEsperaDeProcesos[i][j]
- || (procesosAlaEsperaDeProcesos[i][k]
- && procesosAlaEsperaDeProcesos[k][j]);
- }
- }
- }
- puts("\nProcesos que estan en deadlock por ciclo\n");
- int cantDeadlock = 0;
- for (i = 0; i < filasEsperaColumAsig; i++) {
- if (procesosAlaEsperaDeProcesos[i][i]) {
- printf("Ciclo: %d\n", cantDeadlock);
- cantDeadlock++;
- for (j = 0; j < filasEsperaColumAsig; j++) {
- if (procesosAlaEsperaDeProcesos[i][j]) {
- if (procesosAlaEsperaDeProcesos[j][j]) {
- printf("%s\n", esiQueTieneIndice(j));
- }
- procesosAlaEsperaDeProcesos[j][j] = 0;
- }
- }
- printf("\n");
- }
- }
- }
- */
+void deadlock() {
+	int i, j, k;
+	int columEsperaFilasAsig, filasEsperaColumAsig;
+	g_clavesDeadlock = dictionary_create(); // eliminar estructura que hice
+	g_ESIsDeadlock = dictionary_create();
+	// Se calcula el numero de filas y columnas
+	dictionary_iterator(g_bloq, (void*) creoElementoEnPosibleDeadlockEspera);
+	dictionary_iterator(g_clavesTomadas,
+			(void*) creoElementoEnPosibleDeadlockAsignacion);
+	filasEsperaColumAsig = dictionary_size(g_ESIsDeadlock);
+	columEsperaFilasAsig = dictionary_size(g_clavesDeadlock);
+	// Se crea espacio ambas matrices y las pongo en 0
+	g_matrizEspera = crearMatriz(filasEsperaColumAsig, columEsperaFilasAsig);
+	g_matrizAsignacion = crearMatriz(columEsperaFilasAsig,
+			filasEsperaColumAsig);
+	ponerMatrizTodoNulo(g_matrizEspera, filasEsperaColumAsig,
+			columEsperaFilasAsig);
+	ponerMatrizTodoNulo(g_matrizAsignacion, columEsperaFilasAsig,
+			filasEsperaColumAsig);
+	// matrizEspera W: P -> R, los procesos P estan a la espera de recursos R
+	// Se pone en 1 los esis esperando en la matrizEspera
+	dictionary_iterator(g_bloq, (void*) creoMatrizEspera);
+	// matrizAsignacion A: R -> P, los recursos R estan a la espera de procesos P
+	// Se pone en 1 las claves asignadas en la matrizAsignacion
+	dictionary_iterator(g_clavesTomadas, (void*) creoMatrizAsignacion);
+	// Matriz de procesosAlaEsperaDeProcesos(T) es la composicion entre matrizEspera y matrizAsignacion () T=PxA T: P -> P
+	int procesosAlaEsperaDeProcesos[filasEsperaColumAsig][filasEsperaColumAsig];
+	for (i = 0; i < filasEsperaColumAsig; i++) {
+		for (j = 0; j < filasEsperaColumAsig; j++) {
+			procesosAlaEsperaDeProcesos[i][j] = 0;
+			for (k = 0; k < columEsperaFilasAsig; k++) {
+				if (g_matrizEspera[i][k] && g_matrizAsignacion[k][j]) {
+					procesosAlaEsperaDeProcesos[i][j] = 1;
+					k = columEsperaFilasAsig;
+				}
+			}
+		}
+	}
+	// Se calcula la matriz procesosAlaEsperaDeProcesos con cierre transitivo.
+	// Se calcula aplicandole el algoritmo Warshall a la matriz procesosAlaEsperaDeProcesos
+	for (k = 0; k < filasEsperaColumAsig; k++) {
+		for (i = 0; i < filasEsperaColumAsig; i++) {
+			for (j = 0; j < filasEsperaColumAsig; j++) {
+				procesosAlaEsperaDeProcesos[i][j] =
+						procesosAlaEsperaDeProcesos[i][j]
+								|| (procesosAlaEsperaDeProcesos[i][k]
+										&& procesosAlaEsperaDeProcesos[k][j]);
+			}
+		}
+	}
+	puts("\nProcesos que estan en deadlock por ciclo\n");
+	int cantDeadlock = 0;
+	for (i = 0; i < filasEsperaColumAsig; i++) {
+		if (procesosAlaEsperaDeProcesos[i][i]) {
+			printf("Ciclo: %d\n", cantDeadlock);
+			cantDeadlock++;
+			for (j = 0; j < filasEsperaColumAsig; j++) {
+				if (procesosAlaEsperaDeProcesos[i][j]) {
+					if (procesosAlaEsperaDeProcesos[j][j]) {
+						printf("%s\n", esiQueTieneIndice(j));
+					}
+					procesosAlaEsperaDeProcesos[j][j] = 0;
+				}
+			}
+			printf("\n");
+		}
+	}
+}
+*/
 /*------------------------------Auxiliares------------------------------*/
 
 char* obtenerParametro(char* linea, int parametro) {
+	if(strcmp(linea,"")==0)
+		return "";
 	char** palabras = string_split(linea, " ");
 	return palabras[parametro];
 }
-
 /*------------------------------Auxiliares-Estado de claves o ESI-----------------------------*/
 
 bool estaListo(char*idESI) {
