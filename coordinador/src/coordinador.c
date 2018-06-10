@@ -205,8 +205,8 @@ void* procesarSET(void* args) {
 				"planificador");
 
 
-	usleep(g_configuracion.retardo*1000);
-	//sleep(g_configuracion.retardo); esto lo hacia en segundos
+	usleep(g_configuracion.retardo);
+
 	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
 	log_debug("socket a instancia: %i y a planificacion: %i", *socketInstancia, socketDelPlanificador);
