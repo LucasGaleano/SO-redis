@@ -24,7 +24,7 @@ int main(void) {
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir paquetes
+void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 
 	pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
 	args->paquete = paquete;
@@ -35,9 +35,8 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
-		log_debug(g_logger,"dentro de procesar el handshake");
-		pthread_create(&pid, NULL, procesarHandshake, args);
 
+		pthread_create(&pid, NULL, procesarHandshake, args);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
@@ -111,8 +110,6 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
 		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
 
-	//TODO algoritmo key explicit "KE"
-
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
 		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave, 0);
@@ -157,9 +154,7 @@ void* procesarRespuesta(void* args) {
 
 void* procesarHandshake(void* args) {
 
-	//pthreadArgs_t* argsAux = (pthreadArgs_t*) args;
 
-	log_debug(g_logger,"Entro al procesarHandshake");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 	int* socketCliente = malloc(sizeof(int));
 	*socketCliente = ((pthreadArgs_t*)args)->socket;
@@ -190,7 +185,7 @@ void* procesarHandshake(void* args) {
 
 void* procesarSET(void* args) {
 
-	log_debug(g_logger,"Entro al procesarSET");
+
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	t_claveValor* sentencia = recibirSet(paquete);
@@ -209,8 +204,7 @@ void* procesarSET(void* args) {
 
 	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
-	log_debug("socket a instancia: %i y a planificacion: %i", *socketInstancia, socketDelPlanificador);
-	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketInstancia,sentencia->clave, instanciaElegida->nombre);
+	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",sentencia->clave,sentencia->valor , instanciaElegida->nombre);
 
 	enviarSet(*socketInstancia, sentencia->clave, sentencia->valor);
 	enviarSet(socketDelPlanificador,sentencia->clave,sentencia->valor);
@@ -226,7 +220,7 @@ void* procesarSET(void* args) {
 
 void* procesarGET(void* args) {
 
-	log_debug(g_logger,"Entro al procesarGET");
+
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	char* clave = recibirGet(paquete);
@@ -238,8 +232,8 @@ void* procesarGET(void* args) {
 
 	enviarGet(socketDelPlanificador, clave);
 
-	//free(paquete);
-	//free(args);
+	free(paquete);
+	free(args);
 	return 0;
 
 }
