@@ -15,12 +15,15 @@ int main(void) {
 	t_config* config = config_create(PATH_CONFIG);
 	g_configuracion = armarConfigCoordinador(config);
 
-	sem_init(&g_mutexLog, 0, 1); //TODO destrur semaphore
+	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas,0,1);
 
 
 	iniciarServer(g_configuracion.puertoConexion, (void*) procesarPaquete,
 			g_logger);
+
+	sem_destroy(&g_mutexLog);
+	sem_destroy(&g_mutex_tablas);
 	return 0;
 }
 
@@ -64,9 +67,7 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 	case STORE:
 		;
 
-		//El Coordinador colabora con el Planificador avisando de este recurso
 		pthread_create(&pid, NULL, procesarSTORE, args);
-		//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 		break;
 
 	case RESPUESTA_SOLICITUD:
@@ -101,6 +102,7 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 		t_list* tablaDeInstancias) {
+
 	sem_wait(&g_mutex_tablas);
 	t_instancia* instanciaElegida = NULL;
 
@@ -167,7 +169,6 @@ void* procesarHandshake(void* args) {
 		break;
 
 	case ESI:
-		//TODO que hacer aca?
 		log_info(g_logger,"Se conecto un ESI");
 		break;
 
@@ -277,7 +278,6 @@ void* procesarSTORE(void* args) {
 
 void* procesarNombreInstancia(void* args) {
 
-	log_debug(g_logger,"Entro al procesarNombreInstancia");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	int* socketCliente = malloc(sizeof(int));
@@ -292,7 +292,7 @@ void* procesarNombreInstancia(void* args) {
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(socketCliente, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas);
-	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombre);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombre);
 
 	free(paquete);
 	free(args);
@@ -301,7 +301,6 @@ void* procesarNombreInstancia(void* args) {
 
 void* procesarNombreESI(void* args) {
 
-	log_debug(g_logger,"Entro al procesarNombreEsi");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	int* socketCliente = malloc(sizeof(int));
@@ -310,7 +309,7 @@ void* procesarNombreESI(void* args) {
 	char* nombreESI = recibirNombreEsi(paquete);
 
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
-	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombreESI);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombreESI);
 
 	free(paquete);
 	free(args);
