@@ -593,6 +593,8 @@ void * guardarEnStorageEnIndex(void * valor, int index) {
 }
 
 void compactar(void) {
+	pthread_mutex_lock(&mutex);
+
 	int i;
 	int primeraEntradaLibre;
 
@@ -634,10 +636,13 @@ void compactar(void) {
 		}
 
 	}
+	pthread_mutex_unlock(&mutex);
 }
 
 /*-------------------------Dump-------------------------*/
 void dump(void) {
+
+	pthread_mutex_lock(&mutex);
 
 	mkdir(puntoMontaje, 0777);
 
@@ -663,16 +668,20 @@ void dump(void) {
 	}
 
 	list_iterate(tablaEntradas, (void*) almacenarEnMemoriaSecundaria);
+
+	pthread_mutex_unlock(&mutex);
 }
 
 void almacenamientoContinuo(void) {
 	while (true) {
 		sleep(intervaloDump);
-		//dump();
+		dump();
 	}
 }
 
 void crearAlmacenamientoContinuo(void) {
+	pthread_mutex_init(&mutex, NULL);
+
 	pthread_t threadAlmacenamientoContinuo;
 
 	if (pthread_create(&threadAlmacenamientoContinuo, NULL,

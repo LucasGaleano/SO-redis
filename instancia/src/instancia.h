@@ -35,6 +35,8 @@ t_list * tablaEntradas;
 
 int entradaAReemplazar;
 
+pthread_mutex_t mutex;
+
 /*------------------------Estructuras-------------------------*/
 typedef struct {
 	char clave[40];
