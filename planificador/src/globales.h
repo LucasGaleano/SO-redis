@@ -21,6 +21,7 @@ typedef struct {
 	int tEnEspera;
 	double estAnterior;
 	double realAnterior;
+	char* nombreESI;
 } t_infoListos;
 
 typedef struct {

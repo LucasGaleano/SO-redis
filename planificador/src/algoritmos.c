@@ -20,13 +20,8 @@ static int esMayor(int comp1, int comp2) {
 	return comp1 > comp2;
 }
 
-static char* asignarID(char* ret, int val) {
-	char* num = string_itoa(val);
-	ret = malloc(strlen(num) + 3);
-	strcpy(ret, "ESI");
-	strcat(ret, num);
-	free(num);
-	return ret;
+static char* asignarID(int val) {
+	return string_itoa(val);
 }
 
 static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
@@ -46,7 +41,7 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
 	pthread_mutex_lock(&mutexLog);
-	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", key, g_claveGET);
+	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", insert->data->nombreESI, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
 }
 
@@ -60,20 +55,20 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 	t_infoListos *actual;
 	double unValor;
 	char* auxKey;
+	char* key;
 	int i = 0;
 	do {
-		auxKey = asignarID(auxKey, i);
+		auxKey = asignarID(i);
 		i++;
 	} while (!dictionary_has_key(g_listos, auxKey));
-	char* key;
 	actual = dictionary_get(g_listos, auxKey);
 	unValor = calculadorProx(actual->estAnterior, actual->realAnterior,
 			actual->tEnEspera);
 	key = strdup(auxKey);
-	for (i++; i < g_keyMaxima; i++) {
+	for (; i <= g_keyMaxima; i++) {
 		free(auxKey);
 		do {
-			auxKey = asignarID(auxKey, i);
+			auxKey = asignarID(i);
 			i++;
 		} while (!dictionary_has_key(g_listos, auxKey));
 		actual = dictionary_get(g_listos, auxKey);
@@ -81,10 +76,11 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 				actual->tEnEspera);
 		if (ponderacion(unValor, prox)) {
 			unValor = prox;
-			strcpy(key, auxKey);
+			free(key);
+			key = strdup(auxKey);
 		}
 	}
-	log_trace(g_logger, "Se ejecuta %s", key);
+	log_trace(g_logger, "Se ejecuta %s", ((t_infoListos*)(dictionary_get(g_listos, key)))->nombreESI);
 	free(auxKey);
 	return key;
 }
@@ -131,9 +127,9 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					if (g_termino) {
 						g_termino = 0;
 						enviarRespuesta(g_socketEnEjecucion, OK);
-						free(aEjecutar);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
-								key);
+														aEjecutar->nombreESI);
+						free(aEjecutar);
 					}
 					if (strcmp(algoritmo, "HRRN") == 0) {
 						g_tEjecucion = cont;
@@ -178,6 +174,7 @@ extern void planificarConDesalojo(void) {
 					}
 					if (g_termino) {
 						g_termino = 0;
+						enviarRespuesta(g_socketEnEjecucion, OK);
 						free(aEjecutar);
 						aEjecutar = NULL;
 					}
@@ -191,7 +188,7 @@ extern void planificarConDesalojo(void) {
 						pthread_mutex_unlock(&mutexListo);
 						sem_post(&ESIentrada);
 						log_trace(g_logger, "Se desaloja %s para replanificar",
-								key);
+								aEjecutar->nombreESI);
 						pthread_mutex_lock(&modificacion);
 						g_huboModificacion = 0;
 						pthread_mutex_unlock(&modificacion);
