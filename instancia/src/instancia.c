@@ -215,11 +215,19 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 void procesarStore(t_paquete * unPaquete, int client_socket){
 	char * clave = recibirStore(unPaquete);
 
+	log_trace(logInstancia,
+			"Me llego un STORE con la clave: %s",clave);
+
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
 	almacenarEnMemoriaSecundaria(entradaBuscada);
 
 	eliminarClave(clave);
+
+	enviarRespuesta(client_socket,OK);
+
+	mostrarBitmap();
+	mostrarTablaEntradas();
 
 	free(clave);
 }
@@ -700,6 +708,8 @@ void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 	if (registroEntrada->tamanio == 0)
 		return;
 
+	mkdir(puntoMontaje, 0777);
+
 	char * rutaArchivo = string_new();
 	string_append(&rutaArchivo, puntoMontaje);
 	string_append(&rutaArchivo, "/");
@@ -707,9 +717,9 @@ void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 
 	FILE* file = fopen(rutaArchivo, "w+b");
 
-	void * valor = buscarValorSegunClave(registroEntrada->clave);
+	char * valor = buscarValorSegunClave(registroEntrada->clave);
 
-	fwrite(valor, sizeof(void), registroEntrada->tamanio, file);
+	fwrite(valor, sizeof(char), registroEntrada->tamanio, file);
 
 	fclose(file);
 

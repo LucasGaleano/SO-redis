@@ -196,7 +196,7 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 	if (string_length(archivoNoLeido) < i)
 		*termino = 1;
 
-	char * sentencia = malloc(sizeof(char) * i + 1);
+	char * sentencia = calloc(i,sizeof(char));
 
 	memcpy(sentencia, archivoNoLeido, i);
 
