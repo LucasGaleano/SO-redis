@@ -85,7 +85,7 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 		procesarError();
 		break;
 	case RESPUESTA_SOLICITUD:
-		procesarRespuestaSolicitud();
+		procesarRespuestaSolicitud(unPaquete);
 		break;
 	default:
 		break;
@@ -101,7 +101,7 @@ void procesarSolicitudEjecucion() {
 	char * sentencia = proximaSentencia(archivo, &ip, &termino);
 
 	if (termino)
-			enviarEjecucionTerminada(socketPlanificador);
+		enviarEjecucionTerminada(socketPlanificador);
 	//Parceo la sentencia
 	t_esi_operacion parsed = parse(sentencia);
 
@@ -142,10 +142,16 @@ void procesarError() {
 	log_error(logESI, "Se desconecto el servidor");
 }
 
-void procesarRespuestaSolicitud() {
+void procesarRespuestaSolicitud(t_paquete * unPaquete) {
+	int respuesta = recibirRespuesta(unPaquete);
+
+	if (respuesta == OK)
+		log_trace(logESI, "Termine de enviar sentencias exitosamente \n");
+
+	if (respuesta == ABORTO)
+		log_warning(logESI, "No pude terminar de ejecutar exitosamente\n");
+
 	recibirSolicitudes = false;
-	log_error(logESI, "Fallo critico");
-	exit(EXIT_FAILURE);
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
