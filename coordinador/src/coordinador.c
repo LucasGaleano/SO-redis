@@ -15,16 +15,19 @@ int main(void) {
 	t_config* config = config_create(PATH_CONFIG);
 	g_configuracion = armarConfigCoordinador(config);
 
-	sem_init(&g_mutexLog, 0, 1); //TODO destrur semaphore
+	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas,0,1);
 
 
 	iniciarServer(g_configuracion.puertoConexion, (void*) procesarPaquete,
 			g_logger);
+
+	sem_destroy(&g_mutexLog);
+	sem_destroy(&g_mutex_tablas);
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir paquetes
+void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 
 	pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
 	args->paquete = paquete;
@@ -35,9 +38,8 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
-		log_debug(g_logger,"dentro de procesar el handshake");
-		pthread_create(&pid, NULL, procesarHandshake, args);
 
+		pthread_create(&pid, NULL, procesarHandshake, args);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
@@ -65,9 +67,7 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) { //TODO destruir p
 	case STORE:
 		;
 
-		//El Coordinador colabora con el Planificador avisando de este recurso
 		pthread_create(&pid, NULL, procesarSTORE, args);
-		//avisa si hubo error o no por instancia que se desconecto pero tenia la clave
 		break;
 
 	case RESPUESTA_SOLICITUD:
@@ -102,6 +102,7 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 		t_list* tablaDeInstancias) {
+
 	sem_wait(&g_mutex_tablas);
 	t_instancia* instanciaElegida = NULL;
 
@@ -110,8 +111,6 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
 		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
-
-	//TODO algoritmo key explicit "KE"
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
@@ -157,9 +156,7 @@ void* procesarRespuesta(void* args) {
 
 void* procesarHandshake(void* args) {
 
-	//pthreadArgs_t* argsAux = (pthreadArgs_t*) args;
 
-	log_debug(g_logger,"Entro al procesarHandshake");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 	int* socketCliente = malloc(sizeof(int));
 	*socketCliente = ((pthreadArgs_t*)args)->socket;
@@ -172,7 +169,6 @@ void* procesarHandshake(void* args) {
 		break;
 
 	case ESI:
-		//TODO que hacer aca?
 		log_info(g_logger,"Se conecto un ESI");
 		break;
 
@@ -190,7 +186,7 @@ void* procesarHandshake(void* args) {
 
 void* procesarSET(void* args) {
 
-	log_debug(g_logger,"Entro al procesarSET");
+
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_instancia* instanciaElegida = PlanificarInstancia(
@@ -202,12 +198,11 @@ void* procesarSET(void* args) {
 				"planificador");
 
 
-	usleep(g_configuracion.retardo*1000);
-	//sleep(g_configuracion.retardo); esto lo hacia en segundos
+	usleep(g_configuracion.retardo);
+
 	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
 
-	log_debug("socket a instancia: %i y a planificacion: %i", *socketInstancia, socketDelPlanificador);
-	logTraceSeguro(g_logger, g_mutexLog, "a la instancia: %i mando set clave: %s, y se la envia a %s",*socketInstancia,sentencia->clave, instanciaElegida->nombre);
+	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",sentencia->clave,sentencia->valor , instanciaElegida->nombre);
 
 	enviarSet(*socketInstancia, sentencia->clave, sentencia->valor);
 	enviarSet(socketDelPlanificador,sentencia->clave,sentencia->valor);
@@ -223,7 +218,7 @@ void* procesarSET(void* args) {
 
 void* procesarGET(void* args) {
 
-	log_debug(g_logger,"Entro al procesarGET");
+
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	char* clave = recibirGet(paquete);
@@ -235,8 +230,8 @@ void* procesarGET(void* args) {
 
 	enviarGet(socketDelPlanificador, clave);
 
-	//free(paquete);
-	//free(args);
+	free(paquete);
+	free(args);
 	return 0;
 
 }
@@ -280,7 +275,6 @@ void* procesarSTORE(void* args) {
 
 void* procesarNombreInstancia(void* args) {
 
-	log_debug(g_logger,"Entro al procesarNombreInstancia");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	int* socketCliente = malloc(sizeof(int));
@@ -295,7 +289,7 @@ void* procesarNombreInstancia(void* args) {
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(*socketCliente, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas);
-	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombre);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombre);
 
 	free(paquete);
 	free(args);
@@ -304,7 +298,6 @@ void* procesarNombreInstancia(void* args) {
 
 void* procesarNombreESI(void* args) {
 
-	log_debug(g_logger,"Entro al procesarNombreEsi");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 
 	int* socketCliente = malloc(sizeof(int));
@@ -313,7 +306,7 @@ void* procesarNombreESI(void* args) {
 	char* nombreESI = recibirNombreEsi(paquete);
 
 	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
-	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombreESI);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombreESI);
 
 	free(paquete);
 	free(args);
