@@ -74,6 +74,9 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case SET_DEFINITIVO:
 		procesarSetDefinitivo(unPaquete, *client_socket);
 		break;
+	case STORE:
+		procesarStore(unPaquete, *client_socket);
+		break;
 	case COMPACTAR:
 		procesarCompactacion(unPaquete, *client_socket);
 		break;
@@ -207,6 +210,18 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	free(claveValor->clave);
 	free(claveValor->valor);
 	free(claveValor);
+}
+
+void procesarStore(t_paquete * unPaquete, int client_socket){
+	char * clave = recibirStore(unPaquete);
+
+	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
+
+	almacenarEnMemoriaSecundaria(entradaBuscada);
+
+	eliminarClave(clave);
+
+	free(clave);
 }
 
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
@@ -612,27 +627,6 @@ void dump(void) {
 
 	mkdir(puntoMontaje, 0777);
 
-	void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
-		if (registroEntrada->tamanio == 0)
-			return;
-
-		char * rutaArchivo = string_new();
-		string_append(&rutaArchivo, puntoMontaje);
-		string_append(&rutaArchivo, "/");
-		string_append(&rutaArchivo, registroEntrada->clave);
-
-		FILE* file = fopen(rutaArchivo, "w+b");
-
-		void * valor = buscarValorSegunClave(registroEntrada->clave);
-
-		fwrite(valor, sizeof(void), registroEntrada->tamanio, file);
-
-		fclose(file);
-
-		free(rutaArchivo);
-		free(valor);
-	}
-
 	list_iterate(tablaEntradas, (void*) almacenarEnMemoriaSecundaria);
 
 	pthread_mutex_unlock(&mutex);
@@ -701,6 +695,28 @@ void recuperarInformacionDeInstancia(void) {
 
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
 }
+
+void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
+	if (registroEntrada->tamanio == 0)
+		return;
+
+	char * rutaArchivo = string_new();
+	string_append(&rutaArchivo, puntoMontaje);
+	string_append(&rutaArchivo, "/");
+	string_append(&rutaArchivo, registroEntrada->clave);
+
+	FILE* file = fopen(rutaArchivo, "w+b");
+
+	void * valor = buscarValorSegunClave(registroEntrada->clave);
+
+	fwrite(valor, sizeof(void), registroEntrada->tamanio, file);
+
+	fclose(file);
+
+	free(rutaArchivo);
+	free(valor);
+}
+
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
 void algoritmoReemplazoCircular(char * clave, void * valor) {

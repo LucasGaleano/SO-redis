@@ -102,6 +102,7 @@ void procesarSolicitudEjecucion() {
 
 	if (termino)
 		enviarEjecucionTerminada(socketPlanificador);
+
 	//Parceo la sentencia
 	t_esi_operacion parsed = parse(sentencia);
 

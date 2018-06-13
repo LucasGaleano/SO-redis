@@ -61,6 +61,7 @@ void 		procesarPaquete				(t_paquete * unPaquete, int * client_socket);
 void 		procesarEnviarInfoInstancia	(t_paquete * unPaquete);
 void 		procesarSet					(t_paquete * unPaquete, int client_socket);
 void 		procesarSetDefinitivo		(t_paquete * unPaquete, int client_socket);
+void 		procesarStore				(t_paquete * unPaquete, int client_socket);
 void 		procesarCompactacion		(t_paquete * unPaquete, int client_socket);
 void 		procesarSolicitudValor		(t_paquete * unPaquete, int client_socket);
 void 		procesarError				(t_paquete * unPaquete);
@@ -103,6 +104,7 @@ void 				dump							(void);
 void 				almacenamientoContinuo			(void);
 void 				crearAlmacenamientoContinuo		(void);
 void 				recuperarInformacionDeInstancia	(void);
+void				almacenarEnMemoriaSecundaria	(t_tabla_entradas * registroEntrada);
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
 void 				algoritmoReemplazoCircular			(char * clave, void * valor);
