@@ -35,9 +35,10 @@ void conectarInstancia() {
 			"COORDINADOR_IP");
 	int coordinadorPuerto = config_get_int_value(configInstancia,
 			"COORDINADOR_PUERTO");
-	algoritmoReemplazo = config_get_string_value(configInstancia,
-			"ALGORITMO_REEMPLAZO");
-	puntoMontaje = config_get_string_value(configInstancia, "PUNTO_MONTAJE");
+	algoritmoReemplazo = strdup(
+			config_get_string_value(configInstancia, "ALGORITMO_REEMPLAZO"));
+	puntoMontaje = strdup(
+			config_get_string_value(configInstancia, "PUNTO_MONTAJE"));
 	char * nombreInstancia = config_get_string_value(configInstancia,
 			"NOMBRE_INSTANCIA");
 	intervaloDump = config_get_int_value(configInstancia, "INTERVALO_DUMP");
@@ -72,9 +73,6 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 		break;
 	case SET_DEFINITIVO:
 		procesarSetDefinitivo(unPaquete, *client_socket);
-		break;
-	case GET:
-		procesarGet(unPaquete, *client_socket);
 		break;
 	case COMPACTAR:
 		procesarCompactacion(unPaquete, *client_socket);
@@ -129,7 +127,7 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 			"Me llego un SET con la clave: %s y con el valor: %s",
 			claveValor->clave, (char*) claveValor->valor);
 
-	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
 
 	switch (respuesta) {
 	case ENTRADA_INEXISTENTE:
@@ -168,7 +166,7 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 			"Me llego un SET_DEFINITIVO con la clave: %s y con el valor: %s",
 			claveValor->clave, (char*) claveValor->valor);
 
-	int respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
 
 	aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 
@@ -191,7 +189,7 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 
 		mostrarBitmap();
 
-		respuesta = agregarValorAClave(claveValor->clave, claveValor->valor);
+		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
 
 	}
 
@@ -209,29 +207,6 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	free(claveValor->clave);
 	free(claveValor->valor);
 	free(claveValor);
-}
-
-void procesarGet(t_paquete * unPaquete, int client_socket) {
-	char * clave = recibirGet(unPaquete);
-
-	log_trace(logInstancia, "Me llego un GET con la clave: %s", clave);
-
-	void * resultado = buscarValorSegunClave(clave);
-
-	if (resultado == NULL) {
-		agregarClave(clave);
-		log_warning(logInstancia, "La clave no existia y la creo");
-	}
-
-	aumentarTiempoReferenciadoMenosAClave(clave);
-
-	enviarRespuesta(client_socket, OK);
-
-	if (resultado != NULL)
-		free(resultado);
-	free(clave);
-
-	mostrarTablaEntradas();
 }
 
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
@@ -306,20 +281,6 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 	return registroEntrada;
 }
 
-void agregarClave(char * clave) {
-	t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
-
-	strncpy(registroEntrada->clave, clave, sizeof(registroEntrada->clave) - 1);
-
-	registroEntrada->tamanio = 0;
-
-	registroEntrada->indexComienzo = -1;
-
-	registroEntrada->tiempoReferenciado = 0;
-
-	list_add(tablaEntradas, registroEntrada);
-}
-
 void eliminarClave(char * clave) {
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
 		return string_equals_ignore_case(entrada->clave, clave);
@@ -356,11 +317,7 @@ void mostrarTablaEntradas(void) {
 	printf("\n");
 }
 
-int agregarValorAClave(char * clave, void * valor) {
-	t_tabla_entradas * registroEntrada = buscarEntrada(clave);
-
-	if (registroEntrada == NULL)
-		return ENTRADA_INEXISTENTE;
+int agregarClaveValor(char * clave, void * valor) {
 
 	int tamValor = string_length(valor);
 
@@ -371,12 +328,20 @@ int agregarValorAClave(char * clave, void * valor) {
 	if (respuesta == NULL) {
 		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
+		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
+
+		strncpy(registroEntrada->clave, clave,
+				sizeof(registroEntrada->clave) - 1);
 
 		registroEntrada->entrada = respuesta;
 
 		registroEntrada->tamanio = tamValor;
 
 		registroEntrada->indexComienzo = index;
+
+		registroEntrada->tiempoReferenciado = 0;
+
+		list_add(tablaEntradas, registroEntrada);
 
 		return 0;
 	}
@@ -435,11 +400,12 @@ void aumentarTiempoReferenciadoATodos(t_list * tabla) {
 }
 
 void aumentarTiempoReferenciadoMenosAClave(char * clave) {
-	bool entradasMenosUna(t_tabla_entradas * entrada){
-		return !string_equals_ignore_case(entrada->clave,clave);
+	bool entradasMenosUna(t_tabla_entradas * entrada) {
+		return !string_equals_ignore_case(entrada->clave, clave);
 	}
 
-	t_list * listaFiltrada = list_filter(tablaEntradas,(void *) entradasMenosUna);
+	t_list * listaFiltrada = list_filter(tablaEntradas,
+			(void *) entradasMenosUna);
 
 	aumentarTiempoReferenciadoATodos(listaFiltrada);
 
@@ -713,10 +679,8 @@ void recuperarInformacionDeInstancia(void) {
 		for (i = 0; spliteado[i] != NULL; i++)
 			;
 
-		agregarClave(spliteado[i - 1]);
-
 		if (tamArch != 0)
-			agregarValorAClave(spliteado[i - 1], archivo);
+			agregarClaveValor(spliteado[i - 1], archivo);
 
 		for (i = 0; spliteado[i] != NULL; ++i) {
 			free(spliteado[i]);
