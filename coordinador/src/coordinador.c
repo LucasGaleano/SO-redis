@@ -192,13 +192,10 @@ void* procesarSET(void* args) {
 
 	log_debug(g_logger,"Entro al procesarSET");
 	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
-
 	t_claveValor* sentencia = recibirSet(paquete);
-
 	t_instancia* instanciaElegida = PlanificarInstancia(
 			g_configuracion.algoritmoDist, sentencia->clave,
 			g_tablaDeInstancias);
-
 	mostrarInstancia(instanciaElegida);
 
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
@@ -296,7 +293,7 @@ void* procesarNombreInstancia(void* args) {
 	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,socketCliente);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	distribuirKeys(g_tablaDeInstancias);
-	enviarInfoInstancia(socketCliente, g_configuracion.cantidadEntradas,
+	enviarInfoInstancia(*socketCliente, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas);
 	logTraceSeguro(g_logger, g_mutexLog, "%s mando el nombre",nombre);
 

@@ -172,7 +172,7 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
 	sem_wait(&g_mutex_tablas);
 	t_instancia* instanciaAux = list_find(tablaDeInstancias,
 			(void*) instanciaCumpleCon);
-	sem_wait(&g_mutex_tablas);
+	sem_post(&g_mutex_tablas);
 	return instanciaAux;
 
 }
