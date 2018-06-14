@@ -237,12 +237,7 @@ void procesarStore(t_paquete * unPaquete, int client_socket) {
 
 	almacenarEnMemoriaSecundaria(entradaBuscada);
 
-	eliminarClave(clave);
-
 	enviarRespuesta(client_socket, OK);
-
-	mostrarBitmap();
-	mostrarTablaEntradas();
 
 	free(clave);
 }
