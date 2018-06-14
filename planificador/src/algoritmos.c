@@ -97,6 +97,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 				;
 				while (1) {
 					cont = 0;
+					g_huboError = 0;
 					sem_wait(&ESIentrada);
 					pthread_mutex_lock(&mutexListo);
 					if (strcmp(algoritmo, "SJF-SD") == 0)
@@ -111,7 +112,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					g_nombreESIactual = aEjecutar->nombreESI;
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
-					while (!g_termino && !g_bloqueo) {
+					while (!g_termino && !g_bloqueo && !g_huboError) {
 						pthread_mutex_lock(&mutexConsola);
 						enviarSolicitudEjecucion(g_socketEnEjecucion);
 						pthread_mutex_unlock(&mutexConsola);
@@ -126,8 +127,8 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						bloquear(aEjecutar, cont, key);
 					}
 					if (g_termino) {
-						g_termino = 0;
-						enviarRespuesta(g_socketEnEjecucion, OK);
+						if(!g_huboError)
+							enviarRespuesta(g_socketEnEjecucion, OK);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
 														aEjecutar->nombreESI);
 						free(aEjecutar->nombreESI);

@@ -1,6 +1,8 @@
 #include "planificador.h"
 
 int g_intervaloReconexion;
+char* g_claveBusqueda;
+t_infoBloqueo* aBorrar;
 
 int main(void) {
 
@@ -35,6 +37,10 @@ int main(void) {
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
+
+	g_termino = 0;
+	g_bloqueo = 0;
+	g_huboError = 0;
 
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
@@ -100,7 +106,7 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		break;
 	case ENVIAR_ERROR:
 		keyAux = string_itoa(*socketCliente);
-		liberarClaves(keyAux);
+		liberarESI(keyAux);
 		free(keyAux);
 		break;
 	}
@@ -155,7 +161,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					g_nombreESIactual, recibirStore(unPaquete));
 			pthread_mutex_unlock(&mutexLog);
 		} else {
-			g_termino = 1;
+			g_huboError = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
 			liberarClaves(g_idESIactual);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
@@ -165,7 +171,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case RESPUESTA_SOLICITUD:
-		g_termino = 1;
+		g_huboError = 1;
 		enviarRespuesta(ABORTO, g_socketEnEjecucion);
 		liberarClaves(g_idESIactual);
 		sem_post(&continua);
@@ -174,10 +180,14 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	case ENVIAR_ERROR:
-		log_error(g_logger,
-				"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
-		pthread_mutex_unlock(&mutexLog);
-		exit(EXIT_FAILURE);
+		if (!g_termino) {
+			log_error(g_logger,
+					"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
+			pthread_mutex_unlock(&mutexLog);
+			liberarTodo();
+			exit(EXIT_FAILURE);
+		} else
+			g_termino = 0;
 		break;
 	}
 	destruirPaquete(unPaquete);
@@ -232,4 +242,31 @@ void planificar(char* algoritmo) {
 		planificarSinDesalojo(algoritmo);
 	else
 		planificarConDesalojo();
+}
+
+static buscarESIenLista(t_infoBloqueo* nodo) {
+	return !strcmp(g_claveBusqueda, nodo->idESI);
+}
+
+static buscarESIenBloqueados(t_list* reg) {
+	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
+	if (aBorrar == NULL) {
+		aBorrar = list_find(reg, (void*) buscarESIenLista);
+	}
+}
+
+void liberarESI(char* key) {
+	aBorrar = NULL;
+	liberarClaves(key);
+	if (dictionary_has_key(g_listos, key)) {
+		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
+		free(dictionary_remove(g_listos, key));
+	} else {
+		g_claveBusqueda = key;
+		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
+		free(aBorrar->idESI);
+		free(aBorrar->data->nombreESI);
+		free(aBorrar->data);
+		free(aBorrar);
+	}
 }
