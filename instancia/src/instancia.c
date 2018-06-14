@@ -146,14 +146,16 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 			"Me llego un SET con la clave: %s y con el valor: %s",
 			claveValor->clave, (char*) claveValor->valor);
 
+	t_tabla_entradas * entrada = buscarEntrada(claveValor->clave);
+
+	if (entrada != NULL){
+		eliminarClave(claveValor->clave);
+		log_warning(logInstancia,"La clave existe por lo que la elimino y guardo el valor nuevo \n");
+	}
+
 	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
 
 	switch (respuesta) {
-	case ENTRADA_INEXISTENTE:
-		enviarRespuesta(client_socket, ERROR_CLAVE_NO_IDENTIFICADA);
-		log_error(logInstancia, "Error clave no identiicada");
-		aumentarTiempoReferenciadoATodos(tablaEntradas);
-		break;
 	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
 		log_error(logInstancia, "Error espacio insuficiente");
@@ -698,7 +700,7 @@ void recuperarInformacionDeInstancia(t_list * listaClaves) {
 			;
 
 		bool esClaveBuscada(char * clave) {
-			return string_equals_ignore_case(spliteado[i-1],clave);
+			return string_equals_ignore_case(spliteado[i - 1], clave);
 		}
 
 		bool laEncontre = list_any_satisfy(listaClaves,
@@ -720,7 +722,7 @@ void recuperarInformacionDeInstancia(t_list * listaClaves) {
 		size_t tamArch;
 		FILE * archivofd;
 
-		printf("El archivo a recuperar es: %s \n",rutaArchivo);
+		printf("El archivo a recuperar es: %s \n", rutaArchivo);
 
 		void * archivo = abrirArchivo(rutaArchivo, &tamArch, &archivofd);
 
@@ -753,7 +755,6 @@ void recuperarInformacionDeInstancia(t_list * listaClaves) {
 
 	list_destroy(archivosARecuperar);
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
-
 
 	mostrarTablaEntradas();
 }
