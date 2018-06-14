@@ -128,12 +128,13 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	crearTablaEntradas();
 
 	//Verifico que no tenga archivos anteriores
-	recuperarInformacionDeInstancia();
+	recuperarInformacionDeInstancia(info->listaClaves);
 
 	//Creo el hilo para hacer el dump
 	crearAlmacenamientoContinuo();
 
 	//Libero memoria
+	list_destroy_and_destroy_elements(info->listaClaves, free);
 	free(info);
 
 }
@@ -682,7 +683,7 @@ void crearAlmacenamientoContinuo(void) {
 
 }
 
-void recuperarInformacionDeInstancia(void) {
+void recuperarInformacionDeInstancia(t_list * listaClaves) {
 	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
 
 	almacenar = true;
@@ -693,9 +694,38 @@ void recuperarInformacionDeInstancia(void) {
 		return;
 	}
 
+	bool esArchivoARecuperar(char * rutaArchivo) {
+
+		char ** spliteado = string_split(rutaArchivo, "/");
+
+		int i;
+		for (i = 0; spliteado[i] != NULL; i++)
+			;
+
+		bool esClaveBuscada(char * clave) {
+			return string_equals_ignore_case(spliteado[i-1],clave);
+		}
+
+		bool laEncontre = list_any_satisfy(listaClaves,
+				(void *) esClaveBuscada);
+
+		for (i = 0; spliteado[i] != NULL; ++i) {
+			free(spliteado[i]);
+		}
+		free(spliteado[i]);
+		free(spliteado);
+
+		return laEncontre;
+	}
+
+	t_list * archivosARecuperar = list_filter(listaArchivos,
+			(void *) esArchivoARecuperar);
+
 	void guardarArchivoEnEstructurasAdministrativas(char * rutaArchivo) {
 		size_t tamArch;
 		FILE * archivofd;
+
+		printf("El archivo a recuperar es: %s \n",rutaArchivo);
 
 		void * archivo = abrirArchivo(rutaArchivo, &tamArch, &archivofd);
 
@@ -720,13 +750,17 @@ void recuperarInformacionDeInstancia(void) {
 
 	}
 
-	list_iterate(listaArchivos,
+	list_iterate(archivosARecuperar,
 			(void*) guardarArchivoEnEstructurasAdministrativas);
 
 	log_trace(logInstancia,
 			"Tengo archivos para recuperar inormacion de instancia anterior");
 
+	list_destroy(archivosARecuperar);
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
+
+
+	mostrarTablaEntradas();
 }
 
 void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
