@@ -108,6 +108,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 
 					g_idESIactual = key;
 					aEjecutar = dictionary_remove(g_listos, key);
+					g_nombreESIactual = aEjecutar->nombreESI;
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
 					while (!g_termino && !g_bloqueo) {
@@ -129,6 +130,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						enviarRespuesta(g_socketEnEjecucion, OK);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
 														aEjecutar->nombreESI);
+						free(aEjecutar->nombreESI);
 						free(aEjecutar);
 					}
 					if (strcmp(algoritmo, "HRRN") == 0) {
@@ -157,6 +159,7 @@ extern void planificarConDesalojo(void) {
 							(void*) esMayor);
 					g_idESIactual = key;
 					aEjecutar = dictionary_remove(g_listos, key);
+					g_nombreESIactual = aEjecutar->nombreESI;
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
 
@@ -175,6 +178,7 @@ extern void planificarConDesalojo(void) {
 					if (g_termino) {
 						g_termino = 0;
 						enviarRespuesta(g_socketEnEjecucion, OK);
+						free(aEjecutar->nombreESI);
 						free(aEjecutar);
 						aEjecutar = NULL;
 					}

@@ -21,7 +21,7 @@ int main(void) {
 	g_keyMaxima = 0;
 
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
-	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
+	//asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
 	g_intervaloReconexion = config_get_int_value(g_con, "INTERVALO_RECONEXION");
@@ -36,10 +36,10 @@ int main(void) {
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
 
-	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor,
-			(void*) &puertoLocal);
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
+	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor,
+			(void*) &puertoLocal);
 
 	log_debug(g_logger, "inicio consola");
 	//iniciarConsola();
@@ -94,8 +94,7 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		break;
 	case TERMINO_ESI:
 		pthread_mutex_lock(&mutexLog);
-		log_debug(g_logger, "%s me avisa que finalizo",
-				((t_infoListos*) (dictionary_get(g_listos, g_idESIactual)))->nombreESI);
+		log_debug(g_logger, "%s me avisa que finalizo", g_nombreESIactual);
 		pthread_mutex_unlock(&mutexLog);
 		g_termino = 1;
 		break;
@@ -139,8 +138,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			pthread_mutex_unlock(&mutexClavesTomadas);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
-					((t_infoListos*) (dictionary_get(g_listos, g_idESIactual)))->nombreESI,
-					g_claveGET);
+					g_nombreESIactual, g_claveGET);
 			pthread_mutex_unlock(&mutexLog);
 		}
 		sem_post(&continua);
@@ -154,15 +152,14 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			pthread_mutex_unlock(&mutexBloqueo);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
-					((t_infoListos*) (dictionary_get(g_listos, g_idESIactual)))->nombreESI,
-					recibirStore(unPaquete));
+					g_nombreESIactual, recibirStore(unPaquete));
 			pthread_mutex_unlock(&mutexLog);
 		} else {
 			g_termino = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
 			liberarClaves(g_idESIactual);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
-					((t_infoListos*) (dictionary_get(g_listos, g_idESIactual)))->nombreESI);
+					g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
 		}
 		sem_post(&continua);
@@ -177,9 +174,13 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	case ENVIAR_ERROR:
-		intentarReconectar();
+		log_error(g_logger,
+				"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
+		pthread_mutex_unlock(&mutexLog);
+		exit(EXIT_FAILURE);
 		break;
 	}
+	destruirPaquete(unPaquete);
 }
 
 void atenderCoordinador(void* arg) {
@@ -231,28 +232,4 @@ void planificar(char* algoritmo) {
 		planificarSinDesalojo(algoritmo);
 	else
 		planificarConDesalojo();
-}
-
-void intentarReconectar() {
-	pthread_mutex_lock(&mutexLog);
-	log_debug(g_logger,
-			"El coordinador se ha desconectado. Se comienza el intento de reconexion por %d segundos",
-			g_intervaloReconexion);
-	pthread_mutex_unlock(&mutexLog);
-	time_t start, end;
-	double elapsed;
-	start = time(NULL);
-	g_socketCoordinador = -1;
-	while (g_socketCoordinador < 0) {
-		end = time(NULL);
-		elapsed = difftime(end, start);
-		if (elapsed >= g_intervaloReconexion) {
-			pthread_mutex_lock(&mutexLog);
-			log_debug(g_logger,
-					"El planificador se ha desconectado del coordinador y terminara su ejecucion");
-			pthread_mutex_unlock(&mutexLog);
-			exit(EXIT_FAILURE);
-		} else
-			usleep(50000);
-	}
 }

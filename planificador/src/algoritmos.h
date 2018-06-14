@@ -25,6 +25,7 @@ int g_socketEnEjecucion;
 int g_huboModificacion;
 char* g_claveGET;
 char* g_idESIactual;
+char* g_nombreESIactual;
 
 extern void planificarSinDesalojo(char*);
 extern void planificarConDesalojo(void);
