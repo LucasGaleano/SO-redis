@@ -338,6 +338,16 @@ void enviarRespSolicitudValor(int server_socket, bool claveExistente, char * val
 	enviarPaquetes(server_socket, unPaquete);
 }
 
+void enviarClaveEliminada(int server_socket, char * clave){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = ENVIAR_CLAVE_ELIMINADA;
+
+	serializarMensaje(unPaquete, clave);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
 	return deserializarHandshake(unPaquete->buffer);
@@ -397,4 +407,8 @@ char * recibirSolicitudValor(t_paquete * unPaquete){
 
 t_respuestaValor * recibirRespSolicitudValor(t_paquete * unPaquete){
 	return deserializarExistenciaClaveValor(unPaquete->buffer);
+}
+
+char * recibirClaveEliminada(t_paquete * unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
 }

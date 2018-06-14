@@ -336,6 +336,9 @@ void eliminarClave(char * clave) {
 			for (i = 0; i < cantidadEntradasABorar; i++)
 				liberarIndex(entradaBuscada->indexComienzo + i);
 		}
+
+		enviarClaveEliminada(socketCoordinador, entradaBuscada->clave);
+
 		free(entradaBuscada);
 	}
 

@@ -32,6 +32,7 @@ void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tama
 void 							enviarCompactacion			(int server_socket);
 void 							enviarSolicitudValor		(int server_socket, char * clave);
 void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, char * valor);
+void							enviarClaveEliminada		(int server_socket, char * clave);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);
@@ -49,5 +50,6 @@ t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
 t_infoInstancia * 				recibirInfoInstancia		(t_paquete * unPaquete);
 char *							recibirSolicitudValor		(t_paquete * unPaquete);
 t_respuestaValor *				recibirRespSolicitudValor	(t_paquete * unPaquete);
+char *							recibirClaveEliminada		(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */
