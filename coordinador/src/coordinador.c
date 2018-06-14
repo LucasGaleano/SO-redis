@@ -355,7 +355,7 @@ int iniciarServidor(char* puerto,void (*procesarPaquetes)(void*, int*)){
 
   if(-1 == listen(sockfd, 10))
   perror("listen");
-	printf("esperando conexiones....\n");
+	printf("esperando conexiones en puerto: %s\n",puerto);
   while(1){
     fflush(stdout);
     addr_size = sizeof(their_addr);
@@ -365,9 +365,11 @@ int iniciarServidor(char* puerto,void (*procesarPaquetes)(void*, int*)){
     //send(new_fd, buffer, strlen(buffer), 0);
     //int tamPaq;
     //char* buffer = malloc (20);
+while(1){
+
     int tamPaq;
     if(recv(new_fd,&tamPaq,sizeof (int),MSG_WAITALL) <= 0){
-          printf("el socket: %i se nos fue!!!!",new_fd);
+					break;
     }
     char* buffer = malloc(tamPaq);
     recv(new_fd,buffer,tamPaq,MSG_WAITALL);
@@ -375,6 +377,7 @@ int iniciarServidor(char* puerto,void (*procesarPaquetes)(void*, int*)){
 		printf("socket: %i\n",new_fd);
 		procesarPaquetes(unPaquete,&new_fd);
 
+}
 
     //close(new_fd);
 
