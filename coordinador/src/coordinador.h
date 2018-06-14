@@ -19,7 +19,7 @@
 /*---------------------Estructuras-------------------------*/
 
 typedef struct t_configuracion{
-	int puertoConexion;
+	char* puertoConexion;
 	char* algoritmoDist;
 	int cantidadEntradas;
 	int tamanioEntradas;
@@ -44,6 +44,7 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
+int iniciarServidor(char* puerto,void (*procesarPaquete)(void*, int*));
 void* procesarHandshake(void* args);
 void* procesarSET(void* args);
 void* procesarGET(void* args);

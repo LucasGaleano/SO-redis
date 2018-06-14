@@ -19,8 +19,7 @@ int main(void) {
 	sem_init(&g_mutex_tablas,0,1);
 
 
-	iniciarServer(g_configuracion.puertoConexion, (void*) procesarPaquete,
-			g_logger);
+	iniciarServidor(g_configuracion.puertoConexion, (void*) procesarPaquete);
 
 	sem_destroy(&g_mutexLog);
 	sem_destroy(&g_mutex_tablas);
@@ -33,6 +32,7 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 	args->paquete = paquete;
 	args->socket = *socketCliente;
 	pthread_t pid;
+	log_info(g_logger,"llego una conexion\n");
 
 
 	switch (paquete->codigoOperacion) {
@@ -76,7 +76,7 @@ void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 		break;
 
 	default:
-
+		printf("codigo no reconocido\n");
 	break;
 	}
 
@@ -86,7 +86,7 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 	t_configuraciones configuracion;
 
-	configuracion.puertoConexion = config_get_int_value(archivoConfig,
+	configuracion.puertoConexion = config_get_string_value(archivoConfig,
 			"PUERTO");
 	configuracion.algoritmoDist = config_get_string_value(archivoConfig,
 			"ALGORITMO_DISTRIBUCION");
@@ -325,5 +325,59 @@ void logTraceSeguro(t_log* logger,sem_t mutexLog, char* format, ...) {
 }
 
 
+int iniciarServidor(char* puerto,void (*procesarPaquetes)(void*, int*)){
+
+  struct sockaddr_storage their_addr;
+  struct addrinfo hints, *res;
+  int status, new_fd, sockfd;
+  socklen_t addr_size;
 
 
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6 to force version
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE; // use my IP
+
+  if ((status = getaddrinfo(NULL, puerto, &hints, &res)) != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+    return 2;
+  }
+
+
+  sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
+  // bind it to the port we passed in to getaddrinfo():
+
+  bind(sockfd, res->ai_addr, res->ai_addrlen);
+  //printf("%i\n",sockfd );
+
+  //fflush(stdout);
+
+  if(-1 == listen(sockfd, 10))
+  perror("listen");
+	printf("esperando conexiones....\n");
+  while(1){
+    fflush(stdout);
+    addr_size = sizeof(their_addr);
+    new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &addr_size);
+
+    //char* buffer = malloc(100);
+    //send(new_fd, buffer, strlen(buffer), 0);
+    //int tamPaq;
+    //char* buffer = malloc (20);
+    int tamPaq;
+    if(recv(new_fd,&tamPaq,sizeof (int),MSG_WAITALL) <= 0){
+          printf("el socket: %i se nos fue!!!!",new_fd);
+    }
+    char* buffer = malloc(tamPaq);
+    recv(new_fd,buffer,tamPaq,MSG_WAITALL);
+    t_paquete* unPaquete = crearPaquete(buffer);
+		printf("socket: %i\n",new_fd);
+		procesarPaquetes(unPaquete,&new_fd);
+
+
+    //close(new_fd);
+
+}
+
+}
