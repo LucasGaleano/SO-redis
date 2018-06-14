@@ -37,6 +37,10 @@ int entradaAReemplazar;
 
 pthread_mutex_t mutex;
 
+bool almacenar;
+
+pthread_t threadAlmacenamientoContinuo;
+
 /*------------------------Estructuras-------------------------*/
 typedef struct {
 	char clave[40];

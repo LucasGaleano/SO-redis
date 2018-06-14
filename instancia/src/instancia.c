@@ -16,11 +16,25 @@ int main(void) {
 				logInstancia);
 	}
 
+	//Corto el hilo de almacenamiento
+	almacenar = false;
+	intervaloDump = 0;
+	log_warning(logInstancia, "Espero para hacer el ultimo dump \n");
+	pthread_join(threadAlmacenamientoContinuo,NULL);
+
 	//Termina esi
 	log_trace(logInstancia, "Termino el proceso instancia \n");
 
 	//Destruyo archivo de log
 	log_destroy(logInstancia);
+
+	//Libero memoria
+	destruirTablaEntradas();
+	destruirBitMap();
+	destruirStorage();
+	free(puntoMontaje);
+	free(algoritmoReemplazo);
+	pthread_mutex_destroy(&mutex);
 
 	return EXIT_SUCCESS;
 }
@@ -212,11 +226,10 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	free(claveValor);
 }
 
-void procesarStore(t_paquete * unPaquete, int client_socket){
+void procesarStore(t_paquete * unPaquete, int client_socket) {
 	char * clave = recibirStore(unPaquete);
 
-	log_trace(logInstancia,
-			"Me llego un STORE con la clave: %s",clave);
+	log_trace(logInstancia, "Me llego un STORE con la clave: %s", clave);
 
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
@@ -224,7 +237,7 @@ void procesarStore(t_paquete * unPaquete, int client_socket){
 
 	eliminarClave(clave);
 
-	enviarRespuesta(client_socket,OK);
+	enviarRespuesta(client_socket, OK);
 
 	mostrarBitmap();
 	mostrarTablaEntradas();
@@ -641,7 +654,7 @@ void dump(void) {
 }
 
 void almacenamientoContinuo(void) {
-	while (true) {
+	while (almacenar) {
 		sleep(intervaloDump);
 		dump();
 	}
@@ -650,17 +663,18 @@ void almacenamientoContinuo(void) {
 void crearAlmacenamientoContinuo(void) {
 	pthread_mutex_init(&mutex, NULL);
 
-	pthread_t threadAlmacenamientoContinuo;
-
 	if (pthread_create(&threadAlmacenamientoContinuo, NULL,
 			(void*) almacenamientoContinuo, NULL)) {
 		perror("Error el crear el thread almacenamientoContinuo.");
 		exit(EXIT_FAILURE);
 	}
+
 }
 
 void recuperarInformacionDeInstancia(void) {
 	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
+
+	almacenar = true;
 
 	if (listaArchivos == NULL) {
 		log_warning(logInstancia,
@@ -726,7 +740,6 @@ void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 	free(rutaArchivo);
 	free(valor);
 }
-
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
 void algoritmoReemplazoCircular(char * clave, void * valor) {
