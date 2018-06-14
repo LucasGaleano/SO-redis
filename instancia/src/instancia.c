@@ -20,7 +20,8 @@ int main(void) {
 	almacenar = false;
 	intervaloDump = 0;
 	log_warning(logInstancia, "Espero para hacer el ultimo dump \n");
-	pthread_join(threadAlmacenamientoContinuo,NULL);
+	pthread_cancel(threadAlmacenamientoContinuo);
+	pthread_join(threadAlmacenamientoContinuo, NULL);
 
 	//Termina esi
 	log_trace(logInstancia, "Termino el proceso instancia \n");
@@ -318,6 +319,8 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 }
 
 void eliminarClave(char * clave) {
+	pthread_mutex_lock(&mutex);
+
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
 		return string_equals_ignore_case(entrada->clave, clave);
 	}
@@ -337,6 +340,8 @@ void eliminarClave(char * clave) {
 		}
 		free(entradaBuscada);
 	}
+
+	pthread_mutex_unlock(&mutex);
 }
 
 void mostrarTablaEntradas(void) {
@@ -355,6 +360,8 @@ void mostrarTablaEntradas(void) {
 
 int agregarClaveValor(char * clave, void * valor) {
 
+	pthread_mutex_lock(&mutex);
+
 	int tamValor = string_length(valor);
 
 	int index = -1;
@@ -362,6 +369,8 @@ int agregarClaveValor(char * clave, void * valor) {
 	void * respuesta = guardarEnStorage(valor, &index);
 
 	if (respuesta == NULL) {
+		pthread_mutex_unlock(&mutex);
+
 		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
 		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
@@ -378,6 +387,8 @@ int agregarClaveValor(char * clave, void * valor) {
 		registroEntrada->tiempoReferenciado = 0;
 
 		list_add(tablaEntradas, registroEntrada);
+
+		pthread_mutex_unlock(&mutex);
 
 		return 0;
 	}
