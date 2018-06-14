@@ -247,7 +247,7 @@ static buscarESIenLista(t_infoBloqueo* nodo) {
 	return !strcmp(g_claveBusqueda, nodo->idESI);
 }
 
-static buscarESIenBloqueados(t_list* reg) {
+static buscarESIenBloqueados(char* key, t_list* reg) {
 	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
 	if (aBorrar == NULL) {
 		aBorrar = list_find(reg, (void*) buscarESIenLista);
