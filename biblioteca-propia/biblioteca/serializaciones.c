@@ -95,10 +95,13 @@ void serializarRespuestaStatus(t_paquete* unPaquete, char * valor,
 }
 
 void serializarInfoInstancia(t_paquete * unPaquete, int cantEntradas,
-		int tamanioEntrada) {
+		int tamanioEntrada, t_list * listaClaves) {
 	int tamCantEntradas = sizeof(int);
 	int tamTamanioEntrada = sizeof(int);
-	int tamTotal = tamCantEntradas + tamTamanioEntrada;
+	int tamCantidadElementosLista = sizeof(int);
+
+	int tamTotal = tamCantEntradas + tamTamanioEntrada
+			+ tamCantidadElementosLista;
 
 	int desplazamiento = 0;
 
@@ -113,6 +116,27 @@ void serializarInfoInstancia(t_paquete * unPaquete, int cantEntradas,
 
 	memcpy(unPaquete->buffer->data + desplazamiento, &tamanioEntrada,
 			tamTamanioEntrada);
+	desplazamiento += tamTamanioEntrada;
+
+	memcpy(unPaquete->buffer->data + desplazamiento,
+			&listaClaves->elements_count, tamCantidadElementosLista);
+	desplazamiento += tamCantidadElementosLista;
+
+	void serializarListaClaves(char * clave) {
+		int tamClave = strlen(clave) + 1;
+
+		unPaquete->buffer->size += tamClave;
+
+		unPaquete->buffer->data = realloc(unPaquete->buffer->data,
+				unPaquete->buffer->size);
+
+		memcpy(unPaquete->buffer->data + desplazamiento, clave, tamClave);
+		desplazamiento += tamClave;
+
+	}
+
+	list_iterate(listaClaves, (void *) serializarListaClaves);
+
 }
 
 void serializarExistenciaClaveValor(t_paquete * unPaquete, bool claveExistente,
@@ -202,7 +226,11 @@ t_respuestaStatus* deserializarRespuestaStatus(t_stream * buffer) {
 t_infoInstancia * deserializarInfoInstancia(t_stream * buffer) {
 	t_infoInstancia * info = malloc(sizeof(t_infoInstancia));
 
+	info->listaClaves = list_create();
+
 	int tamNumero = sizeof(int);
+
+	int cantElementosLista;
 
 	int desplazamiento = 0;
 
@@ -210,6 +238,18 @@ t_infoInstancia * deserializarInfoInstancia(t_stream * buffer) {
 	desplazamiento += tamNumero;
 
 	memcpy(&info->tamanioEntrada, buffer->data + desplazamiento, tamNumero);
+	desplazamiento += tamNumero;
+
+	memcpy(&cantElementosLista, buffer->data + desplazamiento, tamNumero);
+	desplazamiento += tamNumero;
+
+	int i;
+	for (i = 0; i < cantElementosLista; ++i) {
+		char * clave  = strdup(buffer->data + desplazamiento);
+		desplazamiento += strlen(clave) + 1;
+
+		list_add(info->listaClaves, clave);
+	}
 
 	return info;
 }

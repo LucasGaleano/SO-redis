@@ -28,7 +28,7 @@ void 							enviarStore					(int server_socket, char * clave);
 void 							enviarSolicitusStatus		(int server_socket, char * clave);
 void 							enviarRespuesta				(int server_socket, int codRespuesta);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
-void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada);
+void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada, t_list * listaClaves);
 void 							enviarCompactacion			(int server_socket);
 void 							enviarSolicitudValor		(int server_socket, char * clave);
 void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, char * valor);

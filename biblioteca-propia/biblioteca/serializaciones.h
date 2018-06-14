@@ -13,7 +13,7 @@ void	serializarArchvivo				(t_paquete * unPaquete, char * rutaArchivo);
 void 	serializarClave					(t_paquete * unPaquete, char * clave);
 void 	serializarClaveValor			(t_paquete * unPaquete, char * clave, char * valor);
 void	serializarRespuestaStatus		(t_paquete* unPaquete, char * valor, char * nomInstanciaActual, char * nomIntanciaPosible);
-void 	serializarInfoInstancia			(t_paquete * unPaquete, int cantEntradas, int tamanioEntrada);
+void 	serializarInfoInstancia			(t_paquete * unPaquete, int cantEntradas, int tamanioEntrada, t_list * listaClaves);
 void	serializarExistenciaClaveValor	(t_paquete * unPaquete, bool claveExistente, void * valor);
 
 /*----------------------------------------Deserializacion----------------------------------------*/

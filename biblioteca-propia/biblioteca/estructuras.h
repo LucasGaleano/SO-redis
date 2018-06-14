@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <parsi/parser.h>
+#include <commons/collections/list.h>
 
 /*------------------------------Estructuras------------------------------*/
 #define TAM_BLOQUE 1048576
@@ -63,6 +64,7 @@ typedef struct {
 typedef struct {
 	int cantEntradas;
 	int tamanioEntrada;
+	t_list * listaClaves;
 } t_infoInstancia;
 
 typedef struct {
