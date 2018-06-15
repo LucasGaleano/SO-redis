@@ -215,6 +215,7 @@ void* procesarSET(t_paquete* paquete, int cliente_fd) {
 	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",
 			sentencia->clave, sentencia->valor, instanciaElegida->nombre);
 
+	list_add(instanciaElegida->claves,sentencia->clave);
 	enviarSet(*socketInstancia, sentencia->clave, sentencia->valor);
 	enviarSet(socketDelPlanificador, sentencia->clave, sentencia->valor);
 
