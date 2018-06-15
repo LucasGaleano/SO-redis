@@ -328,7 +328,7 @@ int iniciarServidor(char* puerto) {
 
 	if ((status = getaddrinfo(NULL, puerto, &hints, &res)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-		return 2;
+		return 1;
 	}
 
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -343,7 +343,7 @@ int iniciarServidor(char* puerto) {
 	while (1) {
 		fflush(stdout);
 		addr_size = sizeof(their_addr);
-		printf("adentro del while 1\n");
+
 		cliente_fd = accept(sockfd, (struct sockaddr*) &their_addr, &addr_size);
 
 		pthread_t pid;

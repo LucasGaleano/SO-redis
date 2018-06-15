@@ -157,9 +157,6 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
 		if (nombre != NULL)
 			igualNombre = string_equals_ignore_case(instancia->nombre, nombre);
 
-		if (socket != 0)
-			igualSocket = instancia->socket == socket;
-
 		if (letraAEncontrar != 0)
 
 			contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar
