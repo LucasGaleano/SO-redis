@@ -145,14 +145,35 @@ int* conseguirConexion(t_dictionary * diccionario, char * clave) {
 	return aux;
 }
 
+//TODO probar esta funcion
+char* buscarDiccionarioPorValor(t_dictionary * diccionario, int* valor){
+
+			char* buscar(char* key, void* value){
+				if(*value == *valor)
+					return key;
+			}
+		  dictionary_iterator(diccionario, buscar);
+
+}
+
+void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar){
+
+	for(int i=0;i<list_size(claves);i++){
+		char* clave = list_get(claves,i);
+		if(strcmp(clave,claveAEliminar)==0){
+			list_remove(claves,i);
+			break;
+		}
+	}
+}
+
 t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
-		int letraAEncontrar, int socket) {
+		int letraAEncontrar) {
 
 	bool instanciaCumpleCon(t_instancia* instancia) {
 
 		bool igualNombre = true;
 		bool contieneLetraAEncontrar = true;
-		bool igualSocket = true;
 
 		if (nombre != NULL)
 			igualNombre = string_equals_ignore_case(instancia->nombre, nombre);
@@ -162,8 +183,7 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
 			contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar
 					&& instancia->ultimaLetra >= letraAEncontrar);
 
-		return (igualNombre && contieneLetraAEncontrar && igualSocket
-				&& instancia->disponible);
+		return (igualNombre && contieneLetraAEncontrar && instancia->disponible);
 
 	}
 

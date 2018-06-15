@@ -44,9 +44,11 @@ t_instancia* crearInstancia(char* nombre);
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);
-t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAEncontrar,int socket);
+t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAEncontrar);
+void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
 
 t_dictionary* crearDiccionarioConexiones(void);
+char* buscarDiccionarioPorValor(t_dictionary * diccionario, int* valor);
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
 int* conseguirConexion(t_dictionary * diccionario, char * clave);
 

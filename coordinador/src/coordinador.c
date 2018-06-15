@@ -94,6 +94,11 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 		procesarRespuesta(paquete, cliente_fd);
 		break;
 
+	case ENVIAR_CLAVE_ELIMINADA:
+		;
+		procesarClaveEliminada(paquete, cliente_fd);
+		break;
+
 	default:
 		printf("codigo no reconocido\n");
 		break;
@@ -144,7 +149,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 }
 
-void* procesarRespuesta(t_paquete* paquete, int cliente_fd) {
+void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
 	int respuesta = recibirRespuesta(paquete);
 
@@ -173,7 +178,7 @@ void* procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
 }
 
-void* procesarHandshake(t_paquete* paquete, int cliente_fd) {
+void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
 	switch (recibirHandshake(paquete)) {
 	case PLANIFICADOR:
@@ -196,7 +201,7 @@ void* procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
 }
 
-void* procesarSET(t_paquete* paquete, int cliente_fd) {
+void procesarSET(t_paquete* paquete, int cliente_fd) {
 
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_instancia* instanciaElegida = PlanificarInstancia(
@@ -225,7 +230,7 @@ void* procesarSET(t_paquete* paquete, int cliente_fd) {
 	return 0;
 }
 
-void* procesarGET(t_paquete* paquete, int cliente_fd) {
+void procesarGET(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirGet(paquete);
 
@@ -242,7 +247,7 @@ void* procesarGET(t_paquete* paquete, int cliente_fd) {
 
 }
 
-void* procesarSTORE(t_paquete* paquete, int cliente_fd) {
+void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
 	log_debug(g_logger, "Entro al procesarSTORE");
 
@@ -277,7 +282,7 @@ void* procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	return 0;
 }
 
-void* procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
+void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	char* nombre = recibirNombreInstancia(paquete);
 
@@ -294,7 +299,18 @@ void* procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	return 0;
 }
 
-void* procesarNombreESI(t_paquete* paquete, int cliente_fd){
+//TODO probar esta funcion
+void procesarClaveEliminada(t_paquete* paquete, int cliente_fd){
+
+	char* clave = recibirClaveEliminada(paquete);
+	nombreInstancia = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
+	instanciaElegida = buscarInstancia(nombreInstancia,0);
+	eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
+
+}
+
+
+void procesarNombreESI(t_paquete* paquete, int cliente_fd){
 
 	char* nombreESI = recibirNombreEsi(paquete);
 
