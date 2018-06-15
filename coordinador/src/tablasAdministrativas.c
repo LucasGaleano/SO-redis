@@ -149,7 +149,7 @@ int* conseguirConexion(t_dictionary * diccionario, char * clave) {
 char* buscarDiccionarioPorValor(t_dictionary * diccionario, int* valor){
 
 			char* buscar(char* key, void* value){
-				if(*value == *valor)
+				if((int*)value == *valor)
 					return key;
 			}
 		  dictionary_iterator(diccionario, buscar);

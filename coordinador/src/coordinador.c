@@ -139,8 +139,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
-		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave,
-				0);
+		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave);
 	}
 
 	sem_post(&g_mutex_tablas);
@@ -303,8 +302,8 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 void procesarClaveEliminada(t_paquete* paquete, int cliente_fd){
 
 	char* clave = recibirClaveEliminada(paquete);
-	nombreInstancia = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
-	instanciaElegida = buscarInstancia(nombreInstancia,0);
+	char* nombreInstancia = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
+	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, nombreInstancia, 0);
 	eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
 
 }
