@@ -16,17 +16,17 @@ void agregarInstancia(t_list * lista, t_instancia* instancia) {
 	sem_post(&g_mutex_tablas);
 }
 
-t_instancia* crearInstancia(char* nombre, int socket) {
+t_instancia* crearInstancia(char* nombre) {
 
 	t_instancia* aux = malloc(sizeof(t_instancia));
 	aux->nombre = string_duplicate(nombre);
 	aux->espacioOcupado = 0;
-	aux->socket = socket;
 	aux->disponible = true;
 	aux->ultimaModificacion = 0;
 	aux->primerLetra = 0;
 	aux->ultimaLetra = 0;
 	aux->trabajoActual = NULL;
+	aux->claves = list_create();
 
 	return aux;
 
@@ -35,6 +35,7 @@ t_instancia* crearInstancia(char* nombre, int socket) {
 void destruirInstancia(t_instancia * instancia) {
 	free(instancia->trabajoActual);
 	free(instancia->nombre);
+	list_destroy(instancia->claves);
 	free(instancia);
 }
 
@@ -184,5 +185,3 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 		mostrarInstancia(instanciaAux);
 	}
 }
-
-

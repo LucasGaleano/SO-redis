@@ -1,8 +1,6 @@
 #include "coordinador.h"
 //TODO hacer funcion logSeguro y reemplazar logTraceSeguro
 //TODO porque la tabla de instancia tiene socket si esta en el diccionario.
-int recibirRespuesta(t_paquete* paquete);
-void procesarPaquete(t_paquete* paquete, int* socketCliente);
 
 int main(void) {
 
@@ -16,68 +14,89 @@ int main(void) {
 	g_configuracion = armarConfigCoordinador(config);
 
 	sem_init(&g_mutexLog, 0, 1);
-	sem_init(&g_mutex_tablas,0,1);
+	sem_init(&g_mutex_tablas, 0, 1);
 
-
-	iniciarServidor(g_configuracion.puertoConexion, (void*) procesarPaquete);
+	iniciarServidor(g_configuracion.puertoConexion);
 
 	sem_destroy(&g_mutexLog);
 	sem_destroy(&g_mutex_tablas);
 	return 0;
 }
 
-void procesarPaquete(t_paquete* paquete, int* socketCliente) {
 
-	pthreadArgs_t* args = malloc(sizeof(pthreadArgs_t));
-	args->paquete = paquete;
-	args->socket = *socketCliente;
-	pthread_t pid;
-	log_info(g_logger,"llego una conexion\n");
+void* procesarPeticion(int cliente_fd){
 
+	while(1){
+			char* buffer = calloc(1000, sizeof(char));
+			int recvError;
+			memset(buffer,'$',1000);
+
+			if( (recvError = recv(cliente_fd, buffer, 1000, 0)) <= 0){
+				log_error(g_logger,"se desconecto socket: %i\n",cliente_fd);
+				return -1;
+				}
+
+			int desplazamiento = 0;
+			printf("%s\n",buffer);
+			while (buffer[desplazamiento+1] != '$') {
+				int tamanio = 0;
+				memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
+				desplazamiento += sizeof(int);
+				void* bufferPaquete = malloc(tamanio);
+				memcpy(bufferPaquete, buffer + desplazamiento, tamanio);
+				desplazamiento += tamanio;
+				t_paquete* unPaquete = crearPaquete(bufferPaquete);
+				procesarPaquete(unPaquete, cliente_fd);
+			}
+			free(buffer);
+		}
+}
+
+void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
 
-		pthread_create(&pid, NULL, procesarHandshake, args);
+		procesarHandshake(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
 		;
-		pthread_create(&pid, NULL, procesarNombreESI, args);
+		procesarNombreESI(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_NOMBRE_INSTANCIA:
 		;
 
-		pthread_create(&pid, NULL, procesarNombreInstancia, args);
+		procesarNombreInstancia(paquete, cliente_fd);
 		break;
 
 	case SET:
 		;
 
-		pthread_create(&pid, NULL, procesarSET, args);
+		procesarSET(paquete, cliente_fd);
 		break;
 
 	case GET:
 		;
-		pthread_create(&pid, NULL, procesarGET, args);
+		procesarGET(paquete, cliente_fd);
 		break;
 
 	case STORE:
 		;
 
-		pthread_create(&pid, NULL, procesarSTORE, args);
+		procesarSTORE(paquete, cliente_fd);
 		break;
 
 	case RESPUESTA_SOLICITUD:
 		;
-		pthread_create(&pid, NULL, procesarRespuesta, args);
+		procesarRespuesta(paquete, cliente_fd);
 		break;
 
 	default:
 		printf("codigo no reconocido\n");
-	break;
+		break;
 	}
 
 }
@@ -107,27 +126,27 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 	t_instancia* instanciaElegida = NULL;
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "LSU"))
-		instanciaElegida = traerInstanciaMasEspacioDisponible(tablaDeInstancias);
+		instanciaElegida = traerInstanciaMasEspacioDisponible(
+				tablaDeInstancias);
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
 		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
-		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave, 0);
+		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave,
+				0);
 	}
 
 	sem_post(&g_mutex_tablas);
-
 
 	return instanciaElegida;
 
 }
 
+void* procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
-void* procesarRespuesta(void* args) {
-
-	int respuesta = recibirRespuesta(((pthreadArgs_t*)args)->paquete);
+	int respuesta = recibirRespuesta(paquete);
 
 	switch (respuesta) {
 
@@ -154,40 +173,31 @@ void* procesarRespuesta(void* args) {
 
 }
 
-void* procesarHandshake(void* args) {
-
-
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
-	int* socketCliente = malloc(sizeof(int));
-	*socketCliente = ((pthreadArgs_t*)args)->socket;
-
+void* procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
 	switch (recibirHandshake(paquete)) {
 	case PLANIFICADOR:
-		log_debug(g_logger,"se conecto el planificador: %i", *socketCliente);
-		agregarConexion(g_diccionarioConexiones, "planificador",socketCliente);
+		log_debug(g_logger, "se conecto el planificador: %i", cliente_fd);
+		agregarConexion(g_diccionarioConexiones, "planificador", &cliente_fd);
 		break;
 
 	case ESI:
-		log_info(g_logger,"Se conecto un ESI");
+		log_info(g_logger, "Se conecto un ESI");
 		break;
 
 	case INSTANCIA:
-		log_info(g_logger,"Se conecto una instancia");
+		log_info(g_logger, "Se conecto una instancia");
 		break;
 
 	}
 
 	free(paquete);
-	free(args);
 	return 0;
 
 }
 
-void* procesarSET(void* args) {
+void* procesarSET(t_paquete* paquete, int cliente_fd) {
 
-
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_instancia* instanciaElegida = PlanificarInstancia(
 			g_configuracion.algoritmoDist, sentencia->clave,
@@ -195,126 +205,106 @@ void* procesarSET(void* args) {
 	mostrarInstancia(instanciaElegida);
 
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
-				"planificador");
-
+			"planificador");
 
 	usleep(g_configuracion.retardo);
 
-	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,instanciaElegida->nombre);
+	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
+			instanciaElegida->nombre);
 
-	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",sentencia->clave,sentencia->valor , instanciaElegida->nombre);
+	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",
+			sentencia->clave, sentencia->valor, instanciaElegida->nombre);
 
 	enviarSet(*socketInstancia, sentencia->clave, sentencia->valor);
-	enviarSet(socketDelPlanificador,sentencia->clave,sentencia->valor);
-
+	enviarSet(socketDelPlanificador, sentencia->clave, sentencia->valor);
 
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
 	free(paquete);
-	free(args);
 	return 0;
 }
 
-
-void* procesarGET(void* args) {
-
-
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
+void* procesarGET(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirGet(paquete);
 
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
 			"planificador");
 
-	log_debug(g_logger,"enviar GET al planificador: %i, clave: %s\n",socketDelPlanificador ,clave);
+	log_debug(g_logger, "enviar GET al planificador: %i, clave: %s\n",
+			socketDelPlanificador, clave);
 
 	enviarGet(socketDelPlanificador, clave);
 
 	free(paquete);
-	free(args);
 	return 0;
 
 }
 
-void* procesarSTORE(void* args) {
+void* procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
-	log_debug(g_logger,"Entro al procesarSTORE");
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
+	log_debug(g_logger, "Entro al procesarSTORE");
 
 	char* clave = recibirStore(paquete);
 
 	t_instancia* instanciaElegida = PlanificarInstancia(
-				g_configuracion.algoritmoDist, clave,
-				g_tablaDeInstancias);
+			g_configuracion.algoritmoDist, clave, g_tablaDeInstancias);
 
-	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones, "planificador");
+	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
+			"planificador");
 
 	// Al planificar busco solo instancias disponibles por lo tanto puede devolver nulo si todavia no se recargo la tabla de instancias
-	if(instanciaElegida != NULL){
+	if (instanciaElegida != NULL) {
 
-	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
+		int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
 				instanciaElegida->nombre);
 
-	enviarStore(*socketInstancia, clave);
-	//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
-	enviarStore(socketDelPlanificador, clave);
+		enviarStore(*socketInstancia, clave);
+		//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
+		enviarStore(socketDelPlanificador, clave);
 
-	logTraceSeguro(g_logger, g_mutexLog,
-			"ENVIAR STORE planificador %i, clave: %s\n",socketDelPlanificador , clave);
-	}
-	else{
+		logTraceSeguro(g_logger, g_mutexLog,
+				"ENVIAR STORE planificador %i, clave: %s\n",
+				socketDelPlanificador, clave);
+	} else {
 
-		enviarRespuesta(socketDelPlanificador,ERROR_CLAVE_INACCESIBLE);
+		enviarRespuesta(socketDelPlanificador, ERROR_CLAVE_INACCESIBLE);
 
 	}
 
 	free(paquete);
-	free(args);
 	return 0;
 }
 
-void* procesarNombreInstancia(void* args) {
-
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
-
-	int* socketCliente = malloc(sizeof(int));
-	*socketCliente = ((pthreadArgs_t*)args)->socket;
+void* procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	char* nombre = recibirNombreInstancia(paquete);
 
-
-	t_instancia* instanciaNueva = crearInstancia(nombre, 0);//TODO no guardar socket aca
-	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,socketCliente);
+	t_instancia* instanciaNueva = crearInstancia(nombre);
+	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,
+			&cliente_fd);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	distribuirKeys(g_tablaDeInstancias);
-	enviarInfoInstancia(*socketCliente, g_configuracion.cantidadEntradas,
-			g_configuracion.tamanioEntradas);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombre);
+	enviarInfoInstancia(cliente_fd, g_configuracion.cantidadEntradas,
+			g_configuracion.tamanioEntradas,instanciaNueva->claves);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s", nombre);
 
 	free(paquete);
-	free(args);
 	return 0;
 }
 
-void* procesarNombreESI(void* args) {
-
-	t_paquete* paquete = ((pthreadArgs_t*)args)->paquete;
-
-	int* socketCliente = malloc(sizeof(int));
-	*socketCliente = ((pthreadArgs_t*)args)->socket;
+void* procesarNombreESI(t_paquete* paquete, int cliente_fd){
 
 	char* nombreESI = recibirNombreEsi(paquete);
 
-	agregarConexion(g_diccionarioConexiones, nombreESI, socketCliente);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s",nombreESI);
+	agregarConexion(g_diccionarioConexiones, nombreESI, &cliente_fd);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s", nombreESI);
 
 	free(paquete);
-	free(args);
-
 	return 0;
 }
 
-void logTraceSeguro(t_log* logger,sem_t mutexLog, char* format, ...) {
+void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 
 	va_list ap;
 	va_start(ap, format);
@@ -324,62 +314,43 @@ void logTraceSeguro(t_log* logger,sem_t mutexLog, char* format, ...) {
 	sem_post(&mutexLog);
 }
 
+int iniciarServidor(char* puerto) {
 
-int iniciarServidor(char* puerto,void (*procesarPaquetes)(void*, int*)){
+	struct sockaddr_storage their_addr;
+	struct addrinfo hints, *res;
+	int status, cliente_fd, sockfd;
+	socklen_t addr_size;
 
-  struct sockaddr_storage their_addr;
-  struct addrinfo hints, *res;
-  int status, new_fd, sockfd;
-  socklen_t addr_size;
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6 to force version
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE; // use my IP
+
+	if ((status = getaddrinfo(NULL, puerto, &hints, &res)) != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+		return 2;
+	}
+
+	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6 to force version
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE; // use my IP
+	bind(sockfd, res->ai_addr, res->ai_addrlen);
+	//TODO cerrar o free adrrinfo
 
-  if ((status = getaddrinfo(NULL, puerto, &hints, &res)) != 0) {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-    return 2;
-  }
+	if (-1 == listen(sockfd, 10))
+		perror("listen");
+	printf("esperando conexiones en puerto: %s\n", puerto);
+	while (1) {
+		fflush(stdout);
+		addr_size = sizeof(their_addr);
+		printf("adentro del while 1\n");
+		cliente_fd = accept(sockfd, (struct sockaddr*) &their_addr, &addr_size);
 
+		pthread_t pid;
+		pthread_create(&pid, NULL, procesarPeticion, cliente_fd);
 
-  sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		//close(cliente_fd);
 
-  // bind it to the port we passed in to getaddrinfo():
-
-  bind(sockfd, res->ai_addr, res->ai_addrlen);
-  //printf("%i\n",sockfd );
-
-  //fflush(stdout);
-
-  if(-1 == listen(sockfd, 10))
-  perror("listen");
-	printf("esperando conexiones en puerto: %s\n",puerto);
-  while(1){
-    fflush(stdout);
-    addr_size = sizeof(their_addr);
-    new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &addr_size);
-
-    //char* buffer = malloc(100);
-    //send(new_fd, buffer, strlen(buffer), 0);
-    //int tamPaq;
-    //char* buffer = malloc (20);
-while(1){
-
-    int tamPaq;
-    if(recv(new_fd,&tamPaq,sizeof (int),MSG_WAITALL) <= 0){
-					break;
-    }
-    char* buffer = malloc(tamPaq);
-    recv(new_fd,buffer,tamPaq,MSG_WAITALL);
-    t_paquete* unPaquete = crearPaquete(buffer);
-		printf("socket: %i\n",new_fd);
-		procesarPaquetes(unPaquete,&new_fd);
-
-}
-
-    //close(new_fd);
 
 }
 

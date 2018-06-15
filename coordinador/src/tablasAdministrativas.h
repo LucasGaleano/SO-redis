@@ -11,9 +11,9 @@
 
 /*TABLA DE INSTANCIAS
  *
- *		{nombre de instancia, espacio ocupado(entradas), 	rango, 				 disponible, 	socket	     ultimaModificada			trabajoActual}
- *		 instancia1,          50 													97-106(a-j)    true   		  1  				18:12:1234							SET:k1045
- *		 instancia2			    	32						 							107-112(k-o)   true	      	2	 				18:12:4312							GET:k3042
+ *		{nombre de instancia, espacio ocupado(entradas), 	rango, 				 disponible, 	     ultimaModificada			trabajoActual   claves}
+ *		 instancia1,          50 													97-106(a-j)    true     				18:12:1234							SET:k1045
+ *		 instancia2			    	32						 							107-112(k-o)   true	  	 				18:12:4312							GET:k3042
  */
 
 /*-------------------ESTRUCTURAS---------------------------*/
@@ -22,11 +22,11 @@ typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	int socket; //sacar socket???
 	time_t ultimaModificacion; // entero por codigo de operacion
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;
+	t_list* claves;
 }t_instancia;
 
 sem_t g_mutex_tablas;
@@ -40,7 +40,7 @@ void distribuirKeys(t_list* tablaDeInstancias);
 
 t_list* crearListaInstancias(void);
 void agregarInstancia(t_list * lista, t_instancia* instancia );
-t_instancia* crearInstancia(char* nombre,int socket);
+t_instancia* crearInstancia(char* nombre);
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);

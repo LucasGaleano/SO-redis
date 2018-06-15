@@ -27,12 +27,6 @@ typedef struct t_configuracion{
 }t_configuraciones;
 
 
-typedef struct {
-	t_paquete* paquete;
-	int socket;
-}pthreadArgs_t;
-
-
 /*------------------------Globales-------------------------*/
 
 t_log* g_logger;
@@ -44,14 +38,16 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
-int iniciarServidor(char* puerto,void (*procesarPaquete)(void*, int*));
-void* procesarHandshake(void* args);
-void* procesarSET(void* args);
-void* procesarGET(void* args);
-void* procesarSTORE(void* args);
-void* procesarNombreESI(void* args);
-void* procesarNombreInstancia(void* args);
-void* procesarRespuesta(void* args);
+int iniciarServidor(char* puerto);
+void* procesarPeticion(int cliente_fd);
+void 	procesarPaquete(t_paquete* unPaquete,int socketCliente);
+void* procesarHandshake(t_paquete* unPaquete,int socketCliente);
+void* procesarSET(t_paquete* unPaquete,int socketCliente);
+void* procesarGET(t_paquete* unPaquete,int socketCliente);
+void* procesarSTORE(t_paquete* unPaquete,int socketCliente);
+void* procesarNombreESI(t_paquete* unPaquete,int socketCliente);
+void* procesarNombreInstancia(t_paquete* unPaquete,int socketCliente);
+void* procesarRespuesta(t_paquete* unPaquete,int socketCliente);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
