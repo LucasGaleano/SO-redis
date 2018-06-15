@@ -37,6 +37,10 @@ int entradaAReemplazar;
 
 pthread_mutex_t mutex;
 
+bool almacenar;
+
+pthread_t threadAlmacenamientoContinuo;
+
 /*------------------------Estructuras-------------------------*/
 typedef struct {
 	char clave[40];
@@ -103,7 +107,7 @@ void 				compactar					(void);
 void 				dump							(void);
 void 				almacenamientoContinuo			(void);
 void 				crearAlmacenamientoContinuo		(void);
-void 				recuperarInformacionDeInstancia	(void);
+void 				recuperarInformacionDeInstancia	(t_list * listaClaves);
 void				almacenarEnMemoriaSecundaria	(t_tabla_entradas * registroEntrada);
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/

@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <parsi/parser.h>
+#include <commons/collections/list.h>
 
 /*------------------------------Estructuras------------------------------*/
 #define TAM_BLOQUE 1048576
@@ -34,7 +35,7 @@ enum emisor {
 };
 
 enum cod_op {
-	HANDSHAKE = 100, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR,
+	HANDSHAKE = 100, ENVIAR_MENSAJE, ENVIAR_ARCHIVO, ENVIAR_ERROR, ENVIAR_CLAVE_ELIMINADA,
 
 	SOLICITUD_EJECUCION, TERMINO_ESI,
 
@@ -63,6 +64,7 @@ typedef struct {
 typedef struct {
 	int cantEntradas;
 	int tamanioEntrada;
+	t_list * listaClaves;
 } t_infoInstancia;
 
 typedef struct {

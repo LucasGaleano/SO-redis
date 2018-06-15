@@ -16,11 +16,26 @@ int main(void) {
 				logInstancia);
 	}
 
+	//Corto el hilo de almacenamiento
+	almacenar = false;
+	intervaloDump = 0;
+	log_warning(logInstancia, "Espero para hacer el ultimo dump \n");
+	pthread_cancel(threadAlmacenamientoContinuo);
+	pthread_join(threadAlmacenamientoContinuo, NULL);
+
 	//Termina esi
 	log_trace(logInstancia, "Termino el proceso instancia \n");
 
 	//Destruyo archivo de log
 	log_destroy(logInstancia);
+
+	//Libero memoria
+	destruirTablaEntradas();
+	destruirBitMap();
+	destruirStorage();
+	free(puntoMontaje);
+	free(algoritmoReemplazo);
+	pthread_mutex_destroy(&mutex);
 
 	return EXIT_SUCCESS;
 }
@@ -113,12 +128,13 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	crearTablaEntradas();
 
 	//Verifico que no tenga archivos anteriores
-	recuperarInformacionDeInstancia();
+	recuperarInformacionDeInstancia(info->listaClaves);
 
 	//Creo el hilo para hacer el dump
 	crearAlmacenamientoContinuo();
 
 	//Libero memoria
+	list_destroy_and_destroy_elements(info->listaClaves, free);
 	free(info);
 
 }
@@ -130,14 +146,16 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 			"Me llego un SET con la clave: %s y con el valor: %s",
 			claveValor->clave, (char*) claveValor->valor);
 
+	t_tabla_entradas * entrada = buscarEntrada(claveValor->clave);
+
+	if (entrada != NULL){
+		eliminarClave(claveValor->clave);
+		log_warning(logInstancia,"La clave existe por lo que la elimino y guardo el valor nuevo \n");
+	}
+
 	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
 
 	switch (respuesta) {
-	case ENTRADA_INEXISTENTE:
-		enviarRespuesta(client_socket, ERROR_CLAVE_NO_IDENTIFICADA);
-		log_error(logInstancia, "Error clave no identiicada");
-		aumentarTiempoReferenciadoATodos(tablaEntradas);
-		break;
 	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
 		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
 		log_error(logInstancia, "Error espacio insuficiente");
@@ -212,22 +230,16 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	free(claveValor);
 }
 
-void procesarStore(t_paquete * unPaquete, int client_socket){
+void procesarStore(t_paquete * unPaquete, int client_socket) {
 	char * clave = recibirStore(unPaquete);
 
-	log_trace(logInstancia,
-			"Me llego un STORE con la clave: %s",clave);
+	log_trace(logInstancia, "Me llego un STORE con la clave: %s", clave);
 
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
 	almacenarEnMemoriaSecundaria(entradaBuscada);
 
-	eliminarClave(clave);
-
-	enviarRespuesta(client_socket,OK);
-
-	mostrarBitmap();
-	mostrarTablaEntradas();
+	enviarRespuesta(client_socket, OK);
 
 	free(clave);
 }
@@ -305,6 +317,8 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 }
 
 void eliminarClave(char * clave) {
+	pthread_mutex_lock(&mutex);
+
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
 		return string_equals_ignore_case(entrada->clave, clave);
 	}
@@ -322,8 +336,13 @@ void eliminarClave(char * clave) {
 			for (i = 0; i < cantidadEntradasABorar; i++)
 				liberarIndex(entradaBuscada->indexComienzo + i);
 		}
+
+		enviarClaveEliminada(socketCoordinador, entradaBuscada->clave);
+
 		free(entradaBuscada);
 	}
+
+	pthread_mutex_unlock(&mutex);
 }
 
 void mostrarTablaEntradas(void) {
@@ -342,6 +361,8 @@ void mostrarTablaEntradas(void) {
 
 int agregarClaveValor(char * clave, void * valor) {
 
+	pthread_mutex_lock(&mutex);
+
 	int tamValor = string_length(valor);
 
 	int index = -1;
@@ -349,6 +370,8 @@ int agregarClaveValor(char * clave, void * valor) {
 	void * respuesta = guardarEnStorage(valor, &index);
 
 	if (respuesta == NULL) {
+		pthread_mutex_unlock(&mutex);
+
 		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
 		t_tabla_entradas * registroEntrada = malloc(sizeof(t_tabla_entradas));
@@ -365,6 +388,8 @@ int agregarClaveValor(char * clave, void * valor) {
 		registroEntrada->tiempoReferenciado = 0;
 
 		list_add(tablaEntradas, registroEntrada);
+
+		pthread_mutex_unlock(&mutex);
 
 		return 0;
 	}
@@ -641,7 +666,7 @@ void dump(void) {
 }
 
 void almacenamientoContinuo(void) {
-	while (true) {
+	while (almacenar) {
 		sleep(intervaloDump);
 		dump();
 	}
@@ -650,17 +675,18 @@ void almacenamientoContinuo(void) {
 void crearAlmacenamientoContinuo(void) {
 	pthread_mutex_init(&mutex, NULL);
 
-	pthread_t threadAlmacenamientoContinuo;
-
 	if (pthread_create(&threadAlmacenamientoContinuo, NULL,
 			(void*) almacenamientoContinuo, NULL)) {
 		perror("Error el crear el thread almacenamientoContinuo.");
 		exit(EXIT_FAILURE);
 	}
+
 }
 
-void recuperarInformacionDeInstancia(void) {
+void recuperarInformacionDeInstancia(t_list * listaClaves) {
 	t_list * listaArchivos = listarArchivosDeMismaCarpeta(puntoMontaje);
+
+	almacenar = true;
 
 	if (listaArchivos == NULL) {
 		log_warning(logInstancia,
@@ -668,9 +694,38 @@ void recuperarInformacionDeInstancia(void) {
 		return;
 	}
 
+	bool esArchivoARecuperar(char * rutaArchivo) {
+
+		char ** spliteado = string_split(rutaArchivo, "/");
+
+		int i;
+		for (i = 0; spliteado[i] != NULL; i++)
+			;
+
+		bool esClaveBuscada(char * clave) {
+			return string_equals_ignore_case(spliteado[i - 1], clave);
+		}
+
+		bool laEncontre = list_any_satisfy(listaClaves,
+				(void *) esClaveBuscada);
+
+		for (i = 0; spliteado[i] != NULL; ++i) {
+			free(spliteado[i]);
+		}
+		free(spliteado[i]);
+		free(spliteado);
+
+		return laEncontre;
+	}
+
+	t_list * archivosARecuperar = list_filter(listaArchivos,
+			(void *) esArchivoARecuperar);
+
 	void guardarArchivoEnEstructurasAdministrativas(char * rutaArchivo) {
 		size_t tamArch;
 		FILE * archivofd;
+
+		printf("El archivo a recuperar es: %s \n", rutaArchivo);
 
 		void * archivo = abrirArchivo(rutaArchivo, &tamArch, &archivofd);
 
@@ -695,13 +750,16 @@ void recuperarInformacionDeInstancia(void) {
 
 	}
 
-	list_iterate(listaArchivos,
+	list_iterate(archivosARecuperar,
 			(void*) guardarArchivoEnEstructurasAdministrativas);
 
 	log_trace(logInstancia,
 			"Tengo archivos para recuperar inormacion de instancia anterior");
 
+	list_destroy(archivosARecuperar);
 	list_destroy_and_destroy_elements(listaArchivos, (void *) free);
+
+	mostrarTablaEntradas();
 }
 
 void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
@@ -726,7 +784,6 @@ void almacenarEnMemoriaSecundaria(t_tabla_entradas * registroEntrada) {
 	free(rutaArchivo);
 	free(valor);
 }
-
 
 /*-------------------------Algoritmos de reemplazo-------------------------*/
 void algoritmoReemplazoCircular(char * clave, void * valor) {
