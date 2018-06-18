@@ -1,10 +1,10 @@
 #include "coordinador.h"
 //TODO hacer funcion logSeguro y reemplazar logTraceSeguro
-//TODO porque la tabla de instancia tiene socket si esta en el diccionario.
+
 
 int main(void) {
 
-	signal(SIGINT, sighandler);
+	signal(SIGTERM, planificador_handler);
 
 	g_tablaDeInstancias = crearListaInstancias();
 	g_diccionarioConexiones = crearDiccionarioConexiones();
@@ -52,7 +52,6 @@ int iniciarServidor(char* puerto) {
 		perror("listen");
 	printf("esperando conexiones en puerto %s\n", puerto);
 	while (1) {
-		fflush(stdout);
 		addr_size = sizeof(their_addr);
 		int* cliente_fd = malloc(sizeof(int));
 		*cliente_fd = accept(sockfd, (struct sockaddr*) &their_addr, &addr_size);
@@ -196,8 +195,11 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 void procesarClienteDesconectado(t_dictionary* g_diccionarioConexiones,int cliente_fd){
 
 	char* clienteDesconectado = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
-	if(strcmp(clienteDesconectado,"planificador") == 0)
-		log_error(g_logger,"se desconecto %s\n Estado inseguro.\n",clienteDesconectado);
+	if(strcmp(clienteDesconectado,"planificador") == 0){
+		log_error(g_logger,"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",clienteDesconectado);
+		raise(SIGTERM);
+
+	}
 	else
 		log_debug(g_logger,"se desconecto %s\n",clienteDesconectado);
 
@@ -382,4 +384,10 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 	sem_wait(&mutexLog);
 	log_trace(logger, mensaje);
 	sem_post(&mutexLog);
+}
+
+void planificador_handler(int signum){
+	log_error(g_logger,"Cerrando coordinador\n");
+	//TODO liberar todo aca tambien si termina por desconexion del planificador
+	exit(0);
 }

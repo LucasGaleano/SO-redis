@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
@@ -38,6 +39,7 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
+void planificador_handler(int signum);
 int iniciarServidor(char* puerto);
 void* procesarPeticion(int* cliente_fd);
 void 	procesarPaquete(t_paquete* unPaquete,int socketCliente);
