@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #define PATH_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/coordinador.cfg"
 
@@ -19,18 +20,12 @@
 /*---------------------Estructuras-------------------------*/
 
 typedef struct t_configuracion{
-	int puertoConexion;
+	char* puertoConexion;
 	char* algoritmoDist;
 	int cantidadEntradas;
 	int tamanioEntradas;
 	int retardo;
 }t_configuraciones;
-
-
-typedef struct {
-	t_paquete* paquete;
-	int socket;
-}pthreadArgs_t;
 
 
 /*------------------------Globales-------------------------*/
@@ -44,13 +39,17 @@ sem_t g_mutexLog;
 
 
 /*------------------------FUNCIONES-------------------------*/
-void* procesarHandshake(void* args);
-void* procesarSET(void* args);
-void* procesarGET(void* args);
-void* procesarSTORE(void* args);
-void* procesarNombreESI(void* args);
-void* procesarNombreInstancia(void* args);
-void* procesarRespuesta(void* args);
+void planificador_handler(int signum);
+int iniciarServidor(char* puerto);
+void* procesarPeticion(int* cliente_fd);
+void 	procesarPaquete(t_paquete* unPaquete,int socketCliente);
+void procesarHandshake(t_paquete* unPaquete,int socketCliente);
+void procesarSET(t_paquete* unPaquete,int socketCliente);
+void procesarGET(t_paquete* unPaquete,int socketCliente);
+void procesarSTORE(t_paquete* unPaquete,int socketCliente);
+void procesarNombreESI(t_paquete* unPaquete,int socketCliente);
+void procesarNombreInstancia(t_paquete* unPaquete,int socketCliente);
+void procesarRespuesta(t_paquete* unPaquete,int socketCliente);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
