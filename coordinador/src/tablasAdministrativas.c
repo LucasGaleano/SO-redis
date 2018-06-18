@@ -130,10 +130,24 @@ t_dictionary* crearDiccionarioConexiones() {
 
 }
 
+void mostrarDiccionario(t_dictionary* diccionario){
+
+	void mostrar(char* key, void* value){
+		printf("clave: %s  valor: %i \n", key, *(int*)value );
+		fflush(stdout);
+	}
+	dictionary_iterator(diccionario, mostrar);
+
+
+}
+
 void agregarConexion(t_dictionary * diccionario, char * clave, int* valor) {
 	sem_wait(&g_mutex_tablas);
-	if (!dictionary_has_key(diccionario, clave))
-		dictionary_put(diccionario, clave, valor);
+	if (!dictionary_has_key(diccionario, clave)){
+		int* socket = malloc(sizeof(int));
+		*socket = *valor;
+		dictionary_put(diccionario, clave, socket);
+	}
 
 	sem_post(&g_mutex_tablas);
 }
@@ -146,14 +160,19 @@ int* conseguirConexion(t_dictionary * diccionario, char * clave) {
 }
 
 //TODO probar esta funcion
-char* buscarDiccionarioPorValor(t_dictionary * diccionario, int* valor){
+char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor){
 
-			char* buscar(char* key, void* value){
-				if((int*)value == *valor)
-					return key;
+			sem_wait(&g_mutex_tablas);
+			char* valorBuscado;
+
+			void buscar(char* key, void* value){
+				if(*(int*)value == *valor)
+					valorBuscado = key;
 			}
 		  dictionary_iterator(diccionario, buscar);
 
+			sem_post(&g_mutex_tablas);
+			return valorBuscado;
 }
 
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar){

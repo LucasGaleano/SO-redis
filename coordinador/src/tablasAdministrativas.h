@@ -6,6 +6,7 @@
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #include <time.h>
 #include <semaphore.h>
 
@@ -48,7 +49,8 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAE
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
 
 t_dictionary* crearDiccionarioConexiones(void);
-char* buscarDiccionarioPorValor(t_dictionary * diccionario, int* valor);
+char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor);
+void mostrarDiccionario(t_dictionary* diccionario);
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
 int* conseguirConexion(t_dictionary * diccionario, char * clave);
 

@@ -39,7 +39,7 @@ sem_t g_mutexLog;
 
 /*------------------------FUNCIONES-------------------------*/
 int iniciarServidor(char* puerto);
-void* procesarPeticion(int cliente_fd);
+void* procesarPeticion(int* cliente_fd);
 void 	procesarPaquete(t_paquete* unPaquete,int socketCliente);
 void procesarHandshake(t_paquete* unPaquete,int socketCliente);
 void procesarSET(t_paquete* unPaquete,int socketCliente);
