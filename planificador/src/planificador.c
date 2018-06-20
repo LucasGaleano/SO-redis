@@ -7,16 +7,22 @@ t_infoBloqueo* aBorrar;
 int main(void) {
 
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
+	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
-	//TODO preguntar si se pudo conectar. loguear y abortar si no se pudo
+
+	if (g_socketCoordinador == -1) {
+		log_error(g_logger,
+				"El coordinador no esta conectado. Revise y vuelva a ejecutar");
+		config_destroy(g_con);
+		log_destroy(g_logger);
+		exit(EXIT_FAILURE);
+	}
 
 	g_listos = dictionary_create();
 	g_bloq = dictionary_create();
 	g_clavesTomadas = dictionary_create();
-
-	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
 
 	int puertoLocal = config_get_int_value(g_con, "PUERTO");
 
@@ -49,8 +55,8 @@ int main(void) {
 	log_debug(g_logger, "inicio consola");
 	//iniciarConsola();
 
-	pthread_join(hiloCoordinador, NULL);
-
+	//pthread_cancel(hiloServidor);
+	pthread_join(hiloServidor, NULL);
 	liberarTodo();
 
 	return EXIT_SUCCESS;
@@ -66,7 +72,7 @@ void asignarBloquedas(char** codigos) {
 
 void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 	t_infoListos *dat;
-	char* keyAux;
+	char* keyAux, *nombreAux;
 	pthread_mutex_lock(&mutexLog);
 	log_debug(g_logger, "Me ha llegado una solicitud");
 	pthread_mutex_unlock(&mutexLog);
@@ -104,9 +110,17 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		g_termino = 1;
 		break;
 	case ENVIAR_ERROR:
-		keyAux = string_itoa(*socketCliente);
-		liberarESI(keyAux);
-		free(keyAux);
+		if (!g_termino) {
+			keyAux = string_itoa(*socketCliente);
+			nombreAux = liberarESI(keyAux);
+			pthread_mutex_lock(&mutexLog);
+			log_warning(g_logger, "%s se ha desconectado sin haber ejecutado",
+					nombreAux);
+			pthread_mutex_unlock(&mutexLog);
+			free(keyAux);
+			free(nombreAux);
+		} else
+			sem_post(&continua);
 		break;
 	}
 	destruirPaquete(unPaquete);
@@ -163,6 +177,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			g_huboError = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
 			liberarClaves(g_idESIactual);
+			pthread_mutex_lock(&mutexLog);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
 					g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
@@ -176,17 +191,15 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case RESPUESTA_STATUS:
-		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
+		mostrarPorConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	case ENVIAR_ERROR:
-		if (!g_termino) {
-			log_error(g_logger,
-					"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
-			pthread_mutex_unlock(&mutexLog);
-			liberarTodo();
-			exit(EXIT_FAILURE);
-		} else
-			g_termino = 0;
+		pthread_mutex_lock(&mutexLog);
+		log_error(g_logger,
+				"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
+		pthread_mutex_unlock(&mutexLog);
+		liberarTodo();
+		exit(EXIT_FAILURE);
 		break;
 	}
 	destruirPaquete(unPaquete);
@@ -243,29 +256,34 @@ void planificar(char* algoritmo) {
 		planificarConDesalojo();
 }
 
-static buscarESIenLista(t_infoBloqueo* nodo) {
+static int buscarESIenLista(t_infoBloqueo* nodo) {
 	return !strcmp(g_claveBusqueda, nodo->idESI);
 }
 
-static buscarESIenBloqueados(char* key, t_list* reg) {
+static void buscarESIenBloqueados(char* key, t_list* reg) {
 	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
 	if (aBorrar == NULL) {
 		aBorrar = list_find(reg, (void*) buscarESIenLista);
 	}
 }
 
-void liberarESI(char* key) {
+char* liberarESI(char* key) {
 	aBorrar = NULL;
+	char* nombre;
 	liberarClaves(key);
 	if (dictionary_has_key(g_listos, key)) {
+		nombre = strdup(
+				((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(dictionary_remove(g_listos, key));
 	} else {
 		g_claveBusqueda = key;
 		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
+		nombre = strdup(aBorrar->data->nombreESI);
 		free(aBorrar->idESI);
 		free(aBorrar->data->nombreESI);
 		free(aBorrar->data);
 		free(aBorrar);
 	}
+	return nombre;
 }

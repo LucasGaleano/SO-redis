@@ -6,16 +6,19 @@
 C_SRCS += \
 ../src/algoritmos.c \
 ../src/consola.c \
+../src/globales.c \
 ../src/planificador.c 
 
 OBJS += \
 ./src/algoritmos.o \
 ./src/consola.o \
+./src/globales.o \
 ./src/planificador.o 
 
 C_DEPS += \
 ./src/algoritmos.d \
 ./src/consola.d \
+./src/globales.d \
 ./src/planificador.d 
 
 

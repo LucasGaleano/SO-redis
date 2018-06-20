@@ -41,7 +41,8 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
 	pthread_mutex_lock(&mutexLog);
-	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", insert->data->nombreESI, g_claveGET);
+	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s",
+			insert->data->nombreESI, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
 }
 
@@ -80,7 +81,8 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 			key = strdup(auxKey);
 		}
 	}
-	log_trace(g_logger, "Se ejecuta %s", ((t_infoListos*)(dictionary_get(g_listos, key)))->nombreESI);
+	log_trace(g_logger, "Se ejecuta %s",
+			((t_infoListos*) (dictionary_get(g_listos, key)))->nombreESI);
 	free(auxKey);
 	return key;
 }
@@ -127,12 +129,14 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						bloquear(aEjecutar, cont, key);
 					}
 					if (g_termino) {
-						if(!g_huboError)
+						if (!g_huboError)
 							enviarRespuesta(g_socketEnEjecucion, OK);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
-														aEjecutar->nombreESI);
+								aEjecutar->nombreESI);
+						sem_wait(&continua);
 						free(aEjecutar->nombreESI);
 						free(aEjecutar);
+						g_termino = 0;
 					}
 					if (strcmp(algoritmo, "HRRN") == 0) {
 						g_tEjecucion = cont;
@@ -154,6 +158,7 @@ extern void planificarConDesalojo(void) {
 				g_huboModificacion = 0;
 				while (1) {
 					cont = 0;
+					g_huboError = 0;
 					sem_wait(&ESIentrada);
 					pthread_mutex_lock(&mutexListo);
 					key = calcularSiguiente((void*) calcularProximaRafaga,
@@ -170,17 +175,22 @@ extern void planificarConDesalojo(void) {
 						cont++;
 						pthread_mutex_unlock(&mutexConsola);
 						sem_wait(&continua);
-					} while (!g_termino && !g_bloqueo && !g_huboModificacion);
+					} while (!g_termino && !g_bloqueo && !g_huboModificacion
+							&& !g_huboError);
 					if (g_bloqueo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
 						aEjecutar = NULL;
 					}
 					if (g_termino) {
-						g_termino = 0;
-						enviarRespuesta(g_socketEnEjecucion, OK);
+						if (!g_huboError)
+							enviarRespuesta(g_socketEnEjecucion, OK);
+						log_trace(g_logger, "%s ha terminado su ejecucion",
+								aEjecutar->nombreESI);
+						sem_wait(&continua);
 						free(aEjecutar->nombreESI);
 						free(aEjecutar);
+						g_termino = 0;
 						aEjecutar = NULL;
 					}
 					if (aEjecutar != NULL) {
