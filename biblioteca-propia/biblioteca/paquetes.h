@@ -33,6 +33,7 @@ void 							enviarCompactacion			(int server_socket);
 void 							enviarSolicitudValor		(int server_socket, char * clave);
 void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, char * valor);
 void							enviarClaveEliminada		(int server_socket, char * clave);
+void							enviarAvisoDesconexion		(int server_socket);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);

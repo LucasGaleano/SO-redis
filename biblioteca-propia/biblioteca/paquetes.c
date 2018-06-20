@@ -348,6 +348,16 @@ void enviarClaveEliminada(int server_socket, char * clave){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
+void enviarAvisoDesconexion(int server_socket){
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = ENVIAR_AVISO_DESCONNEXION;
+
+	serializarNumero(unPaquete, 0);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
 	return deserializarHandshake(unPaquete->buffer);

@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <signal.h>
 
 /*------------------------Constantes-------------------------*/
 #define RUTA_CONFIG "/home/utnso/workspace/tp-2018-1c--0/configuraciones/instancia.cfg"
@@ -119,6 +120,9 @@ t_list * 			ordenarEntradasAtomicasParaBSU		(void);
 t_list * 			ordenarEntradasAtomicasParaLRU		(void);
 void 				eliminarEntradasParaReemplazo		(t_list * entradasAtomicas, void * valor);
 t_list * 			desempate							(t_tabla_entradas * entrada, t_tabla_entradas * entrada2);
+
+/*-------------------------Señales-------------------------*/
+void				procesarSIGINT		(void);
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 				abrirArchivo					(char * rutaArchivo, size_t * tamArc, FILE ** archivo);

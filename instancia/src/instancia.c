@@ -9,6 +9,9 @@ int main(void) {
 	//Conecto instancia con coordinador
 	conectarInstancia();
 
+	//Manejo de señales
+	signal(SIGINT, (void*) procesarSIGINT);
+
 	//Quedo a la espera de solicitudes
 	recibirSolicitudes = true;
 	while (recibirSolicitudes) {
@@ -115,7 +118,7 @@ void procesarEnviarInfoInstancia(t_paquete * unPaquete) {
 	tamanioEntrada = info->tamanioEntrada;
 
 	log_trace(logInstancia,
-			"La cantidad de entradas del Storage es: %d y el tamanio es: %d",
+			"La cantidad de entradas del Storage es: %d y el tamanio es: %d \n",
 			cantEntradas, tamanioEntrada);
 
 	//Creo el espacio de almacenamiento
@@ -148,9 +151,10 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 
 	t_tabla_entradas * entrada = buscarEntrada(claveValor->clave);
 
-	if (entrada != NULL){
+	if (entrada != NULL) {
 		eliminarClave(claveValor->clave);
-		log_warning(logInstancia,"La clave existe por lo que la elimino y guardo el valor nuevo \n");
+		log_warning(logInstancia,
+				"La clave existe por lo que la elimino y guardo el valor nuevo \n");
 	}
 
 	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
@@ -294,7 +298,7 @@ void procesarError(t_paquete * unPaquete) {
 void crearTablaEntradas(void) {
 	tablaEntradas = list_create();
 
-	log_trace(logInstancia, "Creo la tabla de entradas");
+	log_trace(logInstancia, "Creo la tabla de entradas \n");
 }
 
 void destruirTablaEntradas(void) {
@@ -690,7 +694,14 @@ void recuperarInformacionDeInstancia(t_list * listaClaves) {
 
 	if (listaArchivos == NULL) {
 		log_warning(logInstancia,
-				"No tengo archivos para recuperar inormacion de instancia anterior");
+				"No tengo archivos para recuperar inormacion de instancia anterior \n");
+		return;
+	}
+
+	if (listaArchivos->elements_count == 0) {
+		log_warning(logInstancia,
+				"No tengo archivos para recuperar inormacion de instancia anterior \n");
+		list_destroy(listaArchivos);
 		return;
 	}
 
@@ -941,6 +952,37 @@ t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
 	list_destroy(menoresAReemplazar);
 
 	return mayoresAReemplazar;
+}
+
+/*-------------------------Señales-------------------------*/
+void procesarSIGINT(void){
+	log_error(logInstancia, "Me llego signal: SIGINT y mato el proceso\n");
+
+	enviarAvisoDesconexion(socketCoordinador);
+
+	//Corto el hilo de almacenamiento
+	almacenar = false;
+	intervaloDump = 0;
+	log_warning(logInstancia, "Espero para hacer el ultimo dump \n");
+	pthread_cancel(threadAlmacenamientoContinuo);
+	pthread_join(threadAlmacenamientoContinuo, NULL);
+
+	//Termina esi
+	log_trace(logInstancia, "Termino el proceso instancia \n");
+
+	//Destruyo archivo de log
+	log_destroy(logInstancia);
+
+	//Libero memoria
+	destruirTablaEntradas();
+	destruirBitMap();
+	destruirStorage();
+	free(puntoMontaje);
+	free(algoritmoReemplazo);
+	pthread_mutex_destroy(&mutex);
+
+	exit(EXIT_FAILURE);
+
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
