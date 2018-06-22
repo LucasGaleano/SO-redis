@@ -127,7 +127,6 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 
 	case STORE:
 		;
-
 		procesarSTORE(paquete, cliente_fd);
 		break;
 
@@ -200,9 +199,12 @@ void procesarClienteDesconectado(t_dictionary* g_diccionarioConexiones,int clien
 		raise(SIGTERM);
 
 	}
-	else
+	else{
 		log_debug(g_logger,"se desconecto %s\n",clienteDesconectado);
-
+		t_instancia * aux = buscarInstancia( g_tablaDeInstancias,clienteDesconectado, 0);
+		aux->disponible = false;
+		distribuirKeys(g_tablaDeInstancias);
+	}
 	dictionary_remove(g_diccionarioConexiones,clienteDesconectado);
 	close(cliente_fd);
 
@@ -268,6 +270,8 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 	list_add(instanciaElegida->claves,sentencia->clave);
 
 	mostrarInstancia(instanciaElegida);
+
+	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
 			"planificador");
@@ -342,11 +346,18 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	char* nombre = recibirNombreInstancia(paquete);
+	t_instancia * instanciaNueva = buscarInstancia( g_tablaDeInstancias,nombre, 0);
 
-	t_instancia* instanciaNueva = crearInstancia(nombre);
+	if(instanciaNueva == NULL ){
+	instanciaNueva = crearInstancia(nombre);
 	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,
 			&cliente_fd);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
+
+	}
+	else{
+		instanciaNueva->disponible = true;
+	}
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(cliente_fd, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas,instanciaNueva->claves);

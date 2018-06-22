@@ -18,12 +18,14 @@
  */
 
 /*-------------------ESTRUCTURAS---------------------------*/
+typedef int tiempo;
+tiempo g_tiempoPorEjecucion;
 
 typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	time_t ultimaModificacion; // entero por codigo de operacion
+	tiempo ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;

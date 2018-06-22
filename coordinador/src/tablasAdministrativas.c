@@ -45,20 +45,27 @@ void mostrarInstancia(t_instancia * instancia) {
 	printf("disponible: %d\n", instancia->disponible);
 	printf("primerLetra: %d\n", instancia->primerLetra);
 	printf("ultimaLetra: %d\n", instancia->ultimaLetra);
-	printf("ultimaModificacion: %li\n", instancia->ultimaModificacion);
+	printf("ultimaModificacion: %d\n", instancia->ultimaModificacion);
 	printf("\n");
+}
+
+tiempo traerTiempoEjecucion(){
+	tiempo tiempoEjecucionAux = g_tiempoPorEjecucion;
+	return tiempoEjecucionAux;
 }
 
 t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 
-	time_t fechaMasReciente = time(NULL);
+	//TODO ver si funciona igual con entero
+
+	tiempo fechaMasReciente = traerTiempoEjecucion() ;
 	t_instancia* aux;
 	t_instancia* ultimaInstanciaUsada;
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
 		aux = list_get(tablaDeInstancias, i);
-		if (fechaMasReciente > aux->ultimaModificacion) {
+		if (fechaMasReciente > aux->ultimaModificacion && aux->disponible) {
 			fechaMasReciente = aux->ultimaModificacion;
 			ultimaInstanciaUsada = aux;
 
@@ -77,7 +84,7 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
 		aux = list_get(tablaDeInstancias, i);
-		if (espacioMinimo > aux->espacioOcupado) {
+		if (espacioMinimo > aux->espacioOcupado && aux->disponible) {
 			espacioMinimo = aux->espacioOcupado;
 			instanciaMenorEspacioOcupado = aux;
 
