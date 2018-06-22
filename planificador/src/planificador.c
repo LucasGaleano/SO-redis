@@ -58,15 +58,16 @@ int main(void) {
 	g_huboError = 0;
 
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
-	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
+	//pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
 	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor,
 			(void*) &puertoLocal);
 
 	log_debug(g_logger, "inicio consola");
 	//iniciarConsola();
+	atenderCoordinador(NULL);
+//	pthread_cancel(hiloCoordinador);
+	pthread_join(hiloCoordinador, NULL);
 
-	//pthread_cancel(hiloServidor);
-	pthread_join(hiloServidor, NULL);
 	liberarTodo();
 
 	return EXIT_SUCCESS;
