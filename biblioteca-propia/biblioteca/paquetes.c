@@ -351,7 +351,7 @@ void enviarClaveEliminada(int server_socket, char * clave){
 void enviarAvisoDesconexion(int server_socket){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = ENVIAR_AVISO_DESCONNEXION;
+	unPaquete->codigoOperacion = ENVIAR_AVISO_DESCONEXION;
 
 	serializarNumero(unPaquete, 0);
 

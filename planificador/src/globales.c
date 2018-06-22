@@ -2,6 +2,7 @@
 
 static void vaciarListaBloqueados(t_infoBloqueo* nodo) {
 	free(nodo->idESI);
+	free(nodo->data->nombreESI);
 	free(nodo->data);
 	free(nodo);
 }
@@ -14,18 +15,16 @@ static void vaciarClaves(t_list* nodo) {
 	list_destroy_and_destroy_elements(nodo, (void*) free);
 }
 
-static vaciarListos(t_infoListos* nodo) {
+static void vaciarListos(t_infoListos* nodo) {
 	free(nodo->nombreESI);
 	free(nodo);
 }
 
 extern void liberarTodo(void) {
-	pthread_cancel(&hiloAlgoritmos);
-	pthread_cancel(&hiloServidor);
-	pthread_cancel(&hiloCoordinador);
-	pthread_join(&hiloAlgoritmos, NULL);
-	pthread_join(&hiloServidor, NULL);
-	pthread_join(&hiloCoordinador, NULL);
+	pthread_cancel(hiloAlgoritmos);
+	pthread_cancel(hiloCoordinador);
+	pthread_join(hiloAlgoritmos, NULL);
+	pthread_join(hiloCoordinador, NULL);
 
 	pthread_mutex_destroy(&mutexBloqueo);
 	pthread_mutex_destroy(&mutexConsola);

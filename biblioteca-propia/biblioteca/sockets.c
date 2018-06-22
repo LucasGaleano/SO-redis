@@ -20,6 +20,10 @@ int conectarCliente(const char * ip, int puerto, int cliente) {
 			serverInfo->ai_protocol);
 	if (connect(socketfd, serverInfo->ai_addr, serverInfo->ai_addrlen)) {
 		perror(NULL);
+
+		freeaddrinfo(serverInfo);
+
+		return -1;
 	}
 
 	freeaddrinfo(serverInfo);
