@@ -7,7 +7,6 @@
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include <time.h>
 #include <semaphore.h>
 
 /*TABLA DE INSTANCIAS
