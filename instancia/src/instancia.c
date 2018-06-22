@@ -23,7 +23,7 @@ int main(void) {
 	almacenar = false;
 	intervaloDump = 0;
 	log_warning(logInstancia, "Espero para hacer el ultimo dump \n");
-	pthread_cancel(threadAlmacenamientoContinuo);
+	//pthread_cancel(threadAlmacenamientoContinuo);
 	pthread_join(threadAlmacenamientoContinuo, NULL);
 
 	//Termina esi
@@ -38,7 +38,7 @@ int main(void) {
 	destruirStorage();
 	free(puntoMontaje);
 	free(algoritmoReemplazo);
-	pthread_mutex_destroy(&mutex);
+	pthread_mutex_destroy(&mutexDumpCompactacion);
 
 	return EXIT_SUCCESS;
 }
@@ -241,17 +241,26 @@ void procesarStore(t_paquete * unPaquete, int client_socket) {
 
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
+	aumentarTiempoReferenciadoMenosAClave(clave);
+
+	entradaBuscada->tiempoReferenciado = 0;
+
 	almacenarEnMemoriaSecundaria(entradaBuscada);
+
+	void * valor = buscarValorSegunClave(clave);
+
+	log_trace(logInstancia, "El valor de la clave que guarde en memoria es: %s",
+			(char *) valor);
 
 	enviarRespuesta(client_socket, OK);
 
+	free(valor);
 	free(clave);
 }
 
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
 	log_trace(logInstancia, "Me llego pedido de compactacion");
 	compactar();
-	aumentarTiempoReferenciadoATodos(tablaEntradas);
 	enviarCompactacion(client_socket);
 	mostrarBitmap();
 }
@@ -270,8 +279,6 @@ void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {
 		free(clave);
 		return;
 	}
-
-	aumentarTiempoReferenciadoMenosAClave(clave);
 
 	char * valorRespuesta = buscarValorSegunClave(respuesta->clave);
 
@@ -321,7 +328,7 @@ t_tabla_entradas * buscarEntrada(char * clave) {
 }
 
 void eliminarClave(char * clave) {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexDumpCompactacion);
 
 	bool esEntradaBuscada(t_tabla_entradas * entrada) {
 		return string_equals_ignore_case(entrada->clave, clave);
@@ -346,7 +353,7 @@ void eliminarClave(char * clave) {
 		free(entradaBuscada);
 	}
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutexDumpCompactacion);
 }
 
 void mostrarTablaEntradas(void) {
@@ -365,7 +372,7 @@ void mostrarTablaEntradas(void) {
 
 int agregarClaveValor(char * clave, void * valor) {
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexDumpCompactacion);
 
 	int tamValor = string_length(valor);
 
@@ -374,7 +381,7 @@ int agregarClaveValor(char * clave, void * valor) {
 	void * respuesta = guardarEnStorage(valor, &index);
 
 	if (respuesta == NULL) {
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&mutexDumpCompactacion);
 
 		return CANTIDAD_INDEX_LIBRES_INEXISTENTES;
 	} else {
@@ -393,7 +400,7 @@ int agregarClaveValor(char * clave, void * valor) {
 
 		list_add(tablaEntradas, registroEntrada);
 
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&mutexDumpCompactacion);
 
 		return 0;
 	}
@@ -611,7 +618,7 @@ void * guardarEnStorageEnIndex(void * valor, int index) {
 }
 
 void compactar(void) {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexDumpCompactacion);
 
 	int i;
 	int primeraEntradaLibre;
@@ -654,19 +661,19 @@ void compactar(void) {
 		}
 
 	}
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutexDumpCompactacion);
 }
 
 /*-------------------------Dump-------------------------*/
 void dump(void) {
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexDumpCompactacion);
 
 	mkdir(puntoMontaje, 0777);
 
 	list_iterate(tablaEntradas, (void*) almacenarEnMemoriaSecundaria);
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutexDumpCompactacion);
 }
 
 void almacenamientoContinuo(void) {
@@ -677,7 +684,7 @@ void almacenamientoContinuo(void) {
 }
 
 void crearAlmacenamientoContinuo(void) {
-	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutexDumpCompactacion, NULL);
 
 	if (pthread_create(&threadAlmacenamientoContinuo, NULL,
 			(void*) almacenamientoContinuo, NULL)) {
@@ -955,7 +962,7 @@ t_list * desempate(t_tabla_entradas * entrada, t_tabla_entradas * entrada2) {
 }
 
 /*-------------------------Señales-------------------------*/
-void procesarSIGINT(void){
+void procesarSIGINT(void) {
 	log_error(logInstancia, "Me llego signal: SIGINT y mato el proceso\n");
 
 	enviarAvisoDesconexion(socketCoordinador);
@@ -979,7 +986,7 @@ void procesarSIGINT(void){
 	destruirStorage();
 	free(puntoMontaje);
 	free(algoritmoReemplazo);
-	pthread_mutex_destroy(&mutex);
+	pthread_mutex_destroy(&mutexDumpCompactacion);
 
 	exit(EXIT_FAILURE);
 
