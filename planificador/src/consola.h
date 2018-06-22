@@ -41,8 +41,8 @@ void 				ejecutarComando							(char *, bool *);
 void 				ejecutarMan								(void);
 void 				pausarPlanificacion						(void);
 void 				continuarPlanificacion					(void);
-void 				bloquearESI								(char*);
-void 				desbloquearESI							(char*);
+void 				bloquear								(char*);
+void 				desbloquear								(char*);
 void 				listarProcesos							(char*);
 void 				killProceso								(char*);
 void 				status									(char*);
@@ -65,7 +65,8 @@ void 				estaESIBloqueado						(char*, t_list*);
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 char* 				esiQueBloquea							(char*);
-void 				decirESIQueBloqueaClave					(char*, char*);
+void 				decirESIQueBloqueaClave					(char*, t_list*);
+void 				sonIgualesLasClaves						(char*);
 void 				sacarClave								(char*, char*);
 
 /*------------------------------Auxiliares-killProceso----------------------------*/
