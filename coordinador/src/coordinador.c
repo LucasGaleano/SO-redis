@@ -324,6 +324,8 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	// Al planificar busco solo instancias disponibles por lo tanto puede devolver nulo si todavia no se recargo la tabla de instancias
 	if (instanciaElegida != NULL) {
 
+		g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
+
 		int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
 				instanciaElegida->nombre);
 
