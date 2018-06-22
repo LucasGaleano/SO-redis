@@ -29,7 +29,17 @@ int main(void) {
 	g_keyMaxima = 0;
 
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
-	//asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
+
+	char * posiblesClavesBloqueadas = config_get_string_value(g_con,
+			"CLAVES_BLOQUEADAS");
+
+	if (!string_equals_ignore_case(posiblesClavesBloqueadas,
+			"[]") || posiblesClavesBloqueadas != NULL) {
+		asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
+	} else {
+		printf("No hay claves \n");
+	}
+
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
 
@@ -64,7 +74,7 @@ int main(void) {
 
 void asignarBloquedas(char** codigos) {
 	int i = 0;
-	while (codigos[i] != NULL) {
+	for (; codigos[i] != NULL; i++) {
 		t_list* ins = list_create();
 		dictionary_put(g_bloq, codigos[i], ins);
 	}
@@ -163,12 +173,32 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case STORE:
-		if (dictionary_has_key(g_bloq, recibirStore(unPaquete))) {
-			pthread_mutex_lock(&mutexBloqueo);
-			aux = dictionary_remove(g_bloq, recibirStore(unPaquete));
-			list_iterate(aux, (void*) desbloquearESIs);
-			list_destroy(aux);
-			pthread_mutex_unlock(&mutexBloqueo);
+		g_claveTomada = 0;
+		g_claveGET = recibirStore(unPaquete);
+		if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
+			aux = dictionary_get(g_clavesTomadas, g_idESIactual);
+			g_claveTomada = list_any_satisfy(
+					dictionary_get(g_clavesTomadas, g_idESIactual),
+					(void*) condicionDeTomada);
+		} else {
+			g_huboError = 1;
+			enviarRespuesta(ABORTO, g_socketEnEjecucion);
+			liberarClaves(g_idESIactual);
+			pthread_mutex_lock(&mutexLog);
+			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
+					g_nombreESIactual);
+			pthread_mutex_unlock(&mutexLog);
+		}
+		if (g_claveTomada) {
+			if (dictionary_has_key(g_bloq, recibirStore(unPaquete))) {
+				pthread_mutex_lock(&mutexBloqueo);
+				aux = dictionary_remove(g_bloq, recibirStore(unPaquete));
+				list_iterate(aux, (void*) desbloquearESIs);
+				list_destroy(aux);
+				pthread_mutex_unlock(&mutexBloqueo);
+			}
+			list_remove_and_destroy_by_condition(aux, (void*) condicionDeTomada,
+					(void*) free);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
 					g_nombreESIactual, recibirStore(unPaquete));
@@ -263,7 +293,7 @@ static int buscarESIenLista(t_infoBloqueo* nodo) {
 static void buscarESIenBloqueados(char* key, t_list* reg) {
 	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
 	if (aBorrar == NULL) {
-		aBorrar = list_find(reg, (void*) buscarESIenLista);
+		aBorrar = list_remove_by_condition(reg, (void*) buscarESIenLista);
 	}
 }
 
