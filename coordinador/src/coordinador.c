@@ -43,6 +43,7 @@ int iniciarServidor(char* puerto) {
 	}
 
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	agregarConexion(g_diccionarioConexiones,"coordinador",&sockfd);
 
 
 	bind(sockfd, res->ai_addr, res->ai_addrlen);
@@ -71,7 +72,7 @@ void* procesarPeticion(int* cliente_fd){
 
 
 			if( (recvError = recv(*cliente_fd, buffer, 1000, 0)) <= 0){
-				procesarClienteDesconectado(g_diccionarioConexiones,*cliente_fd);
+				procesarClienteDesconectado(*cliente_fd);
 				return 0;
 			}
 
@@ -103,15 +104,15 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 		procesarHandshake(paquete, cliente_fd);
 		break;
 
-	case ENVIAR_NOMBRE_ESI:
-		;
-		procesarNombreESI(paquete, cliente_fd);
-		break;
-
 	case ENVIAR_NOMBRE_INSTANCIA:
 		;
 
 		procesarNombreInstancia(paquete, cliente_fd);
+		break;
+
+	case ENVIAR_NOMBRE_ESI:
+		;
+		procesarNombreESI(paquete, cliente_fd);
 		break;
 
 	case SET:
@@ -182,7 +183,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
-		instanciaElegida = buscarInstancia(tablaDeInstancias, NULL, keyDeClave);
+		instanciaElegida = buscarInstancia(tablaDeInstancias,false, NULL, keyDeClave);
 	}
 
 	sem_post(&g_mutex_tablas);
@@ -191,7 +192,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 }
 
-void procesarClienteDesconectado(t_dictionary* g_diccionarioConexiones,int cliente_fd){
+void procesarClienteDesconectado(int cliente_fd){
 
 	char* clienteDesconectado = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
 	if(strcmp(clienteDesconectado,"planificador") == 0){
@@ -201,12 +202,15 @@ void procesarClienteDesconectado(t_dictionary* g_diccionarioConexiones,int clien
 	}
 	else{
 		log_debug(g_logger,"se desconecto %s\n",clienteDesconectado);
-		t_instancia * aux = buscarInstancia( g_tablaDeInstancias,clienteDesconectado, 0);
+		t_instancia * aux = buscarInstancia( g_tablaDeInstancias,false,clienteDesconectado, 0);
 		aux->disponible = false;
 		distribuirKeys(g_tablaDeInstancias);
+		int* clienteDesconectado_fd = dictionary_remove(g_diccionarioConexiones,clienteDesconectado);
+		close(clienteDesconectado_fd);
+		free(clienteDesconectado_fd);
 	}
-	dictionary_remove(g_diccionarioConexiones,clienteDesconectado);
-	close(cliente_fd);
+
+
 
 }
 
@@ -348,33 +352,31 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	char* nombre = recibirNombreInstancia(paquete);
-	t_instancia * instanciaNueva = buscarInstancia( g_tablaDeInstancias,nombre, 0);
+	t_instancia * instanciaNueva = buscarInstancia( g_tablaDeInstancias,true,nombre, 0);
 
 	if(instanciaNueva == NULL ){
 	instanciaNueva = crearInstancia(nombre);
 	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,
 			&cliente_fd);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
-
-	}
-	else{
+	}else{
 		instanciaNueva->disponible = true;
 	}
+
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(cliente_fd, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas,instanciaNueva->claves);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s", nombre);
-
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto instancia: %s", nombre);
 	free(paquete);
 }
 
 //TODO probar esta funcion
 void procesarClaveEliminada(t_paquete* paquete, int cliente_fd){
 
-	//char* clave = recibirClaveEliminada(paquete);
-	//char* nombreInstancia = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
-	//t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, nombreInstancia, 0);
-	//eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
+	char* clave = recibirClaveEliminada(paquete);
+	char* nombreInstancia = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
+	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false, nombreInstancia, 0);
+	eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
 
 }
 
@@ -384,7 +386,7 @@ void procesarNombreESI(t_paquete* paquete, int cliente_fd){
 	char* nombreESI = recibirNombreEsi(paquete);
 
 	agregarConexion(g_diccionarioConexiones, nombreESI, &cliente_fd);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto: %s", nombreESI);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto esi: %s", nombreESI);
 
 	free(paquete);
 }
@@ -401,7 +403,6 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 
 void planificador_handler(int signum){
 	log_error(g_logger,"Cerrando coordinador\n");
-	//TODO liberar todo aca tambien si termina por desconexion del planificador
 	cerrarTodasLasConexiones(g_diccionarioConexiones);
 	exit(0);
 }

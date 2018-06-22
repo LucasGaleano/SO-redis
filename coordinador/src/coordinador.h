@@ -50,6 +50,7 @@ void procesarSTORE(t_paquete* unPaquete,int socketCliente);
 void procesarNombreESI(t_paquete* unPaquete,int socketCliente);
 void procesarNombreInstancia(t_paquete* unPaquete,int socketCliente);
 void procesarRespuesta(t_paquete* unPaquete,int socketCliente);
+void procesarClienteDesconectado(int cliente_fd);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 t_configuraciones armarConfigCoordinador(t_config*);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,

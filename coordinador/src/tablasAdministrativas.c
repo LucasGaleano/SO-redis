@@ -47,9 +47,10 @@ void mostrarInstancia(t_instancia * instancia) {
 	printf("ultimaLetra: %d\n", instancia->ultimaLetra);
 	printf("ultimaModificacion: %d\n", instancia->ultimaModificacion);
 	printf("\n");
+	fflush(stdout);
 }
 
-tiempo traerTiempoEjecucion(){
+tiempo traerTiempoEjecucion() {
 	tiempo tiempoEjecucionAux = g_tiempoPorEjecucion;
 	return tiempoEjecucionAux;
 }
@@ -58,7 +59,7 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 
 	//TODO ver si funciona igual con entero
 
-	tiempo fechaMasReciente = traerTiempoEjecucion() ;
+	tiempo fechaMasReciente = traerTiempoEjecucion();
 	t_instancia* aux;
 	t_instancia* ultimaInstanciaUsada;
 
@@ -97,6 +98,7 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 }
 
 void distribuirKeys(t_list* tablaDeInstancias) { //abecedario en ascci - 97(a) - 122(z)
+
 	int cantidadInstanciasDisponibles = 0;
 	int letrasAbecedario = 27;
 	int primerLetra = 97;
@@ -109,23 +111,25 @@ void distribuirKeys(t_list* tablaDeInstancias) { //abecedario en ascci - 97(a) -
 			cantidadInstanciasDisponibles++;
 		}
 	}
-	int letrasPorInstancia = (int) letrasAbecedario
-			/ cantidadInstanciasDisponibles;
-	int resto = letrasAbecedario
-			- (letrasPorInstancia * cantidadInstanciasDisponibles);
-	letrasPorInstancia =
-			resto == 0 ? letrasPorInstancia : letrasPorInstancia + 1;
-	for (size_t i = 0; i < list_size(tablaDeInstancias); i++) {
-		t_instancia* instanciaAux = list_get(tablaDeInstancias, i);
-		if (instanciaAux->disponible == true) {
-			instanciaAux->primerLetra = primerLetra;
-			ultimaLetra =
-					(primerLetra + letrasPorInstancia)
-							>= ultimaLetraAbecedario ?
-							ultimaLetraAbecedario :
-							primerLetra + letrasPorInstancia;
-			instanciaAux->ultimaLetra = ultimaLetra;
-			primerLetra = ultimaLetra + 1;
+	if (cantidadInstanciasDisponibles != 0) {
+		int letrasPorInstancia = (int) letrasAbecedario
+				/ cantidadInstanciasDisponibles;
+		int resto = letrasAbecedario
+				- (letrasPorInstancia * cantidadInstanciasDisponibles);
+		letrasPorInstancia =
+				resto == 0 ? letrasPorInstancia : letrasPorInstancia + 1;
+		for (size_t i = 0; i < list_size(tablaDeInstancias); i++) {
+			t_instancia* instanciaAux = list_get(tablaDeInstancias, i);
+			if (instanciaAux->disponible == true) {
+				instanciaAux->primerLetra = primerLetra;
+				ultimaLetra =
+						(primerLetra + letrasPorInstancia)
+								>= ultimaLetraAbecedario ?
+								ultimaLetraAbecedario :
+								primerLetra + letrasPorInstancia;
+				instanciaAux->ultimaLetra = ultimaLetra;
+				primerLetra = ultimaLetra + 1;
+			}
 		}
 	}
 }
@@ -137,20 +141,19 @@ t_dictionary* crearDiccionarioConexiones() {
 
 }
 
-void mostrarDiccionario(t_dictionary* diccionario){
+void mostrarDiccionario(t_dictionary* diccionario) {
 
-	void mostrar(char* key, void* value){
-		printf("clave: %s  valor: %i \n", key, *(int*)value );
+	void mostrar(char* key, void* value) {
+		printf("clave: %s  valor: %i \n", key, *(int*) value);
 		fflush(stdout);
 	}
 	dictionary_iterator(diccionario, mostrar);
-
 
 }
 
 void agregarConexion(t_dictionary * diccionario, char * clave, int* valor) {
 	sem_wait(&g_mutex_tablas);
-	if (!dictionary_has_key(diccionario, clave)){
+	if (!dictionary_has_key(diccionario, clave)) {
 		int* socket = malloc(sizeof(int));
 		*socket = *valor;
 		dictionary_put(diccionario, clave, socket);
@@ -167,33 +170,33 @@ int* conseguirConexion(t_dictionary * diccionario, char * clave) {
 }
 
 //TODO probar esta funcion
-char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor){
+char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor) {
 
-			sem_wait(&g_mutex_tablas);
-			char* valorBuscado;
+	sem_wait(&g_mutex_tablas);
+	char* valorBuscado;
 
-			void buscar(char* key, void* value){
-				if(*(int*)value == *valor)
-					valorBuscado = key;
-			}
-		  dictionary_iterator(diccionario, buscar);
+	void buscar(char* key, void* value) {
+		if (*(int*) value == *valor)
+			valorBuscado = key;
+	}
+	dictionary_iterator(diccionario, buscar);
 
-			sem_post(&g_mutex_tablas);
-			return valorBuscado;
+	sem_post(&g_mutex_tablas);
+	return valorBuscado;
 }
 
-void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar){
+void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar) {
 
-	for(int i=0;i<list_size(claves);i++){
-		char* clave = list_get(claves,i);
-		if(strcmp(clave,claveAEliminar)==0){
-			list_remove(claves,i);
+	for (int i = 0; i < list_size(claves); i++) {
+		char* clave = list_get(claves, i);
+		if (strcmp(clave, claveAEliminar) == 0) {
+			list_remove(claves, i);
 			break;
 		}
 	}
 }
 
-t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
+t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, char* nombre,
 		int letraAEncontrar) {
 
 	bool instanciaCumpleCon(t_instancia* instancia) {
@@ -209,7 +212,7 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,
 			contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar
 					&& instancia->ultimaLetra >= letraAEncontrar);
 
-		return (igualNombre && contieneLetraAEncontrar && instancia->disponible);
+		return (igualNombre && contieneLetraAEncontrar && (instancia->disponible || buscaNoDisponibles));
 
 	}
 
@@ -229,12 +232,12 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 	}
 }
 
-void cerrarTodasLasConexiones(t_dictionary * diccionario){
+void cerrarTodasLasConexiones(t_dictionary * diccionario) {
 
-	void cerrarConexion(void* value){
+	void cerrarConexion(void* value) {
 		close(&value);
 		free(value);
 
 	}
-	dictionary_clean_and_destroy_elements(diccionario,cerrarConexion);
+	dictionary_clean_and_destroy_elements(diccionario, cerrarConexion);
 }
