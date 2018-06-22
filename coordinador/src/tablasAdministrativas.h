@@ -7,7 +7,6 @@
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include <time.h>
 #include <semaphore.h>
 
 /*TABLA DE INSTANCIAS
@@ -18,12 +17,14 @@
  */
 
 /*-------------------ESTRUCTURAS---------------------------*/
+typedef int tiempo;
+tiempo g_tiempoPorEjecucion;
 
 typedef struct{
 	char* nombre;
 	int espacioOcupado;
 	bool disponible;
-	time_t ultimaModificacion; // entero por codigo de operacion
+	tiempo ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;
@@ -53,6 +54,7 @@ char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor);
 void mostrarDiccionario(t_dictionary* diccionario);
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
 int* conseguirConexion(t_dictionary * diccionario, char * clave);
+void cerrarTodasLasConexiones(t_dictionary * diccionario);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */
