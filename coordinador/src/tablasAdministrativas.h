@@ -54,6 +54,7 @@ char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor);
 void mostrarDiccionario(t_dictionary* diccionario);
 void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
 int* conseguirConexion(t_dictionary * diccionario, char * clave);
+void cerrarTodasLasConexiones(t_dictionary * diccionario);
 
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

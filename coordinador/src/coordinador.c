@@ -4,7 +4,7 @@
 
 int main(void) {
 
-	signal(SIGTERM, planificador_handler);
+	signal(SIGINT, planificador_handler);
 
 	g_tablaDeInstancias = crearListaInstancias();
 	g_diccionarioConexiones = crearDiccionarioConexiones();
@@ -196,7 +196,7 @@ void procesarClienteDesconectado(t_dictionary* g_diccionarioConexiones,int clien
 	char* clienteDesconectado = buscarDiccionarioPorValor(g_diccionarioConexiones,&cliente_fd);
 	if(strcmp(clienteDesconectado,"planificador") == 0){
 		log_error(g_logger,"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",clienteDesconectado);
-		raise(SIGTERM);
+		raise(SIGINT);
 
 	}
 	else{
@@ -276,7 +276,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 	int socketDelPlanificador = *conseguirConexion(g_diccionarioConexiones,
 			"planificador");
 
-	usleep(g_configuracion.retardo);
+	usleep(g_configuracion.retardo*1000);
 
 	int* socketInstancia = conseguirConexion(g_diccionarioConexiones,
 			instanciaElegida->nombre);
@@ -402,5 +402,6 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 void planificador_handler(int signum){
 	log_error(g_logger,"Cerrando coordinador\n");
 	//TODO liberar todo aca tambien si termina por desconexion del planificador
+	cerrarTodasLasConexiones(g_diccionarioConexiones);
 	exit(0);
 }

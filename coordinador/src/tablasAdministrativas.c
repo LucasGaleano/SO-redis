@@ -228,3 +228,13 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 		mostrarInstancia(instanciaAux);
 	}
 }
+
+void cerrarTodasLasConexiones(t_dictionary * diccionario){
+
+	void cerrarConexion(void* value){
+		close(&value);
+		free(value);
+
+	}
+	dictionary_clean_and_destroy_elements(diccionario,cerrarConexion);
+}
