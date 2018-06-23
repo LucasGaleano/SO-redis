@@ -46,6 +46,9 @@ void mostrarInstancia(t_instancia * instancia) {
 	printf("primerLetra: %d\n", instancia->primerLetra);
 	printf("ultimaLetra: %d\n", instancia->ultimaLetra);
 	printf("ultimaModificacion: %d\n", instancia->ultimaModificacion);
+	printf("claves: \n");
+	for(int i=0;i<list_size(instancia->claves);i++)
+		printf("  %s\n",(char*)list_get(instancia->claves,i));
 	printf("\n");
 	fflush(stdout);
 }
@@ -60,8 +63,8 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 	//TODO ver si funciona igual con entero
 
 	tiempo fechaMasReciente = traerTiempoEjecucion();
-	t_instancia* aux;
-	t_instancia* ultimaInstanciaUsada;
+	t_instancia* aux = NULL;
+	t_instancia* ultimaInstanciaUsada = NULL;
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
@@ -79,8 +82,8 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 
 	unsigned int espacioMinimo = MAX_ENTRADAS;
-	t_instancia* aux;
-	t_instancia* instanciaMenorEspacioOcupado;
+	t_instancia* aux = NULL;
+	t_instancia* instanciaMenorEspacioOcupado = NULL;
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
@@ -88,9 +91,7 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 		if (espacioMinimo > aux->espacioOcupado && aux->disponible) {
 			espacioMinimo = aux->espacioOcupado;
 			instanciaMenorEspacioOcupado = aux;
-
 		}
-
 	}
 
 	return instanciaMenorEspacioOcupado;
@@ -134,55 +135,61 @@ void distribuirKeys(t_list* tablaDeInstancias) { //abecedario en ascci - 97(a) -
 	}
 }
 
-t_dictionary* crearDiccionarioConexiones() {
+t_list* crearDiccionarioConexiones() {
 
-	t_dictionary* aux = dictionary_create();
+	t_list* aux = list_create();
 	return aux;
 
 }
 
-void mostrarDiccionario(t_dictionary* diccionario) {
+void mostrarDiccionario(t_list* diccionario) {
 
-	void mostrar(char* key, void* value) {
-		printf("clave: %s  valor: %i \n", key, *(int*) value);
-		fflush(stdout);
+	void mostrar(void* conexion) {
+		t_conexion* conexionAMostrar = (t_conexion*) conexion;
+		printf("nombre: %s  socket: %i \n", conexionAMostrar->nombre, conexionAMostrar->socket);
 	}
-	dictionary_iterator(diccionario, mostrar);
-
-}
-
-void agregarConexion(t_dictionary * diccionario, char * clave, int* valor) {
 	sem_wait(&g_mutex_tablas);
-	if (!dictionary_has_key(diccionario, clave)) {
-		int* socket = malloc(sizeof(int));
-		*socket = *valor;
-		dictionary_put(diccionario, clave, socket);
-	}
-
+	list_iterate(diccionario, mostrar);
 	sem_post(&g_mutex_tablas);
 }
 
-int* conseguirConexion(t_dictionary * diccionario, char * clave) {
-	sem_wait(&g_mutex_tablas);
-	int* aux = dictionary_get(diccionario, clave);
-	sem_post(&g_mutex_tablas);
-	return aux;
+t_conexion* crearConexion(char* nombre, int socket){
+	t_conexion* nuevaConexion = malloc(sizeof(t_conexion));
+	nuevaConexion->nombre = string_duplicate(nombre);
+	nuevaConexion->socket = socket;
+	return nuevaConexion;
 }
 
-//TODO probar esta funcion
-char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor) {
+void agregarConexion(t_list * diccionario, char * nombre, int socket) {
+
+
+	t_conexion* nuevaConexion = crearConexion(nombre,socket);
 
 	sem_wait(&g_mutex_tablas);
-	char* valorBuscado;
-
-	void buscar(char* key, void* value) {
-		if (*(int*) value == *valor)
-			valorBuscado = key;
-	}
-	dictionary_iterator(diccionario, buscar);
-
+	list_add(diccionario,nuevaConexion);
 	sem_post(&g_mutex_tablas);
-	return valorBuscado;
+}
+
+t_conexion* buscarConexion(t_list * diccionario, char * nombre, int socket) {
+
+	bool igualNombre = true;
+	bool igualSocket = true;
+	bool conexionCumpleCon(void* conexion){
+		t_conexion* conexionBuscar = (t_conexion*) conexion;
+
+		if (nombre != NULL)
+			igualNombre = string_equals_ignore_case(conexionBuscar->nombre, nombre);
+
+		if (socket != 0)
+			igualSocket = (conexionBuscar->socket == socket );
+
+			return (igualNombre && igualSocket);
+
+	}
+	sem_wait(&g_mutex_tablas);
+	t_conexion* conexionBuscada = list_find(diccionario,conexionCumpleCon);
+	sem_post(&g_mutex_tablas);
+	return conexionBuscada;
 }
 
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar) {
@@ -197,31 +204,42 @@ void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar) {
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, char* nombre,
-		int letraAEncontrar) {
-
-	bool instanciaCumpleCon(t_instancia* instancia) {
+		int letraAEncontrar, char* clave) {
 
 		bool igualNombre = true;
 		bool contieneLetraAEncontrar = true;
+		bool contieneClave = true;
+		bool instanciaCumpleCon(t_instancia* instancia) {
 
 		if (nombre != NULL)
 			igualNombre = string_equals_ignore_case(instancia->nombre, nombre);
 
 		if (letraAEncontrar != 0)
-
 			contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar
 					&& instancia->ultimaLetra >= letraAEncontrar);
+		if(clave != NULL){
+			contieneClave = instanciaContieneClave(instancia->claves,clave);
+		}
 
-		return (igualNombre && contieneLetraAEncontrar && (instancia->disponible || buscaNoDisponibles));
+		return (igualNombre && contieneLetraAEncontrar && contieneClave &&(instancia->disponible || buscaNoDisponibles));
 
 	}
-
 	sem_wait(&g_mutex_tablas);
-	t_instancia* instanciaAux = list_find(tablaDeInstancias,
-			(void*) instanciaCumpleCon);
+	t_instancia* instanciaAux = list_find(tablaDeInstancias,(void*) instanciaCumpleCon);
 	sem_post(&g_mutex_tablas);
 	return instanciaAux;
+}
 
+bool instanciaContieneClave(t_list* claves,char* clave){
+
+	bool contieneClave = false;
+	for(int i=0;i<list_size(claves);i++){
+		if(strcmp(list_get(claves,i),clave)==0){
+			contieneClave = true;
+			break;
+		}
+	}
+	return contieneClave;
 }
 
 void mostrarTablaInstancia(t_list* tablaDeInstancias) {
@@ -232,12 +250,39 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 	}
 }
 
-void cerrarTodasLasConexiones(t_dictionary * diccionario) {
-
-	void cerrarConexion(void* value) {
-		close(&value);
-		free(value);
-
+void sacarConexion(t_list* diccionario, t_conexion* conexion){
+	int index;
+	for (index = 0;index<list_size(diccionario);index++){
+		t_conexion* aux = list_get(diccionario,index);
+		if(strcmp(aux->nombre,conexion->nombre) == 0){
+			aux = list_remove(diccionario,index);
+			cerrarConexion(aux);
+			destruirConexion(aux);
+		}
 	}
-	dictionary_clean_and_destroy_elements(diccionario, cerrarConexion);
+}
+
+void cerrarConexion(void* conexion) {
+	t_conexion* conexionACerrar = (t_conexion*)conexion;
+	printf("cerrando %s\n",conexionACerrar->nombre);
+	close(conexionACerrar->socket);
+}
+
+void destruirConexion(void* conexion){
+		t_conexion* conexionACerrar = (t_conexion*)conexion;
+		free(conexionACerrar->nombre);
+		free(conexionACerrar);
+}
+
+void cerrarTodasLasConexiones(t_list * diccionario) {
+	sem_wait(&g_mutex_tablas);
+	list_iterate(diccionario, cerrarConexion);
+	sem_post(&g_mutex_tablas);
+	destruirDiccionario(diccionario);
+}
+
+void destruirDiccionario(t_list* diccionario){
+	sem_wait(&g_mutex_tablas);
+	list_clean_and_destroy_elements(diccionario,destruirConexion);
+	sem_post(&g_mutex_tablas);
 }
