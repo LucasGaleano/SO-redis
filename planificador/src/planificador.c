@@ -30,15 +30,7 @@ int main(void) {
 
 	g_est = config_get_double_value(g_con, "ESTIMACION_INICIAL");
 
-	char * posiblesClavesBloqueadas = config_get_string_value(g_con,
-			"CLAVES_BLOQUEADAS");
-
-	if (!string_equals_ignore_case(posiblesClavesBloqueadas,
-			"[]") || posiblesClavesBloqueadas != NULL) {
-		asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
-	} else {
-		printf("No hay claves \n");
-	}
+	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
 	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
@@ -58,15 +50,16 @@ int main(void) {
 	g_huboError = 0;
 
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
-	//pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
+	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
 	pthread_create(&hiloServidor, NULL, (void*) iniciarServidor,
 			(void*) &puertoLocal);
 
 	log_debug(g_logger, "inicio consola");
 	//iniciarConsola();
-	atenderCoordinador(NULL);
+
 //	pthread_cancel(hiloCoordinador);
-	pthread_join(hiloCoordinador, NULL);
+
+	pthread_join(hiloCoordinador, NULL); //Eliminar al terminar la consola
 
 	liberarTodo();
 
@@ -181,14 +174,6 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			g_claveTomada = list_any_satisfy(
 					dictionary_get(g_clavesTomadas, g_idESIactual),
 					(void*) condicionDeTomada);
-		} else {
-			g_huboError = 1;
-			enviarRespuesta(ABORTO, g_socketEnEjecucion);
-			liberarClaves(g_idESIactual);
-			pthread_mutex_lock(&mutexLog);
-			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
-					g_nombreESIactual);
-			pthread_mutex_unlock(&mutexLog);
 		}
 		if (g_claveTomada) {
 			if (dictionary_has_key(g_bloq, recibirStore(unPaquete))) {
@@ -206,7 +191,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			pthread_mutex_unlock(&mutexLog);
 		} else {
 			g_huboError = 1;
-			enviarRespuesta(ABORTO, g_socketEnEjecucion);
+			enviarRespuesta(g_socketEnEjecucion, ABORTO);
 			liberarClaves(g_idESIactual);
 			pthread_mutex_lock(&mutexLog);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
@@ -217,7 +202,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		break;
 	case RESPUESTA_SOLICITUD:
 		g_huboError = 1;
-		enviarRespuesta(ABORTO, g_socketEnEjecucion);
+		enviarRespuesta(g_socketEnEjecucion, ABORTO);
 		liberarClaves(g_idESIactual);
 		sem_post(&continua);
 		break;
