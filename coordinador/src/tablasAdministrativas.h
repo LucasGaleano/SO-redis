@@ -54,8 +54,9 @@ void agregarInstancia(t_list * lista, t_instancia* instancia );
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);
-t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar);
+t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar, char* clave);
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
+bool instanciaContieneClave(t_list* claves,char* clave);
 
 t_list* crearDiccionarioConexiones(void);
 t_conexion* crearConexion(char* nombre, int socket);

@@ -54,11 +54,11 @@ int iniciarServidor(char* puerto) {
 	printf("esperando conexiones en puerto %s\n", puerto);
 	while (1) {
 		addr_size = sizeof(their_addr);
-		int cliente_fd;
-		cliente_fd = accept(sockfd, (struct sockaddr*) &their_addr, &addr_size);
+		int* cliente_fd = malloc(sizeof(int));
+		*cliente_fd = accept(sockfd, (struct sockaddr*) &their_addr, &addr_size);
 
 		pthread_t pid;
-		pthread_create(&pid, NULL, procesarPeticion, &cliente_fd);
+		pthread_create(&pid, NULL, procesarPeticion, cliente_fd);
 
 	}
 }
@@ -94,8 +94,6 @@ void* procesarPeticion(void* cliente_fd){
 
 void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 
-
-
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
@@ -107,11 +105,13 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 		;
 
 		procesarNombreInstancia(paquete, cliente_fd);
+		mostrarDiccionario(g_diccionarioConexiones);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
 		;
 		procesarNombreESI(paquete, cliente_fd);
+		mostrarDiccionario(g_diccionarioConexiones);
 		break;
 
 	case SET:
@@ -167,8 +167,7 @@ t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
 
 }
 
-t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
-		t_list* tablaDeInstancias) {
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave, t_list* tablaDeInstancias) {
 
 	sem_wait(&g_mutex_tablas);
 	t_instancia* instanciaElegida = NULL;
@@ -182,7 +181,7 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
 		int keyDeClave = (int) string_substring(clave, 0, 1);
-		instanciaElegida = buscarInstancia(tablaDeInstancias,false, NULL, keyDeClave);
+		instanciaElegida = buscarInstancia(tablaDeInstancias,false, NULL, keyDeClave,NULL);
 	}
 
 	sem_post(&g_mutex_tablas);
@@ -191,20 +190,26 @@ t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 
 }
 
-void procesarClienteDesconectado(int cliente_fd){
+void* procesarClienteDesconectado(int cliente_fd){
 
 	t_conexion* clienteDesconectado = buscarConexion(g_diccionarioConexiones,NULL,cliente_fd);
-	if(string_equals_ignore_case(clienteDesconectado->nombre,"planificador") == 0){
+	if(clienteDesconectado==NULL){
+		return 0;
+	}
+	if(string_equals_ignore_case(clienteDesconectado->nombre,"planificador")){
 		log_error(g_logger,"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",clienteDesconectado->nombre);
 		raise(SIGINT);
 	}
 	else{
 		log_debug(g_logger,"se desconecto %s\n",clienteDesconectado->nombre);
-		t_instancia * instanciaDesconectada = buscarInstancia( g_tablaDeInstancias,false,clienteDesconectado->nombre, 0);
-		instanciaDesconectada->disponible = false;
-		distribuirKeys(g_tablaDeInstancias);
+		t_instancia * instanciaDesconectada = buscarInstancia( g_tablaDeInstancias,false,clienteDesconectado->nombre, 0,NULL);
+		if(instanciaDesconectada!=NULL){
+			instanciaDesconectada->disponible = false;
+			distribuirKeys(g_tablaDeInstancias);
+		}
 		sacarConexion(g_diccionarioConexiones,clienteDesconectado);
 	}
+	return 0;
 }
 
 void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
@@ -258,29 +263,34 @@ void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 }
 
 void procesarSET(t_paquete* paquete, int cliente_fd) {
+	usleep(g_configuracion.retardo*1000);
 
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_instancia* instanciaElegida = PlanificarInstancia(
 			g_configuracion.algoritmoDist, sentencia->clave,
 			g_tablaDeInstancias);
 
-	list_add(instanciaElegida->claves,sentencia->clave);
+	if(instanciaElegida==NULL){
+		log_error(g_logger,"no se pudo planificar una instancia para la clave: %s",sentencia->clave);
+		raise(SIGINT);
+	}
 
 	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
-
-
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
-	usleep(g_configuracion.retardo*1000);
+
 
 	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
 
-	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s, %s a %s",
-			sentencia->clave, sentencia->valor, instanciaElegida->nombre);
-
 	list_add(instanciaElegida->claves,sentencia->clave);
+	instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
+	instanciaElegida->espacioOcupado++;//TODO tope de espacio ocupado
+
+	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
+									sentencia->clave, sentencia->valor, instanciaElegida->nombre);
+
 	enviarSet(conexionDeInstancia->socket, sentencia->clave, sentencia->valor);
 	enviarSet(conexionDelPlanificador->socket, sentencia->clave, sentencia->valor);
-
+	mostrarInstancia(instanciaElegida);
 	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
 	free(paquete);
@@ -289,16 +299,11 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 void procesarGET(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirGet(paquete);
-
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
-
 	log_debug(g_logger, "enviar GET al planificador: %i, clave: %s\n",
 			conexionDelPlanificador->socket, clave);
-
 	enviarGet(conexionDelPlanificador->socket, clave);
-
 	free(paquete);
-
 }
 
 void procesarSTORE(t_paquete* paquete, int cliente_fd) {
@@ -307,14 +312,14 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirStore(paquete);
 
-	t_instancia* instanciaElegida = PlanificarInstancia(
-			g_configuracion.algoritmoDist, clave, g_tablaDeInstancias);
+	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, true ,NULL,0,clave);
+			//TODO si instancia devuelve un "no disponible avisar del error y no hacer nada mas"
 
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
 
 	// Al planificar busco solo instancias disponibles por lo tanto puede devolver nulo si todavia no se recargo la tabla de instancias
 	if (instanciaElegida != NULL) {
-
+		mostrarInstancia(instanciaElegida);
 		g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 		t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,
@@ -339,16 +344,16 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	char* nombre = recibirNombreInstancia(paquete);
-	t_instancia* instanciaNueva = buscarInstancia( g_tablaDeInstancias,true,nombre, 0);
+	t_instancia* instanciaNueva = buscarInstancia( g_tablaDeInstancias,true,nombre, 0,NULL);
 
 	if(instanciaNueva == NULL ){
 	instanciaNueva = crearInstancia(nombre);
-	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,cliente_fd);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	}else{
 		instanciaNueva->disponible = true;
 	}
 
+	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,cliente_fd);
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(cliente_fd, g_configuracion.cantidadEntradas,
 			g_configuracion.tamanioEntradas,instanciaNueva->claves);
@@ -361,7 +366,7 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd){
 
 	char* clave = recibirClaveEliminada(paquete);
 	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,NULL,cliente_fd);
-	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false, conexionDeInstancia->nombre, 0);
+	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false, conexionDeInstancia->nombre, 0,NULL);
 	eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
 
 }
@@ -387,7 +392,7 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 }
 
 void planificador_handler(int signum){
-	log_error(g_logger,"Cerrando coordinador\n");
+	log_error(g_logger,"Cerrando conexiones\n");
 	cerrarTodasLasConexiones(g_diccionarioConexiones);
 	exit(0);
 }

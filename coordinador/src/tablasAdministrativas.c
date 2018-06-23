@@ -46,6 +46,9 @@ void mostrarInstancia(t_instancia * instancia) {
 	printf("primerLetra: %d\n", instancia->primerLetra);
 	printf("ultimaLetra: %d\n", instancia->ultimaLetra);
 	printf("ultimaModificacion: %d\n", instancia->ultimaModificacion);
+	printf("claves: \n");
+	for(int i=0;i<list_size(instancia->claves);i++)
+		printf("  %s\n",(char*)list_get(instancia->claves,i));
 	printf("\n");
 	fflush(stdout);
 }
@@ -60,8 +63,8 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 	//TODO ver si funciona igual con entero
 
 	tiempo fechaMasReciente = traerTiempoEjecucion();
-	t_instancia* aux;
-	t_instancia* ultimaInstanciaUsada;
+	t_instancia* aux = NULL;
+	t_instancia* ultimaInstanciaUsada = NULL;
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
@@ -79,8 +82,8 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 
 	unsigned int espacioMinimo = MAX_ENTRADAS;
-	t_instancia* aux;
-	t_instancia* instanciaMenorEspacioOcupado;
+	t_instancia* aux = NULL;
+	t_instancia* instanciaMenorEspacioOcupado = NULL;
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
@@ -88,9 +91,7 @@ t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 		if (espacioMinimo > aux->espacioOcupado && aux->disponible) {
 			espacioMinimo = aux->espacioOcupado;
 			instanciaMenorEspacioOcupado = aux;
-
 		}
-
 	}
 
 	return instanciaMenorEspacioOcupado;
@@ -203,12 +204,12 @@ void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar) {
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, char* nombre,
-		int letraAEncontrar) {
-
-	bool instanciaCumpleCon(t_instancia* instancia) {
+		int letraAEncontrar, char* clave) {
 
 		bool igualNombre = true;
 		bool contieneLetraAEncontrar = true;
+		bool contieneClave = true;
+		bool instanciaCumpleCon(t_instancia* instancia) {
 
 		if (nombre != NULL)
 			igualNombre = string_equals_ignore_case(instancia->nombre, nombre);
@@ -216,16 +217,29 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, 
 		if (letraAEncontrar != 0)
 			contieneLetraAEncontrar = (instancia->primerLetra <= letraAEncontrar
 					&& instancia->ultimaLetra >= letraAEncontrar);
+		if(clave != NULL){
+			contieneClave = instanciaContieneClave(instancia->claves,clave);
+		}
 
-		return (igualNombre && contieneLetraAEncontrar && (instancia->disponible || buscaNoDisponibles));
+		return (igualNombre && contieneLetraAEncontrar && contieneClave &&(instancia->disponible || buscaNoDisponibles));
 
 	}
-
 	sem_wait(&g_mutex_tablas);
 	t_instancia* instanciaAux = list_find(tablaDeInstancias,(void*) instanciaCumpleCon);
 	sem_post(&g_mutex_tablas);
 	return instanciaAux;
+}
 
+bool instanciaContieneClave(t_list* claves,char* clave){
+
+	bool contieneClave = false;
+	for(int i=0;i<list_size(claves);i++){
+		if(strcmp(list_get(claves,i),clave)==0){
+			contieneClave = true;
+			break;
+		}
+	}
+	return contieneClave;
 }
 
 void mostrarTablaInstancia(t_list* tablaDeInstancias) {
