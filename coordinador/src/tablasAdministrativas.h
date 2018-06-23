@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
@@ -34,7 +36,7 @@ typedef struct{
 typedef struct{
 	char* nombre;
 	int socket;
-}t_Conexion;
+}t_conexion;
 
 
 sem_t g_mutex_tablas;
@@ -58,12 +60,12 @@ void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
 t_list* crearDiccionarioConexiones(void);
 t_conexion* crearConexion(char* nombre, int socket);
 void agregarConexion(t_list * diccionario, char * clave , int valor);
+void sacarConexion(t_list* diccionario, t_conexion* conexion);
 void mostrarDiccionario(t_list* diccionario);
-int buscarConexion(t_list * diccionario, char * clave, int socket);
-void cerrarTodasLasConexiones(t_dictionary * diccionario);
-void cerrarConexion(t_conexion* conexion);
-void destruirConexion(t_conexion* conexion);
-void cerrarTodasLasConexiones(t_list * diccionario);
+t_conexion* buscarConexion(t_list * diccionario, char * clave, int socket);
+void cerrarConexion(void* conexion);
+void destruirConexion(void* conexion);
+void cerrarTodasLasConexiones(t_list* diccionario);
 void destruirDiccionario(t_list* diccionario);
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

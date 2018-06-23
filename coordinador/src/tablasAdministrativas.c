@@ -134,7 +134,7 @@ void distribuirKeys(t_list* tablaDeInstancias) { //abecedario en ascci - 97(a) -
 	}
 }
 
-t_dictionary* crearDiccionarioConexiones() {
+t_list* crearDiccionarioConexiones() {
 
 	t_list* aux = list_create();
 	return aux;
@@ -143,11 +143,12 @@ t_dictionary* crearDiccionarioConexiones() {
 
 void mostrarDiccionario(t_list* diccionario) {
 
-	void mostrar(t_conexion* conexion) {
-		printf("nombre: %s  socket: %i \n", conexion->nombre, conexion->socket);
+	void mostrar(void* conexion) {
+		t_conexion* conexionAMostrar = (t_conexion*) conexion;
+		printf("nombre: %s  socket: %i \n", conexionAMostrar->nombre, conexionAMostrar->socket);
 	}
 	sem_wait(&g_mutex_tablas);
-	list_iterator(diccionario, mostrar);
+	list_iterate(diccionario, mostrar);
 	sem_post(&g_mutex_tablas);
 }
 
@@ -161,24 +162,25 @@ t_conexion* crearConexion(char* nombre, int socket){
 void agregarConexion(t_list * diccionario, char * nombre, int socket) {
 
 
-	t_conexion* nuevaConexion = crearConexion(nombre,socket)
+	t_conexion* nuevaConexion = crearConexion(nombre,socket);
 
 	sem_wait(&g_mutex_tablas);
 	list_add(diccionario,nuevaConexion);
 	sem_post(&g_mutex_tablas);
 }
 
-int buscarConexion(t_list * diccionario, char * nombre, int socket) {
+t_conexion* buscarConexion(t_list * diccionario, char * nombre, int socket) {
 
 	bool igualNombre = true;
 	bool igualSocket = true;
-	bool conexionCumpleCon(t_conexion* conexion){
+	bool conexionCumpleCon(void* conexion){
+		t_conexion* conexionBuscar = (t_conexion*) conexion;
 
 		if (nombre != NULL)
-			igualNombre = string_equals_ignore_case(conexion->nombre, nombre);
+			igualNombre = string_equals_ignore_case(conexionBuscar->nombre, nombre);
 
 		if (socket != 0)
-			igualSocket = (conexion->socket == socket );
+			igualSocket = (conexionBuscar->socket == socket );
 
 			return (igualNombre && igualSocket);
 
@@ -234,8 +236,7 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 	}
 }
 
-sacarConexion(t_list* diccionario, t_conexion* conexion){
-
+void sacarConexion(t_list* diccionario, t_conexion* conexion){
 	int index;
 	for (index = 0;index<list_size(diccionario);index++){
 		t_conexion* aux = list_get(diccionario,index);
@@ -247,14 +248,16 @@ sacarConexion(t_list* diccionario, t_conexion* conexion){
 	}
 }
 
-void cerrarConexion(t_conexion* conexion) {
-	printf("cerrando %s\n",conexion->nombre);
-	close(conexion->socket);
+void cerrarConexion(void* conexion) {
+	t_conexion* conexionACerrar = (t_conexion*)conexion;
+	printf("cerrando %s\n",conexionACerrar->nombre);
+	close(conexionACerrar->socket);
 }
 
-void destruirConexion(t_conexion* conexion){
-		free(conexion->nombre);
-		free(conexion);
+void destruirConexion(void* conexion){
+		t_conexion* conexionACerrar = (t_conexion*)conexion;
+		free(conexionACerrar->nombre);
+		free(conexionACerrar);
 }
 
 void cerrarTodasLasConexiones(t_list * diccionario) {
@@ -266,6 +269,6 @@ void cerrarTodasLasConexiones(t_list * diccionario) {
 
 void destruirDiccionario(t_list* diccionario){
 	sem_wait(&g_mutex_tablas);
-	list_clean_and_destroy_elements(diccionario,destruirConexion)
+	list_clean_and_destroy_elements(diccionario,destruirConexion);
 	sem_post(&g_mutex_tablas);
 }
