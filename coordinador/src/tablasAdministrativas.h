@@ -31,6 +31,12 @@ typedef struct{
 	t_list* claves;
 }t_instancia;
 
+typedef struct{
+	char* nombre;
+	int socket;
+}t_Conexion;
+
+
 sem_t g_mutex_tablas;
 
 /*-------------------FUNCIONES---------------------------*/
@@ -41,20 +47,23 @@ t_instancia* traerInstanciaQueContieneKey(t_list* tablaDeInstancia,char* primerL
 void distribuirKeys(t_list* tablaDeInstancias);
 
 t_list* crearListaInstancias(void);
-void agregarInstancia(t_list * lista, t_instancia* instancia );
 t_instancia* crearInstancia(char* nombre);
+void agregarInstancia(t_list * lista, t_instancia* instancia );
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar);
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
 
-t_dictionary* crearDiccionarioConexiones(void);
-char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor);
-void mostrarDiccionario(t_dictionary* diccionario);
-void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
-int* conseguirConexion(t_dictionary * diccionario, char * clave);
+t_list* crearDiccionarioConexiones(void);
+t_conexion* crearConexion(char* nombre, int socket);
+void agregarConexion(t_list * diccionario, char * clave , int valor);
+void mostrarDiccionario(t_list* diccionario);
+int buscarConexion(t_list * diccionario, char * clave, int socket);
 void cerrarTodasLasConexiones(t_dictionary * diccionario);
-
+void cerrarConexion(t_conexion* conexion);
+void destruirConexion(t_conexion* conexion);
+void cerrarTodasLasConexiones(t_list * diccionario);
+void destruirDiccionario(t_list* diccionario);
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

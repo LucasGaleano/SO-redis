@@ -19,7 +19,7 @@
 
 /*---------------------Estructuras-------------------------*/
 
-typedef struct t_configuracion{
+typedef struct{
 	char* puertoConexion;
 	char* algoritmoDist;
 	int cantidadEntradas;
@@ -33,7 +33,7 @@ typedef struct t_configuracion{
 t_log* g_logger;
 t_configuraciones g_configuracion;
 t_list* g_tablaDeInstancias;
-t_dictionary* g_diccionarioConexiones;
+t_list* g_diccionarioConexiones;
 sem_t g_mutexLog;
 
 
