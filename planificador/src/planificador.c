@@ -17,7 +17,7 @@ int main(void) {
 				"El coordinador no esta conectado. Revise y vuelva a ejecutar");
 		config_destroy(g_con);
 		log_destroy(g_logger);
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	g_listos = dictionary_create();
@@ -71,7 +71,9 @@ void asignarBloquedas(char** codigos) {
 	for (; codigos[i] != NULL; i++) {
 		t_list* ins = list_create();
 		dictionary_put(g_bloq, codigos[i], ins);
+		free(codigos[i]);
 	}
+	free(codigos);
 }
 
 void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
@@ -101,7 +103,7 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&ESIentrada);
 		pthread_mutex_lock(&mutexLog);
 		log_info(g_logger, "Se conecto exitosamente el %s",
-				recibirNombreEsi(unPaquete));
+				dat->nombreESI);
 		pthread_mutex_unlock(&mutexLog);
 		pthread_mutex_lock(&modificacion);
 		g_huboModificacion = 1;
@@ -176,9 +178,9 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					(void*) condicionDeTomada);
 		}
 		if (g_claveTomada) {
-			if (dictionary_has_key(g_bloq, recibirStore(unPaquete))) {
+			if (dictionary_has_key(g_bloq, g_claveGET)) {
 				pthread_mutex_lock(&mutexBloqueo);
-				aux = dictionary_remove(g_bloq, recibirStore(unPaquete));
+				aux = dictionary_remove(g_bloq, g_claveGET);
 				list_iterate(aux, (void*) desbloquearESIs);
 				list_destroy(aux);
 				pthread_mutex_unlock(&mutexBloqueo);
@@ -187,7 +189,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					(void*) free);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
-					g_nombreESIactual, recibirStore(unPaquete));
+					g_nombreESIactual, g_claveGET);
 			pthread_mutex_unlock(&mutexLog);
 		} else {
 			g_huboError = 1;
@@ -198,6 +200,8 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
 		}
+		free(g_claveGET);
+		g_claveGET = NULL;
 		sem_post(&continua);
 		break;
 	case RESPUESTA_SOLICITUD:
@@ -214,6 +218,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		log_error(g_logger,
 				"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
 		pthread_mutex_unlock(&mutexLog);
+		destruirPaquete(unPaquete);
 		liberarTodo();
 		exit(EXIT_FAILURE);
 		break;

@@ -20,8 +20,15 @@ static int esMayor(int comp1, int comp2) {
 	return comp1 > comp2;
 }
 
-static char* asignarID(int val) {
-	return string_itoa(val);
+static char* asignarID(int *val) {
+	char* auxKey = NULL;
+
+	do {
+		free(auxKey);
+		auxKey = string_itoa(*val);
+		(*val)++;
+	} while (!dictionary_has_key(g_listos, auxKey));
+	return auxKey;
 }
 
 static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
@@ -44,6 +51,8 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s",
 			insert->data->nombreESI, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
+	free(g_claveGET);
+	g_claveGET = NULL;
 }
 
 static void liberarSalida(void* arg) {
@@ -55,23 +64,17 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 		int (*ponderacion)(int, int)) {
 	t_infoListos *actual;
 	double unValor;
-	char* auxKey;
+	char* auxKey = NULL;
 	char* key;
 	int i = 0;
-	do {
-		auxKey = asignarID(i);
-		i++;
-	} while (!dictionary_has_key(g_listos, auxKey));
+	auxKey = asignarID(&i);
 	actual = dictionary_get(g_listos, auxKey);
 	unValor = calculadorProx(actual->estAnterior, actual->realAnterior,
 			actual->tEnEspera);
 	key = strdup(auxKey);
 	for (; i <= g_keyMaxima; i++) {
 		free(auxKey);
-		do {
-			auxKey = asignarID(i);
-			i++;
-		} while (!dictionary_has_key(g_listos, auxKey));
+		auxKey = asignarID(&i);
 		actual = dictionary_get(g_listos, auxKey);
 		double prox = calculadorProx(actual->estAnterior, actual->realAnterior,
 				actual->tEnEspera);
@@ -128,7 +131,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
 					}
-					if (g_termino) {
+					if (g_termino || g_huboError) {
 						if (!g_huboError)
 							enviarRespuesta(g_socketEnEjecucion, OK);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
@@ -182,7 +185,7 @@ extern void planificarConDesalojo(void) {
 						bloquear(aEjecutar, cont, key);
 						aEjecutar = NULL;
 					}
-					if (g_termino) {
+					if (g_termino || g_huboError) {
 						if (!g_huboError)
 							enviarRespuesta(g_socketEnEjecucion, OK);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
