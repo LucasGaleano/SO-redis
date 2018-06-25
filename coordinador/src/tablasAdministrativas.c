@@ -16,10 +16,11 @@ void agregarInstancia(t_list * lista, t_instancia* instancia) {
 	sem_post(&g_mutex_tablas);
 }
 
-t_instancia* crearInstancia(char* nombre) {
+t_instancia* crearInstancia(char* nombre,int espacioMaximo) {
 
 	t_instancia* aux = malloc(sizeof(t_instancia));
 	aux->nombre = string_duplicate(nombre);
+	aux->espacioMaximo = espacioMaximo;
 	aux->espacioOcupado = 0;
 	aux->disponible = true;
 	aux->ultimaModificacion = 0;
@@ -60,8 +61,6 @@ tiempo traerTiempoEjecucion() {
 
 t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 
-	//TODO ver si funciona igual con entero
-
 	tiempo fechaMasReciente = traerTiempoEjecucion();
 	t_instancia* aux = NULL;
 	t_instancia* ultimaInstanciaUsada = NULL;
@@ -72,13 +71,11 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 		if (fechaMasReciente > aux->ultimaModificacion && aux->disponible) {
 			fechaMasReciente = aux->ultimaModificacion;
 			ultimaInstanciaUsada = aux;
-
 		}
-
 	}
-
 	return ultimaInstanciaUsada;
 }
+
 t_instancia* traerInstanciaMasEspacioDisponible(t_list* tablaDeInstancias) {
 
 	unsigned int espacioMinimo = MAX_ENTRADAS;
@@ -248,6 +245,18 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias) {
 		t_instancia* instanciaAux = list_get(tablaDeInstancias, i);
 		mostrarInstancia(instanciaAux);
 	}
+	for (size_t i = 0; i < list_size(tablaDeInstancias); i++) {
+		t_instancia* instanciaAux = list_get(tablaDeInstancias, i);
+		mostrarEspacioOcupado(instanciaAux);
+	}
+	printf("\n");
+}
+
+void mostrarEspacioOcupado(t_instancia* instancia){
+	char* espacio = string_repeat('|',instancia->espacioOcupado);
+	printf("%s %i/%i [", instancia->nombre, instancia->espacioOcupado,instancia->espacioMaximo);
+	printf("%-*s]\n",instancia->espacioMaximo,espacio);
+	free(espacio);
 }
 
 void sacarConexion(t_list* diccionario, t_conexion* conexion){

@@ -25,6 +25,7 @@ tiempo g_tiempoPorEjecucion;
 typedef struct{
 	char* nombre;
 	int espacioOcupado;
+	int espacioMaximo;
 	bool disponible;
 	tiempo ultimaModificacion;
 	int primerLetra;
@@ -49,10 +50,11 @@ t_instancia* traerInstanciaQueContieneKey(t_list* tablaDeInstancia,char* primerL
 void distribuirKeys(t_list* tablaDeInstancias);
 
 t_list* crearListaInstancias(void);
-t_instancia* crearInstancia(char* nombre);
+t_instancia* crearInstancia(char* nombre, int espacioMaximo);
 void agregarInstancia(t_list * lista, t_instancia* instancia );
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
+void mostrarEspacioOcupado(t_instancia* instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar, char* clave);
 void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);

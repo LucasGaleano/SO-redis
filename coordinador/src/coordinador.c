@@ -4,21 +4,22 @@
 
 int main(void) {
 
-	signal(SIGINT, planificador_handler);
-
+	signal(SIGINT, signal_handler);
+	signal(SIGUSR1, signal_handler);
 	g_tablaDeInstancias = crearListaInstancias();
 	g_diccionarioConexiones = crearDiccionarioConexiones();
+	g_configuracion = malloc(sizeof(t_configuraciones));
 
 	g_logger = log_create("coordinador.log", "coordinador", true,
 			LOG_LEVEL_TRACE);
 
 	t_config* config = config_create(PATH_CONFIG);
-	g_configuracion = armarConfigCoordinador(config);
+	armarConfigCoordinador(g_configuracion, config);
 
 	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas, 0, 1);
 
-	iniciarServidor(g_configuracion.puertoConexion);
+	iniciarServidor(g_configuracion->puertoConexion);
 
 	sem_destroy(&g_mutexLog);
 	sem_destroy(&g_mutex_tablas);
@@ -105,13 +106,11 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 		;
 
 		procesarNombreInstancia(paquete, cliente_fd);
-		mostrarDiccionario(g_diccionarioConexiones);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
 		;
 		procesarNombreESI(paquete, cliente_fd);
-		mostrarDiccionario(g_diccionarioConexiones);
 		break;
 
 	case SET:
@@ -149,21 +148,17 @@ void procesarPaquete(t_paquete* paquete,int cliente_fd) {
 
 }
 
-t_configuraciones armarConfigCoordinador(t_config* archivoConfig) {
+void armarConfigCoordinador(t_configuraciones* g_configuracion, t_config* archivoConfig) {
 
-	t_configuraciones configuracion;
-
-	configuracion.puertoConexion = config_get_string_value(archivoConfig,
+	g_configuracion->puertoConexion = config_get_string_value(archivoConfig,
 			"PUERTO");
-	configuracion.algoritmoDist = config_get_string_value(archivoConfig,
+	g_configuracion->algoritmoDist = config_get_string_value(archivoConfig,
 			"ALGORITMO_DISTRIBUCION");
-	configuracion.cantidadEntradas = config_get_int_value(archivoConfig,
+	g_configuracion->cantidadEntradas = config_get_int_value(archivoConfig,
 			"CANTIDAD_ENTRADAS");
-	configuracion.tamanioEntradas = config_get_int_value(archivoConfig,
+	g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
 			"TAMANIO_ENTRADA");
-	configuracion.retardo = config_get_int_value(archivoConfig, "RETARDO");
-
-	return configuracion;
+	g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
 
 }
 
@@ -263,11 +258,11 @@ void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 }
 
 void procesarSET(t_paquete* paquete, int cliente_fd) {
-	usleep(g_configuracion.retardo*1000);
+	usleep(g_configuracion->retardo*1000);
 
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_instancia* instanciaElegida = PlanificarInstancia(
-			g_configuracion.algoritmoDist, sentencia->clave,
+			g_configuracion->algoritmoDist, sentencia->clave,
 			g_tablaDeInstancias);
 
 	if(instanciaElegida==NULL){
@@ -347,7 +342,7 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	t_instancia* instanciaNueva = buscarInstancia( g_tablaDeInstancias,true,nombre, 0,NULL);
 
 	if(instanciaNueva == NULL ){
-	instanciaNueva = crearInstancia(nombre);
+	instanciaNueva = crearInstancia(nombre,g_configuracion->tamanioEntradas);
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	}else{
 		instanciaNueva->disponible = true;
@@ -355,8 +350,8 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 
 	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,cliente_fd);
 	distribuirKeys(g_tablaDeInstancias);
-	enviarInfoInstancia(cliente_fd, g_configuracion.cantidadEntradas,
-			g_configuracion.tamanioEntradas,instanciaNueva->claves);
+	enviarInfoInstancia(cliente_fd, g_configuracion->cantidadEntradas,
+			g_configuracion->tamanioEntradas,instanciaNueva->claves);
 	logTraceSeguro(g_logger, g_mutexLog, "se conecto instancia: %s", nombre);
 	free(paquete);
 }
@@ -391,8 +386,20 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 	sem_post(&mutexLog);
 }
 
-void planificador_handler(int signum){
-	log_error(g_logger,"Cerrando conexiones\n");
-	cerrarTodasLasConexiones(g_diccionarioConexiones);
-	exit(0);
+void signal_handler(int signum){
+
+	if(signum==SIGINT){
+		log_error(g_logger,"Cerrando conexiones\n");
+		cerrarTodasLasConexiones(g_diccionarioConexiones);
+		exit(0);
+	}
+	if(signum==SIGUSR1){
+		t_config* config = config_create(PATH_CONFIG);
+		armarConfigCoordinador(g_configuracion, config);
+		printf("algortimo planificaion actual: %s\n\n", g_configuracion->algoritmoDist);
+		printf("INSTANCIAS----------------------\n");
+		mostrarTablaInstancia(g_tablaDeInstancias);
+		printf("CONEXIONES----------------------\n");
+		mostrarDiccionario(g_diccionarioConexiones);
+	}
 }
