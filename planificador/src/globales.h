@@ -21,11 +21,11 @@ typedef struct {
 	int tEnEspera;
 	double estAnterior;
 	double realAnterior;
-	char* nombreESI;
+	char* nombreESI; // esi
 } t_infoListos;
 
 typedef struct {
-	char* idESI;
+	char* idESI;// id nro
 	t_infoListos* data;
 }t_infoBloqueo;
 
@@ -54,6 +54,8 @@ int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
 int g_keyMaxima;
+
+t_infoListos* g_enEjecucion;
 
 extern void liberarTodo(void);
 

@@ -18,20 +18,20 @@
 #include <pthread.h>
 #include <biblioteca/estructuras.h>
 #include "globales.h"
+#include "algoritmos.h"
 
 /*------------------------------Globales-----------------------------*/
-char* g_idESI;
+char* g_nombreESI;
 char* g_clave;
-bool g_estaBloqueado;
+char* g_idESI;
+bool g_bool;
 int **g_matrizAsignacion;
 int **g_matrizEspera;
 int g_indiceESI;
+
 t_dictionary* g_clavesDeadlock;
 t_dictionary* g_ESIsDeadlock;
 
-typedef struct {
-	int indice;
-} t_infoIndiceDeadlock;
 
 /*------------------------------Consola------------------------------*/
 void 				iniciarConsola							(void);
@@ -51,22 +51,19 @@ void				salirConsola							(bool*);
 
 /*------------------------------Auxiliares------------------------------*/
 char* 				obtenerParametro						(char*, int);
+char* 				obtenerId								(char*);
 
 /*------------------------------Auxiliares-Estado de claves o ESI-----------------------------*/
 bool 				estaListo								(char*);
 bool 				estaBloqueadoPorLaClave					(char*, char*);
-bool 				sonIguales								(t_infoBloqueo*);
 bool 				estaBloqueadaLaClave					(char*);
-void 				estaClaveBloqueada						(char*, t_list*);
-bool 				estaBloqueadoPorElESI					(char*, char*, t_list*);
-bool 				sonIgualesClavesTomadas					(char*);
+bool 				estaBloqueadoPorElESI					(char*, char*);
+bool 				sonIgualesClaves						(char*);
 bool				estaBloqueado							(char*);
-void 				estaESIBloqueado						(char*, t_list*);
+bool 				enEjecucion								(char*);
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 char* 				esiQueBloquea							(char*);
-void 				decirESIQueBloqueaClave					(char*, t_list*);
-void 				sonIgualesLasClaves						(char*);
 void 				sacarClave								(char*, char*);
 
 /*------------------------------Auxiliares-killProceso----------------------------*/
@@ -81,17 +78,14 @@ int 				indice									(char*, t_dictionary*);
 int **				crearMatriz								(int, int);
 void 				ponerMatrizTodoNulo						(int **, int, int);
 void 				creoElementoEnPosibleDeadlockAsignacion	(char* idESI, t_list* clavesBloqueadas);
-void 				creoElementosEnPosibleDeadlockAsignacion(char*);
 void 				creoElementoEnPosibleDeadlockEspera		(char*, t_list*);
-void 				creoElementosEnPosibleDeadlockEspera	(t_infoBloqueo*);
 void 				creoMatrizAsignacion					(char*, t_list*);
-void 				asignarEnMatrizAsignacion				(char*);
 void 				creoMatrizEspera						(char*, t_list*);
-void 				asignarEnMatrizEspera					(t_infoBloqueo*);
-void 				esiIndice								(char*, t_infoIndiceDeadlock*);
 char* 				esiQueTieneIndice						(int);
 
 /*------------------------------Auxiliares-Liberar Memoria------------------------------*/
-void 				eliminarT_infoBloqueo					(t_infoBloqueo*);
+void 				liberarT_infoBloqueo					(t_infoBloqueo*);
+void 				liberarT_infoListos						(t_infoListos*);
+void 				liberarMatriz							(int **, int);
 
 #endif /* CONSOLA_H_ */

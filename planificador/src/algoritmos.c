@@ -96,6 +96,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 	pthread_cleanup_push((void*) liberarSalida, NULL)
 				;
 				while (1) {
+					g_enEjecucion = NULL;
 					cont = 0;
 					g_huboError = 0;
 					sem_wait(&ESIentrada);
@@ -109,6 +110,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 
 					g_idESIactual = key;
 					aEjecutar = dictionary_remove(g_listos, key);
+					g_enEjecucion = aEjecutar;
 					g_nombreESIactual = aEjecutar->nombreESI;
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;

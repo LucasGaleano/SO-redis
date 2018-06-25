@@ -132,13 +132,14 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		if (g_claveTomada) {
 			g_bloqueo = 1;
 		} else {
-			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
-				list_add(dictionary_get(g_clavesTomadas, g_idESIactual),
+			//if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
+			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				list_add(dictionary_get(g_clavesTomadas, g_nombreESIactual),
 						g_claveGET);
 			} else {
 				aux = list_create();
 				list_add(aux, g_claveGET);
-				dictionary_put(g_clavesTomadas, g_idESIactual, aux);
+				dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
 			}
 			pthread_mutex_unlock(&mutexClavesTomadas);
 			pthread_mutex_lock(&mutexLog);
@@ -162,7 +163,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		} else {
 			g_huboError = 1;
 			enviarRespuesta(ABORTO, g_socketEnEjecucion);
-			liberarClaves(g_idESIactual);
+			liberarClaves(g_nombreESIactual);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
 					g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
@@ -172,7 +173,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	case RESPUESTA_SOLICITUD:
 		g_huboError = 1;
 		enviarRespuesta(ABORTO, g_socketEnEjecucion);
-		liberarClaves(g_idESIactual);
+		liberarClaves(g_nombreESIactual);
 		sem_post(&continua);
 		break;
 	case RESPUESTA_STATUS:
@@ -256,13 +257,15 @@ static buscarESIenBloqueados(char* key, t_list* reg) {
 
 void liberarESI(char* key) {
 	aBorrar = NULL;
-	liberarClaves(key);
 	if (dictionary_has_key(g_listos, key)) {
+
+		liberarClaves(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(dictionary_remove(g_listos, key));
 	} else {
 		g_claveBusqueda = key;
 		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
+		liberarClaves(aBorrar->data->nombreESI);
 		free(aBorrar->idESI);
 		free(aBorrar->data->nombreESI);
 		free(aBorrar->data);
