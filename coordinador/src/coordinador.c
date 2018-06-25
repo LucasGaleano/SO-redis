@@ -270,15 +270,16 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 		raise(SIGINT);
 	}
 
+
 	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
 
 
 	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
+	if(!instanciaContieneClave(instanciaElegida))
+		agregarClaveDeInstancia(instanciaElegida, sentencia->clave);
 
-	list_add(instanciaElegida->claves,sentencia->clave);
 	instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
-	instanciaElegida->espacioOcupado++;//TODO tope de espacio ocupado
 
 	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
 									sentencia->clave, sentencia->valor, instanciaElegida->nombre);
@@ -342,7 +343,7 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	t_instancia* instanciaNueva = buscarInstancia( g_tablaDeInstancias,true,nombre, 0,NULL);
 
 	if(instanciaNueva == NULL ){
-	instanciaNueva = crearInstancia(nombre,g_configuracion->tamanioEntradas);
+	instanciaNueva = crearInstancia(nombre,g_configuracion->espacioOcupado, g_configuracion->tamanioEntradas );
 	agregarInstancia(g_tablaDeInstancias, instanciaNueva);
 	}else{
 		instanciaNueva->disponible = true;
@@ -362,7 +363,7 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd){
 	char* clave = recibirClaveEliminada(paquete);
 	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,NULL,cliente_fd);
 	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false, conexionDeInstancia->nombre, 0,NULL);
-	eliminiarClaveDeInstancia(instanciaElegida->claves,clave);
+	eliminiarClaveDeInstancia(instanciaElegida,clave);
 
 }
 

@@ -16,12 +16,13 @@ void agregarInstancia(t_list * lista, t_instancia* instancia) {
 	sem_post(&g_mutex_tablas);
 }
 
-t_instancia* crearInstancia(char* nombre,int espacioMaximo) {
+t_instancia* crearInstancia(char* nombre,int cantidadEntradas, int tamanioEntrada) {
 
 	t_instancia* aux = malloc(sizeof(t_instancia));
 	aux->nombre = string_duplicate(nombre);
-	aux->espacioMaximo = espacioMaximo;
+	aux->espacioMaximo = cantidadEntradas;
 	aux->espacioOcupado = 0;
+	aux->tamanioEntrada = tamanioEntrada;
 	aux->disponible = true;
 	aux->ultimaModificacion = 0;
 	aux->primerLetra = 0;
@@ -189,15 +190,32 @@ t_conexion* buscarConexion(t_list * diccionario, char * nombre, int socket) {
 	return conexionBuscada;
 }
 
-void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar) {
+void eliminiarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar) {
 
+	t_list* claves = instancia->claves;
 	for (int i = 0; i < list_size(claves); i++) {
 		char* clave = list_get(claves, i);
 		if (strcmp(clave, claveAEliminar) == 0) {
-			list_remove(claves, i);
+			char* claveEliminada = list_remove(claves, i);
+			int entradasOcupadas = cantidadEntradasPorClave(clave,instancia->tamanioEntrada);
+			instancia->espacioOcupado -= entradasOcupadas;
+			free(claveEliminada);
 			break;
 		}
 	}
+}
+
+void agregarClaveDeInstancia(t_instancia* instancia, char* clave){
+
+	char *claveAgregar = string_duplicate(clave);
+	list_add(instancia->claves,claveAgregar);
+	int entradasOcupadas = cantidadEntradasPorClave(clave,instancia->tamanioEntrada);
+	instancia->espacioOcupado += entradasOcupadas;
+}
+
+int cantidadEntradasPorClave(char* clave, int tamanioEntrada){
+	int lenClave = string_length(clave);
+	return (lenClave/tamanioEntrada + (lenClave%tamanioEntrada != 0));
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, char* nombre,
