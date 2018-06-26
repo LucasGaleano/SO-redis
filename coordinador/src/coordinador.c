@@ -19,12 +19,11 @@ int main(void) {
 
 	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas, 0, 1);
-	sem_init(&g_mutex_respuesta, 0, 0);
+	sem_init(&g_mutex_respuesta_set, 0, 0);
+	sem_init(&g_mutex_respuesta_store, 0, 0);
 
 	iniciarServidor(g_configuracion->puertoConexion);
 
-	sem_destroy(&g_mutexLog);
-	sem_destroy(&g_mutex_tablas);
 	return 0;
 }
 
@@ -230,21 +229,23 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		break;
 
 		case SET_OK:
-			sem_post(&g_mutex_respuesta);
+			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = true;
 			break;
 
 		case SET_ERROR:
-			sem_post(&g_mutex_respuesta);
+			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = false;
 			break;
 
 		case STORE_OK:
-			//TODO mandamos error a planificador
+			sem_post(&g_mutex_respuesta_store);
+			g_respuesta = true;
 			break;
 
 		case STORE_ERROR:
-			//TODO mandamos error a planificador
+			sem_post(&g_mutex_respuesta_store);
+			g_respuesta = false;
 			break;
 
 	}
@@ -284,7 +285,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
 	enviarSet(conexionDelPlanificador->socket, sentencia->clave, sentencia->valor);
 
-	sem_wait(&g_mutex_respuesta);
+	sem_wait(&g_mutex_respuesta_set);
 
 	if(g_respuesta == true){
 
@@ -330,7 +331,7 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
 	enviarStore(conexionDelPlanificador->socket, clave);
 
-	sem_wait(&g_mutex_respuesta);
+	sem_wait(&g_mutex_respuesta_store);
 
 	if(g_respuesta == true){
 
@@ -338,20 +339,15 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 				//TODO si instancia devuelve un "no disponible avisar del error y no hacer nada mas"
 
 		if(instanciaElegida!=NULL){
-
 			if (instanciaElegida->disponible == true) {
 				mostrarInstancia(instanciaElegida);
 				g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 				t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,
 						instanciaElegida->nombre,0);
-
 				enviarStore(conexionDeInstancia->socket, clave);
-				//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
+				logTraceSeguro(g_logger, g_mutexLog, "ENVIAR STORE planificador %i, clave: %s\n", conexionDelPlanificador->socket, clave);
 
-				logTraceSeguro(g_logger, g_mutexLog,
-						"ENVIAR STORE planificador %i, clave: %s\n",
-						conexionDelPlanificador->socket, clave);
 			}else {
 				log_error(g_logger,"la clave %s se encuentra en la %s pero esta desconectada.",clave,instanciaElegida->nombre);
 				enviarRespuesta(conexionDelPlanificador->socket, ERROR_CLAVE_INACCESIBLE);
@@ -420,6 +416,10 @@ void signal_handler(int signum){
 	if(signum==SIGINT){
 		log_error(g_logger,"Cerrando conexiones\n");
 		cerrarTodasLasConexiones(g_diccionarioConexiones);
+		sem_destroy(&g_mutexLog);
+		sem_destroy(&g_mutex_tablas);
+		sem_destroy(&g_mutex_respuesta_set);
+		sem_destroy(&g_mutex_respuesta_store);
 		exit(0);
 	}
 	if(signum==SIGUSR1){
