@@ -9,6 +9,7 @@ int main(void) {
 	g_tablaDeInstancias = crearListaInstancias();
 	g_diccionarioConexiones = crearDiccionarioConexiones();
 	g_configuracion = malloc(sizeof(t_configuraciones));
+	g_respuesta = true;
 
 	g_logger = log_create("coordinador.log", "coordinador", true,
 			LOG_LEVEL_TRACE);
@@ -18,6 +19,7 @@ int main(void) {
 
 	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas, 0, 1);
+	sem_init(&g_mutex_respuesta, 0, 0);
 
 	iniciarServidor(g_configuracion->puertoConexion);
 
@@ -213,7 +215,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
 	switch (respuesta) {
 
-	case ERROR_ESPACIO_INSUFICIENTE:
+		case ERROR_ESPACIO_INSUFICIENTE:
 		/*
 		 * TODO
 		 * esperamos que todas las ejecuciones terminen.
@@ -227,9 +229,23 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
 		break;
 
-	case ERROR_CLAVE_NO_IDENTIFICADA:
-		//TODO mandamos error a planificador
-		break;
+		case SET_OK:
+			sem_post(&g_mutex_respuesta);
+			g_respuesta = true;
+			break;
+
+		case SET_ERROR:
+			sem_post(&g_mutex_respuesta);
+			g_respuesta = false;
+			break;
+
+		case STORE_OK:
+			//TODO mandamos error a planificador
+			break;
+
+		case STORE_ERROR:
+			//TODO mandamos error a planificador
+			break;
 
 	}
 
@@ -265,30 +281,35 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 			g_configuracion->algoritmoDist, sentencia->clave,
 			g_tablaDeInstancias);
 
-	if(instanciaElegida==NULL){
-		log_error(g_logger,"no se pudo planificar una instancia para la clave: %s",sentencia->clave);
-		raise(SIGINT);
-	}
-
-
-	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
-
-
-	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
-	if(!instanciaContieneClave(instanciaElegida))
-		agregarClaveDeInstancia(instanciaElegida, sentencia->clave);
-
-	instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
-
-	logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
-									sentencia->clave, sentencia->valor, instanciaElegida->nombre);
-
-	enviarSet(conexionDeInstancia->socket, sentencia->clave, sentencia->valor);
 	enviarSet(conexionDelPlanificador->socket, sentencia->clave, sentencia->valor);
-	mostrarInstancia(instanciaElegida);
-	//TODO si no se puede acceder a la instancia, se le avisa al planificador
 
+	sem_wait(&g_mutex_respuesta);
+
+	if(g_respuesta == true){
+
+		if(instanciaElegida==NULL){
+			log_error(g_logger,"no se pudo planificar una instancia para la clave: %s",sentencia->clave);
+			raise(SIGINT);
+		}
+
+		g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
+
+
+		t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
+		if(!instanciaContieneClave(instanciaElegida))
+			agregarClaveDeInstancia(instanciaElegida, sentencia->clave);
+
+		instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
+
+		logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
+										sentencia->clave, sentencia->valor, instanciaElegida->nombre);
+
+		enviarSet(conexionDeInstancia->socket, sentencia->clave, sentencia->valor);
+		mostrarInstancia(instanciaElegida);
+		//TODO si no se puede acceder a la instancia, se le avisa al planificador
+	}
+	//TODO liberar sentencia
 	free(paquete);
 }
 
@@ -304,34 +325,41 @@ void procesarGET(t_paquete* paquete, int cliente_fd) {
 
 void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
-	log_debug(g_logger, "Entro al procesarSTORE");
 
 	char* clave = recibirStore(paquete);
-
-	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, true ,NULL,0,clave);
-			//TODO si instancia devuelve un "no disponible avisar del error y no hacer nada mas"
-
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
+	enviarStore(conexionDelPlanificador->socket, clave);
 
-	// Al planificar busco solo instancias disponibles por lo tanto puede devolver nulo si todavia no se recargo la tabla de instancias
-	if (instanciaElegida != NULL) {
-		mostrarInstancia(instanciaElegida);
-		g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
+	sem_wait(&g_mutex_respuesta);
 
-		t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,
-				instanciaElegida->nombre,0);
+	if(g_respuesta == true){
 
-		enviarStore(conexionDeInstancia->socket, clave);
-		//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
-		enviarStore(conexionDelPlanificador->socket, clave);
+		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, true ,NULL,0,clave);
+				//TODO si instancia devuelve un "no disponible avisar del error y no hacer nada mas"
 
-		logTraceSeguro(g_logger, g_mutexLog,
-				"ENVIAR STORE planificador %i, clave: %s\n",
-				conexionDelPlanificador->socket, clave);
-	} else {
+		if(instanciaElegida!=NULL){
 
-		enviarRespuesta(conexionDelPlanificador->socket, ERROR_CLAVE_INACCESIBLE);
+			if (instanciaElegida->disponible == true) {
+				mostrarInstancia(instanciaElegida);
+				g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
+				t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,
+						instanciaElegida->nombre,0);
+
+				enviarStore(conexionDeInstancia->socket, clave);
+				//TODO: contemplar posible error en la liberacion de la clave en la instancia , clave inaccesible instancia
+
+				logTraceSeguro(g_logger, g_mutexLog,
+						"ENVIAR STORE planificador %i, clave: %s\n",
+						conexionDelPlanificador->socket, clave);
+			}else {
+				log_error(g_logger,"la clave %s se encuentra en la %s pero esta desconectada.",clave,instanciaElegida->nombre);
+				enviarRespuesta(conexionDelPlanificador->socket, ERROR_CLAVE_INACCESIBLE);
+			}
+		}else{
+			log_error(g_logger,"la clave %s no se encuentra en ninguna instancia.",clave);
+			enviarRespuesta(conexionDelPlanificador->socket, ERROR_CLAVE_NO_IDENTIFICADA);
+		}
 	}
 
 	free(paquete);
