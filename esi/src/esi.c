@@ -146,10 +146,10 @@ void procesarError() {
 void procesarRespuestaSolicitud(t_paquete * unPaquete) {
 	int respuesta = recibirRespuesta(unPaquete);
 
-	if (respuesta == OK)
+	if (respuesta == CONTINUA_ESI)
 		log_trace(logESI, "Termine de enviar sentencias exitosamente \n");
 
-	if (respuesta == ABORTO)
+	if (respuesta == ABORTO_ESI)
 		log_warning(logESI, "No pude terminar de ejecutar exitosamente\n");
 
 	recibirSolicitudes = false;

@@ -133,7 +133,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					}
 					if (g_termino || g_huboError) {
 						if (!g_huboError)
-							enviarRespuesta(g_socketEnEjecucion, OK);
+							enviarRespuesta(g_socketEnEjecucion, CONTINUA_ESI);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
 								aEjecutar->nombreESI);
 						sem_wait(&continua);
@@ -187,7 +187,7 @@ extern void planificarConDesalojo(void) {
 					}
 					if (g_termino || g_huboError) {
 						if (!g_huboError)
-							enviarRespuesta(g_socketEnEjecucion, OK);
+							enviarRespuesta(g_socketEnEjecucion, CONTINUA_ESI);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
 								aEjecutar->nombreESI);
 						sem_wait(&continua);

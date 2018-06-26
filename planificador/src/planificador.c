@@ -102,8 +102,7 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		free(keyAux);
 		sem_post(&ESIentrada);
 		pthread_mutex_lock(&mutexLog);
-		log_info(g_logger, "Se conecto exitosamente el %s",
-				dat->nombreESI);
+		log_info(g_logger, "Se conecto exitosamente el %s", dat->nombreESI);
 		pthread_mutex_unlock(&mutexLog);
 		pthread_mutex_lock(&modificacion);
 		g_huboModificacion = 1;
@@ -139,6 +138,22 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_lock(&mutexLog);
 		log_debug(g_logger, "Me ha llegado un SET");
 		pthread_mutex_unlock(&mutexLog);
+		g_claveTomada = 0;
+		g_claveGET = recibirGet(unPaquete);
+		pthread_mutex_lock(&mutexClavesTomadas);
+		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
+		if (g_claveTomada)
+			enviarRespuesta(g_socketCoordinador, SET_OK);
+		else {
+			enviarRespuesta(g_socketCoordinador, SET_ERROR);
+			g_huboError = 1;
+			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
+			liberarClaves(g_nombreESIactual);
+			pthread_mutex_lock(&mutexLog);
+			log_error(g_logger, "%s se aborta por SET sobre clave no tomada",
+					g_nombreESIactual);
+			pthread_mutex_unlock(&mutexLog);
+		}
 		sem_post(&continua);
 		break;
 	case GET:
@@ -172,7 +187,6 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		g_claveTomada = 0;
 		g_claveGET = recibirStore(unPaquete);
 		if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
-			aux = dictionary_get(g_clavesTomadas, g_idESIactual);
 			g_claveTomada = list_any_satisfy(
 					dictionary_get(g_clavesTomadas, g_idESIactual),
 					(void*) condicionDeTomada);
@@ -185,15 +199,18 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 				list_destroy(aux);
 				pthread_mutex_unlock(&mutexBloqueo);
 			}
+			aux = dictionary_get(g_clavesTomadas, g_idESIactual);
 			list_remove_and_destroy_by_condition(aux, (void*) condicionDeTomada,
 					(void*) free);
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
 					g_nombreESIactual, g_claveGET);
 			pthread_mutex_unlock(&mutexLog);
+			enviarRespuesta(g_socketCoordinador, STORE_OK);
 		} else {
 			g_huboError = 1;
-			enviarRespuesta(g_socketEnEjecucion, ABORTO);
+			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
+			enviarRespuesta(g_socketCoordinador, STORE_ERROR);
 			liberarClaves(g_idESIactual);
 			pthread_mutex_lock(&mutexLog);
 			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
@@ -205,8 +222,25 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case RESPUESTA_SOLICITUD:
+		pthread_mutex_lock(&mutexLog);
+		switch(recibirRespuesta(unPaquete))
+		{
+		case ERROR_TAMANIO_CLAVE:
+			log_error(g_logger, "Se aborta %s por clave mayor a 40 caracteres", g_nombreESIactual);
+			break;
+		case ERROR_CLAVE_NO_IDENTIFICADA:
+			log_error(g_logger, "Se aborta %s por una clave no identificada", g_nombreESIactual);
+			break;
+		case ERROR_CLAVE_INACCESIBLE:
+			log_error(g_logger, "Se aborta %s por clave inaccesible", g_nombreESIactual);
+			break;
+		case ERROR_ESPACIO_INSUFICIENTE:
+			log_error(g_logger, "Se aborta %s por espacio insuficiente", g_nombreESIactual);
+			break;
+		}
+		pthread_mutex_unlock(&mutexLog);
 		g_huboError = 1;
-		enviarRespuesta(g_socketEnEjecucion, ABORTO);
+		enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
 		liberarClaves(g_idESIactual);
 		sem_post(&continua);
 		break;
@@ -245,9 +279,7 @@ void desbloquearESIs(t_infoBloqueo* nodo) {
 }
 
 int condicionDeTomada(char* nodo) {
-	if (strcmp(nodo, g_claveGET) == 0)
-		return 1;
-	return 0;
+	return !strcmp(nodo, g_claveGET);
 }
 
 void claveEstaTomada(char* key, t_list* value) {
@@ -282,7 +314,6 @@ static int buscarESIenLista(t_infoBloqueo* nodo) {
 }
 
 static void buscarESIenBloqueados(char* key, t_list* reg) {
-	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
 	if (aBorrar == NULL) {
 		aBorrar = list_remove_by_condition(reg, (void*) buscarESIenLista);
 	}
