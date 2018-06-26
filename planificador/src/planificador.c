@@ -131,6 +131,23 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 	destruirPaquete(unPaquete);
 }
 
+static int existeClave(char* clave) {
+	int existe = 0;
+	void buscarEnbloq(char* cl, void* arg) {
+		if (!existe)
+			existe = !strcmp(clave, cl);
+	}
+	void buscarEnClavesTomadas(char* c, t_list* lista) {
+		if (!existe)
+			existe = list_any_satisfy(lista, (void*) condicionDeTomada);
+	}
+	dictionary_iterator(g_bloq, (void*) buscarEnbloq);
+	if (!existe) {
+		dictionary_iterator(g_clavesTomadas, (void*) buscarEnClavesTomadas);
+	}
+	return existe;
+}
+
 void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	t_list* aux;
 	switch (unPaquete->codigoOperacion) {
@@ -150,10 +167,18 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
 			liberarClaves(g_nombreESIactual);
 			pthread_mutex_lock(&mutexLog);
-			log_error(g_logger, "%s se aborta por SET sobre clave no tomada",
-					g_nombreESIactual);
+			if (existeClave(g_claveGET))
+				log_error(g_logger,
+						"%s se aborta por SET sobre clave no tomada",
+						g_nombreESIactual);
+			else
+				log_error(g_logger,
+						"%s se aborta por SET sobre clave inexistente",
+						g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
 		}
+		free(g_claveGET);
+		g_claveGET = NULL;
 		sem_post(&continua);
 		break;
 	case GET:
@@ -213,8 +238,14 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			enviarRespuesta(g_socketCoordinador, STORE_ERROR);
 			liberarClaves(g_idESIactual);
 			pthread_mutex_lock(&mutexLog);
-			log_error(g_logger, "%s se aborta por STORE sobre clave no tomada",
-					g_nombreESIactual);
+			if (existeClave(g_claveGET))
+				log_error(g_logger,
+						"%s se aborta por STORE sobre clave no tomada",
+						g_nombreESIactual);
+			else
+				log_error(g_logger,
+						"%s se aborta por STORE sobre clave inexistente",
+						g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
 		}
 		free(g_claveGET);
@@ -223,19 +254,22 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		break;
 	case RESPUESTA_SOLICITUD:
 		pthread_mutex_lock(&mutexLog);
-		switch(recibirRespuesta(unPaquete))
-		{
+		switch (recibirRespuesta(unPaquete)) {
 		case ERROR_TAMANIO_CLAVE:
-			log_error(g_logger, "Se aborta %s por clave mayor a 40 caracteres", g_nombreESIactual);
+			log_error(g_logger, "Se aborta %s por clave mayor a 40 caracteres",
+					g_nombreESIactual);
 			break;
 		case ERROR_CLAVE_NO_IDENTIFICADA:
-			log_error(g_logger, "Se aborta %s por una clave no identificada", g_nombreESIactual);
+			log_error(g_logger, "Se aborta %s por una clave no identificada",
+					g_nombreESIactual);
 			break;
 		case ERROR_CLAVE_INACCESIBLE:
-			log_error(g_logger, "Se aborta %s por clave inaccesible", g_nombreESIactual);
+			log_error(g_logger, "Se aborta %s por clave inaccesible",
+					g_nombreESIactual);
 			break;
 		case ERROR_ESPACIO_INSUFICIENTE:
-			log_error(g_logger, "Se aborta %s por espacio insuficiente", g_nombreESIactual);
+			log_error(g_logger, "Se aborta %s por espacio insuficiente",
+					g_nombreESIactual);
 			break;
 		}
 		pthread_mutex_unlock(&mutexLog);
