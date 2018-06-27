@@ -37,7 +37,7 @@ t_list* g_diccionarioConexiones;
 sem_t g_mutexLog;
 sem_t g_mutex_respuesta_set;
 sem_t g_mutex_respuesta_store;
-bool respuesta;
+bool g_respuesta;
 
 
 /*------------------------FUNCIONES-------------------------*/

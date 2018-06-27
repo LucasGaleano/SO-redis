@@ -56,7 +56,7 @@ void conectarEsi() {
 
 	//Conecto al coordinador
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto, ESI);
-
+	enviarNombreEsi(socketCoordinador, nombre);
 	//Conecto al planificador
 	socketPlanificador = conectarCliente(planificadorIP, planificadorPuerto,
 			ESI);
