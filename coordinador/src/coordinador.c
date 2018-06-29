@@ -201,7 +201,7 @@ void* procesarClienteDesconectado(int cliente_fd){
 	else{
 		log_debug(g_logger,"se desconecto %s\n",clienteDesconectado->nombre);
 		t_instancia * instanciaDesconectada = buscarInstancia( g_tablaDeInstancias,false,clienteDesconectado->nombre, 0,NULL);
-		if(instanciaDesconectada!=NULL){
+		if(instanciaDesconectada!=NULL){ //entonces se desconecto un esi
 			instanciaDesconectada->disponible = false;
 			distribuirKeys(g_tablaDeInstancias);
 		}
@@ -228,7 +228,11 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		 *
 		 * */
 
-		break;
+			break;
+
+		case ERROR_TAMANIO_CLAVE:
+			log_error(g_logger,"%s mando error de tamanio de clave", buscarConexion(g_diccionarioConexiones,NULL,cliente_fd));
+			break;
 
 		case SET_OK:
 			if(strcmp(conexionCliente->nombre,"planificador")==0){
@@ -238,6 +242,13 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 			}else{
 				log_debug(g_logger,"le llego el SET  a %s",conexionCliente->nombre);
 			}
+			break;
+		
+
+
+			
+		case SET_DEFINITIVO_ERROR:
+
 			break;
 
 		case SET_ERROR:
@@ -352,15 +363,14 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirStore(paquete);
 	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones,"planificador",0);
+
 	log_debug(g_logger,"preguntar por STORE al planificador");
 	enviarStore(conexionDelPlanificador->socket, clave);
-
 	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
 
 	if(g_respuesta == true){
 
 		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, true ,NULL,0,clave);
-				//TODO si instancia devuelve un "no disponible avisar del error y no hacer nada mas"
 
 		if(instanciaElegida!=NULL){
 			if (instanciaElegida->disponible == true) {

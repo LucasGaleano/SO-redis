@@ -117,8 +117,14 @@ void procesarSolicitudEjecucion() {
 		case SET:
 			log_trace(logESI, "SET\tclave: <%s>\tvalor: <%s>\n",
 					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+			if(parsed.argumentos.SET.clave > 40){
+				enviarRespuesta(socketCoordinador,ERROR_TAMANIO_CLAVE);
+				//TODO liberar memoria
+				exit(1);
+			}
 			enviarSet(socketCoordinador, parsed.argumentos.SET.clave,
 					parsed.argumentos.SET.valor);
+
 			break;
 		case STORE:
 			log_trace(logESI, "STORE\tclave: <%s>\n",
@@ -193,7 +199,7 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 			++i)
 		;
 
-	if (string_length(archivoNoLeido) < i)
+	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip)))
 		*termino = 1;
 
 	char * sentencia = calloc(i,sizeof(char));
