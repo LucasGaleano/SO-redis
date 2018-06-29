@@ -224,6 +224,7 @@ t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, 
 		bool igualNombre = true;
 		bool contieneLetraAEncontrar = true;
 		bool contieneClave = true;
+
 		bool instanciaCumpleCon(t_instancia* instancia) {
 
 		if (nombre != NULL)
