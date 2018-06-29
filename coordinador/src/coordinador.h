@@ -34,6 +34,7 @@ t_log* g_logger;
 t_configuraciones* g_configuracion;
 t_list* g_tablaDeInstancias;
 t_list* g_diccionarioConexiones;
+t_list* g_diccionarioClaves;
 sem_t g_mutexLog;
 sem_t g_mutex_respuesta_set;
 sem_t g_mutex_respuesta_store;

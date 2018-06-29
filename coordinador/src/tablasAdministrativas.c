@@ -314,3 +314,36 @@ void destruirDiccionario(t_list* diccionario){
 	list_clean_and_destroy_elements(diccionario,destruirConexion);
 	sem_post(&g_mutex_tablas);
 }
+
+
+t_list* crearDiccionarioClaves(){
+	t_list* aux = list_create();
+	return aux;
+};
+
+void agregarClaveAlSistema(t_list* diccionarioClaves, char* clave){
+	 char * aux = string_duplicate(clave);
+     list_add(diccionarioClaves,aux);
+};
+
+bool existeClaveEnSistema(t_list* diccionarioClaves, char* clave){
+
+	bool existe = false;
+	void buscarClave(void* claveABuscar){
+
+		if(string_equals_ignore_case(claveABuscar, clave)){
+			existe = true;
+	    }
+	}
+	list_iterate(diccionarioClaves, buscarClave);
+
+	return existe;
+
+}
+
+void destruirDiccionarioClaves(t_list* diccionarioClaves){
+	list_clean_and_destroy_elements(diccionarioClaves,free);
+
+}
+
+

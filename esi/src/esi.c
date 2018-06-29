@@ -199,7 +199,8 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 			++i)
 		;
 
-	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip)))
+
+	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip))<3 )
 		*termino = 1;
 
 	char * sentencia = calloc(i,sizeof(char));

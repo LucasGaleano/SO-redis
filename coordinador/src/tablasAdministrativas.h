@@ -74,4 +74,9 @@ void destruirConexion(void* conexion);
 void cerrarTodasLasConexiones(t_list* diccionario);
 void destruirDiccionario(t_list* diccionario);
 
+t_list* crearDiccionarioClaves();
+void agregarClaveAlSistema(t_list* diccionarioClaves, char* clave);
+bool existeClaveEnSistema(t_list* diccionarioClaves, char* clave);
+void destruirDiccionarioClaves(t_list* diccionarioClaves);
+
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */
