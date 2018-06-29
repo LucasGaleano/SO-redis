@@ -161,7 +161,8 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		log_debug(g_logger, "Me ha llegado un SET");
 		pthread_mutex_unlock(&mutexLog);
 		g_claveTomada = 0;
-		g_claveGET = recibirSet(unPaquete);
+		t_claveValor* recv = recibirSet(unPaquete);
+		g_claveGET = recv->clave;
 		pthread_mutex_lock(&mutexClavesTomadas);
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
 		pthread_mutex_unlock(&mutexClavesTomadas);
@@ -183,7 +184,9 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 						g_nombreESIactual);
 			pthread_mutex_unlock(&mutexLog);
 		}
-		free(g_claveGET);
+		free(recv->clave);
+		free(recv->valor);
+		free(recv);
 		g_claveGET = NULL;
 		sem_post(&continua);
 		break;
