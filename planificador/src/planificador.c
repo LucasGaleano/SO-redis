@@ -58,7 +58,6 @@ int main(void) {
 	//iniciarConsola();
 
 //	pthread_cancel(hiloCoordinador);
-
 	pthread_join(hiloCoordinador, NULL); //Eliminar al terminar la consola
 
 	liberarTodo();
@@ -115,7 +114,7 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		g_termino = 1;
 		break;
 	case ENVIAR_ERROR:
-		if (!g_termino) {
+		if (!g_termino && !g_huboError) {
 			keyAux = string_itoa(*socketCliente);
 			nombreAux = liberarESI(keyAux);
 			pthread_mutex_lock(&mutexLog);
@@ -125,7 +124,13 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 			free(keyAux);
 			free(nombreAux);
 		} else
+		{
+			if(dictionary_has_key(g_clavesTomadas, g_nombreESIactual))
+			{
+				list_destroy_and_destroy_elements(dictionary_remove(g_clavesTomadas, g_nombreESIactual),(void*)free);
+			}
 			sem_post(&continua);
+		}
 		break;
 	}
 	destruirPaquete(unPaquete);
@@ -156,9 +161,10 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		log_debug(g_logger, "Me ha llegado un SET");
 		pthread_mutex_unlock(&mutexLog);
 		g_claveTomada = 0;
-		g_claveGET = recibirGet(unPaquete);
+		g_claveGET = recibirSet(unPaquete);
 		pthread_mutex_lock(&mutexClavesTomadas);
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
+		pthread_mutex_unlock(&mutexClavesTomadas);
 		if (g_claveTomada)
 			enviarRespuesta(g_socketCoordinador, SET_OK);
 		else {
@@ -317,7 +323,7 @@ int condicionDeTomada(char* nodo) {
 }
 
 void claveEstaTomada(char* key, t_list* value) {
-	if (!g_claveTomada && strcmp(g_idESIactual, key) != 0)
+	if (!g_claveTomada && strcmp(g_idESIactual, key) == 0)
 		g_claveTomada = list_any_satisfy(value, (void*) condicionDeTomada);
 }
 

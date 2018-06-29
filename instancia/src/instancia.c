@@ -166,7 +166,7 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 		aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 		break;
 	default:
-		enviarRespuesta(client_socket, OK);
+		enviarRespuesta(client_socket, SET_OK);
 		void * valor = buscarValorSegunClave(claveValor->clave);
 		log_trace(logInstancia, "El valor de la clave guardada es: %s",
 				(char *) valor);
@@ -219,10 +219,10 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	}
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
-		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+		enviarRespuesta(client_socket, SET_DEFINITIVO_ERROR);
 		log_error(logInstancia, "Error espacio insuficiente");
 	} else {
-		enviarRespuesta(client_socket, OK);
+		enviarRespuesta(client_socket, SET_DEFINITIVO_OK);
 		void * valor = buscarValorSegunClave(claveValor->clave);
 		log_trace(logInstancia, "El valor de la clave guardada es: %s",
 				(char *) valor);
@@ -252,7 +252,7 @@ void procesarStore(t_paquete * unPaquete, int client_socket) {
 	log_trace(logInstancia, "El valor de la clave que guarde en memoria es: %s",
 			(char *) valor);
 
-	enviarRespuesta(client_socket, OK);
+	enviarRespuesta(client_socket, STORE_OK);
 
 	free(valor);
 	free(clave);
