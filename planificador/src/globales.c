@@ -36,7 +36,6 @@ extern void liberarTodo(void) {
 	sem_destroy(&ESIentrada);
 	sem_destroy(&continua);
 
-	free(g_algoritmo);
 	log_destroy(g_logger);
 	config_destroy(g_con);
 

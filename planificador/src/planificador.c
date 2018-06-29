@@ -6,6 +6,7 @@ t_infoBloqueo* aBorrar;
 
 int main(void) {
 
+	signal(SIGINT, (void*) atenderCtrlC);
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
 	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
@@ -381,4 +382,13 @@ char* liberarESI(char* key) {
 		free(aBorrar);
 	}
 	return nombre;
+}
+
+void atenderCtrlC(void)
+{
+	log_error(g_logger, "Me llego signal: SIGINT y mato el proceso\n");
+	pthread_cancel(hiloCoordinador);
+	pthread_join(hiloCoordinador, NULL);
+	liberarTodo();
+	exit(EXIT_FAILURE);
 }
