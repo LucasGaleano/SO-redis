@@ -212,7 +212,7 @@ void atenderCoordinador(void* arg) {
 	}
 }
 
-void liberarClaves(char* clave) {
+void liberarClaves(char* clave) { // TODO DESBLOQUEAR UN ESI Y ASIGNARLE CLAVE
 	if (dictionary_has_key(g_clavesTomadas, clave))
 		list_destroy_and_destroy_elements(
 				dictionary_remove(g_clavesTomadas, clave), (void*) free);
