@@ -78,7 +78,6 @@ void* procesarPeticion(void* cliente_fd) {
 		}
 
 		int desplazamiento = 0;
-		printf("%s\n", buffer);
 		while (buffer[desplazamiento + 1] != '$') {
 			int tamanio = 0;
 			memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
@@ -345,7 +344,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 							ERROR_CLAVE_NO_IDENTIFICADA);
 	} else {
 
-		log_debug(g_logger, "preguntar por SET al planificador");
+		log_debug(g_logger, "preguntar por SET %s %s al planificador", sentencia->clave,sentencia->valor);
 		enviarSet(conexionDelPlanificador->socket, sentencia->clave,
 				sentencia->valor);
 		sem_wait(&g_mutex_respuesta_set); //espera respuesta set
@@ -392,12 +391,11 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(
 			g_diccionarioConexiones, "planificador", 0);
 
-	log_debug(g_logger, "preguntar por STORE al planificador");
+	log_debug(g_logger, "preguntar por STORE %s %s al planificador", sentencia->clave,sentencia->valor);
 	enviarStore(conexionDelPlanificador->socket, clave);
 	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
 
 	if (g_respuesta == true) {
-		mostrarTablaInstancia(g_tablaDeInstancias);
 		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, false, NULL, 0, clave);
 		if(instanciaElegida == NULL){ //si no esta busca en las desconectadas
 			instanciaElegida = buscarInstancia(g_tablaDeInstancias, true, NULL, 0, clave);

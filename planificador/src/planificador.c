@@ -199,7 +199,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		g_claveGET = recibirGet(unPaquete);
 		pthread_mutex_lock(&mutexClavesTomadas);
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
-		if (g_claveTomada) {
+		if (g_claveTomada || dictionary_has_key(g_bloq,g_claveGET)) {
 			g_bloqueo = 1;
 		} else {
 			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
