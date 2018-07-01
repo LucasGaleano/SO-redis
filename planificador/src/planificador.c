@@ -43,6 +43,9 @@ int main(void) {
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
+	/*---*/
+	sem_init(&existenciaClave, 0, 0);
+	/*---*/
 
 	g_termino = 0;
 	g_bloqueo = 0;
@@ -299,6 +302,10 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		destruirPaquete(unPaquete);
 		liberarTodo();
 		exit(EXIT_FAILURE);
+		break;
+		/*-----------*/
+	case RESPUESTA_CLAVE_EXISTE:
+		validarClaveExisteConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	}
 	destruirPaquete(unPaquete);

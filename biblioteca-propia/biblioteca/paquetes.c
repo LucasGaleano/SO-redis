@@ -275,7 +275,7 @@ void enviarRespuesta(int server_socket, int codRespuesta) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitusStatus(int server_socket, char * clave) {
+void enviarSolicitudStatus(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;
@@ -351,12 +351,34 @@ void enviarClaveEliminada(int server_socket, char * clave){
 void enviarAvisoDesconexion(int server_socket){
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = ENVIAR_AVISO_DESCONNEXION;
+	unPaquete->codigoOperacion = ENVIAR_AVISO_DESCONEXION;
 
 	serializarNumero(unPaquete, 0);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
+
+/*---*/
+void enviarSolicitusExisteClave(int server_socket, char * clave) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = SOLICITAR_EXISTE_CLAVE;
+
+	serializarMensaje(unPaquete, clave);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+
+void enviarRespuestaExisteClave(int server_socket, bool existeClave) {
+	t_paquete * unPaquete = malloc(sizeof(t_paquete));
+
+	unPaquete->codigoOperacion = RESPUESTA_EXISTE_CLAVE;
+
+	serializarRespuestaExisteClave(unPaquete, existeClave);
+
+	enviarPaquetes(server_socket, unPaquete);
+}
+/*---*/
 
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
@@ -399,7 +421,7 @@ int recibirRespuesta(t_paquete* unPaquete) {
 	return deserializarNumero(unPaquete->buffer);
 }
 
-char * recibirSolicitusStatus(t_paquete * unPaquete){
+char * recibirSolicitudStatus(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
@@ -422,3 +444,9 @@ t_respuestaValor * recibirRespSolicitudValor(t_paquete * unPaquete){
 char * recibirClaveEliminada(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
+
+/*---*/
+char * recibirSolicitudClaveExiste(t_paquete * unPaquete){
+	return deserializarMensaje(unPaquete->buffer);
+}
+/*---*/

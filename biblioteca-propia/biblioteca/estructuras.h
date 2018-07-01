@@ -60,6 +60,11 @@ enum cod_op {
 	RESPUESTA_SOLICITAR_VALOR,
 
 	ENVIAR_AVISO_DESCONEXION,
+
+	/*---*/
+	SOLICITAR_EXISTE_CLAVE,
+	RESPUESTA_EXISTE_CLAVE,
+	/*---*/
 };
 
 enum cod_respuesta {

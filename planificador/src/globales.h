@@ -21,11 +21,11 @@ typedef struct {
 	int tEnEspera;
 	double estAnterior;
 	double realAnterior;
-	char* nombreESI; // esi
+	char* nombreESI;
 } t_infoListos;
 
 typedef struct {
-	char* idESI;// id nro
+	char* idESI;
 	t_infoListos* data;
 }t_infoBloqueo;
 
@@ -41,6 +41,9 @@ pthread_mutex_t mutexLog;
 pthread_mutex_t mutexClavesTomadas;
 sem_t ESIentrada;
 sem_t continua;
+/*---*/
+sem_t existenciaClave;
+/*---*/
 
 t_dictionary* g_listos;
 t_dictionary* g_bloq;

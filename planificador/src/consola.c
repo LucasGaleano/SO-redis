@@ -1,10 +1,3 @@
-/*
- * consola.c
- *
- *  Created on: 20 abr. 2018
- *      Author: utnso
- */
-
 #include "consola.h"
 
 /*------------------------------Consola------------------------------*/
@@ -109,10 +102,10 @@ void ejecutarMan() {
 
 	printf("	void pausar(void) \n");
 	printf("	void continuar(void) \n");
-	printf("	void bloquear(char* clave, int id) \n");
-	printf("	void desbloquear(char* clave, int id ) \n");
-	printf("	void listar(char* recurso) \n");
-	printf("	void kill(char* clave, int id) \n");
+	printf("	void bloquear(char* clave, char* nombreESI) \n");
+	printf("	void desbloquear(char* clave, char* nombreESI) \n");
+	printf("	void listar(char* clave) \n");
+	printf("	void kill(char* nombreESI) \n");
 	printf("	void status(char* clave) \n");
 	printf("	void deadlock(void) \n");
 	printf("	void exit(void) \n\n");
@@ -153,6 +146,13 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 	if (clave == NULL)
 		return;
 
+	enviarSolicitudClaveExiste(g_socketCoordinador, clave);
+	if(!existe(clave)){
+		printf("No se puede bloquear a un ESI con una clave que no existe.\n");
+		free(clave);
+		return;
+	}
+
 	char* nombreESI = obtenerParametro(linea, 2);
 
 	if (nombreESI == NULL) {
@@ -160,7 +160,6 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 		return;
 	}
 
-	// Validaciones
 
 	if (estaBloqueadoPorLaClave(nombreESI, clave)) {
 		printf("Ya esta bloqueado el %s por la clave %s.\n", nombreESI, clave);
@@ -249,6 +248,13 @@ void desbloquear(char* linea) {
 
 	if (clave == NULL)
 		return;
+
+	enviarSolicitudClaveExiste(g_socketCoordinador, clave);
+	if(!existe(clave)){
+		printf("No se puede desbloquear una clave que no existe.\n");
+		free(clave);
+		return;
+	}
 
 	if (!estaBloqueadaLaClave(clave)) {
 		printf("No se puede desbloquear la clave %s que no esta bloqueada.",
@@ -365,7 +371,7 @@ void status(char* linea) {
 	if (clave == NULL)
 		return;
 
-enviarSolicitusStatus(g_socketCoordinador, clave);
+	enviarSolicitusStatus(g_socketCoordinador, clave);
 
 // muestro ESIs bloqueados a la espera de dicha clave
 	char* lineaExtra = string_new();
@@ -619,6 +625,15 @@ bool enEjecucion(char* nombreESI) {
 	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
 }
 
+void validarClaveExisteConsola(bool existeClave){
+	g_existenciaClave = existeClave;
+	sem_post(&existenciaClave);
+}
+
+bool existe(clave){
+	sem_wait(&existenciaClave);
+	return(g_existenciaClave);
+}
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 
 char* esiQueBloquea(char* claveBuscada) {

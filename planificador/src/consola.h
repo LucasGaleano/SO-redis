@@ -26,6 +26,7 @@ char* g_clave;
 char* g_idESI;
 char* g_elemento;
 bool g_bool;
+bool g_existenciaClave;
 int **g_matrizAsignacion;
 int **g_matrizEspera;
 int g_indiceESI;
