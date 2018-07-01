@@ -1,8 +1,6 @@
 #include "planificador.h"
 
 int g_intervaloReconexion;
-char* g_claveBusqueda;
-t_infoBloqueo* aBorrar;
 
 int main(void) {
 
@@ -177,18 +175,21 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		sem_post(&continua);
 		break;
 	case RESPUESTA_STATUS:
-		//mostrarPorConsola(recibirRespuestaStatus(unPaquete));
+		mostrarPorConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	case ENVIAR_ERROR:
-		if (!g_termino) {
-			log_error(g_logger,
-					"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
-			pthread_mutex_unlock(&mutexLog);
-			liberarTodo();
-			exit(EXIT_FAILURE);
-		} else
-			g_termino = 0;
+		pthread_mutex_lock(&mutexLog);
+		log_error(g_logger,
+			"El coordinador se ha desconectado. Se aborta el planificador y sus ESIs");
+		pthread_mutex_unlock(&mutexLog);
+		liberarTodo();
+		exit(EXIT_FAILURE);
+
 		break;
+
+	/*case RESPUESTA_CLAVE_EXISTE:
+		informarSiExisteClavePorConsola(recibirRespuestaStatus(unPaquete));
+		break;*/
 	}
 	destruirPaquete(unPaquete);
 }
@@ -200,7 +201,7 @@ void atenderCoordinador(void* arg) {
 	}
 }
 
-void liberarClaves(char* clave) {
+void liberarClaves(char* clave) { // TODO DESBLOQUEAR UN ESI Y ASIGNARLE CLAVE
 	if (dictionary_has_key(g_clavesTomadas, clave))
 		list_destroy_and_destroy_elements(
 				dictionary_remove(g_clavesTomadas, clave), (void*) free);
@@ -244,31 +245,40 @@ void planificar(char* algoritmo) {
 		planificarConDesalojo();
 }
 
-static buscarESIenLista(t_infoBloqueo* nodo) {
-	return !strcmp(g_claveBusqueda, nodo->idESI);
-}
+char* liberarESI(char* key) {
+	char* nombre;
 
-static buscarESIenBloqueados(char* key, t_list* reg) {
-	//Esto PODRIA llegar a romper con liberarTodo porque quedaria un nodo con su data con basura por el free. Espero no tener que darle bola a este comentario en el futuro
-	if (aBorrar == NULL) {
-		aBorrar = list_find(reg, (void*) buscarESIenLista);
+	void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBloqueados) {
+		bool sonIguales(t_infoBloqueo* nodo) {
+			return string_equals_ignore_case(nodo->idESI, key);
+		}
+
+		void liberarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
+			nombre = strdup(infoBloqueo->data->nombreESI);
+			//free(infoBloqueo->data->nombreESI); // idem del comentario de free de listos
+			free(infoBloqueo->data);
+			free(infoBloqueo->idESI);
+			free(infoBloqueo);
+		}
+
+		list_remove_and_destroy_by_condition(listaBloqueados,
+				(void*) sonIguales, (void*) liberarT_infoBloqueo);
+
+		if (list_is_empty(listaBloqueados)) {
+			dictionary_remove_and_destroy(g_bloq, clave, (void*) list_destroy);
+		}
 	}
-}
 
-void liberarESI(char* key) {
-	aBorrar = NULL;
 	if (dictionary_has_key(g_listos, key)) {
+		nombre = strdup(
+				((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 
-		liberarClaves(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
-		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
+		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
 		free(dictionary_remove(g_listos, key));
 	} else {
-		g_claveBusqueda = key;
-		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
-		liberarClaves(aBorrar->data->nombreESI);
-		free(aBorrar->idESI);
-		free(aBorrar->data->nombreESI);
-		free(aBorrar->data);
-		free(aBorrar);
+		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);
 	}
+
+	liberarClaves(nombre);
+	return nombre;
 }

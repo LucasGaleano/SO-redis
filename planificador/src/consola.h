@@ -24,6 +24,7 @@
 char* g_nombreESI;
 char* g_clave;
 char* g_idESI;
+char* g_elemento;
 bool g_bool;
 int **g_matrizAsignacion;
 int **g_matrizEspera;
@@ -64,6 +65,7 @@ bool 				enEjecucion								(char*);
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 char* 				esiQueBloquea							(char*);
+bool 				sonIgualesClaves						(char*);
 void 				sacarClave								(char*, char*);
 
 /*------------------------------Auxiliares-killProceso----------------------------*/
@@ -77,15 +79,12 @@ void 				mostrarPorConsola						(t_respuestaStatus*);
 int 				indice									(char*, t_dictionary*);
 int **				crearMatriz								(int, int);
 void 				ponerMatrizTodoNulo						(int **, int, int);
-void 				creoElementoEnPosibleDeadlockAsignacion	(char* idESI, t_list* clavesBloqueadas);
-void 				creoElementoEnPosibleDeadlockEspera		(char*, t_list*);
-void 				creoMatrizAsignacion					(char*, t_list*);
-void 				creoMatrizEspera						(char*, t_list*);
-char* 				esiQueTieneIndice						(int);
-
-/*------------------------------Auxiliares-Liberar Memoria------------------------------*/
-void 				liberarT_infoBloqueo					(t_infoBloqueo*);
-void 				liberarT_infoListos						(t_infoListos*);
-void 				liberarMatriz							(int **, int);
+void 				crearIndiceAsignacion					(char*);
+void 				crearIndiceEspera						(t_infoBloqueo*);
+void 				creoElementosEnPosibleDeadlock			(t_dictionary*, void (*creoIndiceMatriz)(void*));
+void 				asignarEnMatrizAsignacion				(char*);
+void 				asignarEnMatrizEspera					(t_infoBloqueo*);
+void 				asignoMatriz							(t_dictionary*, void (*asignarTipoMatriz)(void*));
+char* 				esiEnDeadlock							(int);
 
 #endif /* CONSOLA_H_ */

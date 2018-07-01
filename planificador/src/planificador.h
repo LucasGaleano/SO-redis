@@ -23,6 +23,6 @@ int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void liberarClaves(char* clave);
 void atenderCoordinador(void* arg);
-void liberarESI(char* key);
+char* liberarESI(char* key);
 
 #endif /* PLANIFICADOR_H_ */
