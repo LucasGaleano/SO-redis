@@ -56,7 +56,7 @@ void conectarEsi() {
 
 	//Conecto al coordinador
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto, ESI);
-
+	enviarNombreEsi(socketCoordinador, nombre);
 	//Conecto al planificador
 	socketPlanificador = conectarCliente(planificadorIP, planificadorPuerto,
 			ESI);
@@ -117,8 +117,14 @@ void procesarSolicitudEjecucion() {
 		case SET:
 			log_trace(logESI, "SET\tclave: <%s>\tvalor: <%s>\n",
 					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
+			if(strlen(parsed.argumentos.SET.clave) > 40){
+				enviarRespuesta(socketCoordinador,ERROR_TAMANIO_CLAVE);
+				//TODO liberar memoria
+				exit(1);
+			}
 			enviarSet(socketCoordinador, parsed.argumentos.SET.clave,
 					parsed.argumentos.SET.valor);
+
 			break;
 		case STORE:
 			log_trace(logESI, "STORE\tclave: <%s>\n",
@@ -146,10 +152,10 @@ void procesarError() {
 void procesarRespuestaSolicitud(t_paquete * unPaquete) {
 	int respuesta = recibirRespuesta(unPaquete);
 
-	if (respuesta == OK)
+	if (respuesta == CONTINUA_ESI)
 		log_trace(logESI, "Termine de enviar sentencias exitosamente \n");
 
-	if (respuesta == ABORTO)
+	if (respuesta == ABORTO_ESI)
 		log_warning(logESI, "No pude terminar de ejecutar exitosamente\n");
 
 	recibirSolicitudes = false;
@@ -193,14 +199,15 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 			++i)
 		;
 
-	if (string_length(archivoNoLeido) < i)
+	*ip = *ip + i + 1;
+	log_debug(logESI, "tamanio de lo que queda del archivo: %i",strlen(archivo + (*ip)));
+	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip))<5 )
 		*termino = 1;
 
 	char * sentencia = calloc(i,sizeof(char));
 
 	memcpy(sentencia, archivoNoLeido, i);
 
-	*ip = *ip + i + 1;
 
 	return sentencia;
 }

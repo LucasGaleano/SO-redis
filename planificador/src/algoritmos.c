@@ -20,8 +20,15 @@ static int esMayor(int comp1, int comp2) {
 	return comp1 > comp2;
 }
 
-static char* asignarID(int val) {
-	return string_itoa(val);
+static char* asignarID(int *val) {
+	char* auxKey = NULL;
+
+	do {
+		free(auxKey);
+		auxKey = string_itoa(*val);
+		(*val)++;
+	} while (!dictionary_has_key(g_listos, auxKey));
+	return auxKey;
 }
 
 static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
@@ -41,8 +48,11 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
 	pthread_mutex_lock(&mutexLog);
-	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s", insert->data->nombreESI, g_claveGET);
+	log_trace(g_logger, "Se ha bloqueado %s bajo la clave %s",
+			insert->data->nombreESI, g_claveGET);
 	pthread_mutex_unlock(&mutexLog);
+	free(g_claveGET);
+	g_claveGET = NULL;
 }
 
 static void liberarSalida(void* arg) {
@@ -54,23 +64,17 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 		int (*ponderacion)(int, int)) {
 	t_infoListos *actual;
 	double unValor;
-	char* auxKey;
+	char* auxKey = NULL;
 	char* key;
 	int i = 0;
-	do {
-		auxKey = asignarID(i);
-		i++;
-	} while (!dictionary_has_key(g_listos, auxKey));
+	auxKey = asignarID(&i);
 	actual = dictionary_get(g_listos, auxKey);
 	unValor = calculadorProx(actual->estAnterior, actual->realAnterior,
 			actual->tEnEspera);
 	key = strdup(auxKey);
 	for (; i <= g_keyMaxima; i++) {
 		free(auxKey);
-		do {
-			auxKey = asignarID(i);
-			i++;
-		} while (!dictionary_has_key(g_listos, auxKey));
+		auxKey = asignarID(&i);
 		actual = dictionary_get(g_listos, auxKey);
 		double prox = calculadorProx(actual->estAnterior, actual->realAnterior,
 				actual->tEnEspera);
@@ -80,7 +84,8 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 			key = strdup(auxKey);
 		}
 	}
-	log_trace(g_logger, "Se ejecuta %s", ((t_infoListos*)(dictionary_get(g_listos, key)))->nombreESI);
+	log_trace(g_logger, "Se ejecuta %s",
+			((t_infoListos*) (dictionary_get(g_listos, key)))->nombreESI);
 	free(auxKey);
 	return key;
 }
@@ -96,7 +101,6 @@ extern void planificarSinDesalojo(char* algoritmo) {
 	pthread_cleanup_push((void*) liberarSalida, NULL)
 				;
 				while (1) {
-					g_enEjecucion = NULL;
 					cont = 0;
 					g_huboError = 0;
 					sem_wait(&ESIentrada);
@@ -110,7 +114,6 @@ extern void planificarSinDesalojo(char* algoritmo) {
 
 					g_idESIactual = key;
 					aEjecutar = dictionary_remove(g_listos, key);
-					g_enEjecucion = aEjecutar;
 					g_nombreESIactual = aEjecutar->nombreESI;
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
@@ -128,13 +131,15 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
 					}
-					if (g_termino) {
-						if(!g_huboError)
-							enviarRespuesta(g_socketEnEjecucion, OK);
+					if (g_termino || g_huboError) {
+						if (!g_huboError)
+							enviarRespuesta(g_socketEnEjecucion, CONTINUA_ESI);
 						log_trace(g_logger, "%s ha terminado su ejecucion",
-														aEjecutar->nombreESI);
+								aEjecutar->nombreESI);
+						sem_wait(&continua);
 						free(aEjecutar->nombreESI);
 						free(aEjecutar);
+						g_termino = 0;
 					}
 					if (strcmp(algoritmo, "HRRN") == 0) {
 						g_tEjecucion = cont;
@@ -156,6 +161,7 @@ extern void planificarConDesalojo(void) {
 				g_huboModificacion = 0;
 				while (1) {
 					cont = 0;
+					g_huboError = 0;
 					sem_wait(&ESIentrada);
 					pthread_mutex_lock(&mutexListo);
 					key = calcularSiguiente((void*) calcularProximaRafaga,
@@ -172,17 +178,22 @@ extern void planificarConDesalojo(void) {
 						cont++;
 						pthread_mutex_unlock(&mutexConsola);
 						sem_wait(&continua);
-					} while (!g_termino && !g_bloqueo && !g_huboModificacion);
+					} while (!g_termino && !g_bloqueo && !g_huboModificacion
+							&& !g_huboError);
 					if (g_bloqueo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
 						aEjecutar = NULL;
 					}
-					if (g_termino) {
-						g_termino = 0;
-						enviarRespuesta(g_socketEnEjecucion, OK);
+					if (g_termino || g_huboError) {
+						if (!g_huboError)
+							enviarRespuesta(g_socketEnEjecucion, CONTINUA_ESI);
+						log_trace(g_logger, "%s ha terminado su ejecucion",
+								aEjecutar->nombreESI);
+						sem_wait(&continua);
 						free(aEjecutar->nombreESI);
 						free(aEjecutar);
+						g_termino = 0;
 						aEjecutar = NULL;
 					}
 					if (aEjecutar != NULL) {

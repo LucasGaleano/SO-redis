@@ -3,11 +3,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/dictionary.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include <time.h>
 #include <semaphore.h>
 
 /*TABLA DE INSTANCIAS
@@ -18,17 +19,27 @@
  */
 
 /*-------------------ESTRUCTURAS---------------------------*/
+typedef int tiempo;
+tiempo g_tiempoPorEjecucion;
 
 typedef struct{
 	char* nombre;
 	int espacioOcupado;
+	int espacioMaximo;
+	int tamanioEntrada;
 	bool disponible;
-	time_t ultimaModificacion; // entero por codigo de operacion
+	tiempo ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
 	char * trabajoActual;
 	t_list* claves;
 }t_instancia;
+
+typedef struct{
+	char* nombre;
+	int socket;
+}t_conexion;
+
 
 sem_t g_mutex_tablas;
 
@@ -40,19 +51,34 @@ t_instancia* traerInstanciaQueContieneKey(t_list* tablaDeInstancia,char* primerL
 void distribuirKeys(t_list* tablaDeInstancias);
 
 t_list* crearListaInstancias(void);
-void agregarInstancia(t_list * lista, t_instancia* instancia );
-t_instancia* crearInstancia(char* nombre);
+t_instancia* crearInstancia(char* nombre, int espacioMaximo, int tamanioEntradas);
+void agregarInstancia(t_list * lista, t_instancia* instancia);
 void destruirInstancia(t_instancia * instancia);
 void mostrarInstancia(t_instancia * instancia);
+void mostrarEspacioOcupado(t_instancia* instancia);
 void mostrarTablaInstancia(t_list* tablaDeInstancias);
-t_instancia* buscarInstancia(t_list* tablaDeInstancias, char* nombre,int letraAEncontrar);
-void eliminiarClaveDeInstancia(t_list* claves, char* claveAEliminar);
+t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar, char* clave);
+void eliminiarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
+void agregarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
+void agregarTrabajoActual(t_instancia* instancia, char* clave);
+char* conseguirTrabajoActual(t_instancia* instancia);
+bool instanciaContieneClave(t_list* claves,char* clave);
+int cantidadEntradasPorClave(char* clave, int tamanioEntradas);
 
-t_dictionary* crearDiccionarioConexiones(void);
-char* buscarDiccionarioPorValor(t_dictionary* diccionario, int* valor);
-void mostrarDiccionario(t_dictionary* diccionario);
-void agregarConexion(t_dictionary * diccionario, char * clave , int* valor);
-int* conseguirConexion(t_dictionary * diccionario, char * clave);
+t_list* crearDiccionarioConexiones(void);
+t_conexion* crearConexion(char* nombre, int socket);
+void agregarConexion(t_list * diccionario, char * clave , int valor);
+void sacarConexion(t_list* diccionario, t_conexion* conexion);
+void mostrarDiccionario(t_list* diccionario);
+t_conexion* buscarConexion(t_list * diccionario, char * clave, int socket);
+void cerrarConexion(void* conexion);
+void destruirConexion(void* conexion);
+void cerrarTodasLasConexiones(t_list* diccionario);
+void destruirDiccionario(t_list* diccionario);
 
+t_list* crearDiccionarioClaves();
+void agregarClaveAlSistema(t_list* diccionarioClaves, char* clave);
+bool existeClaveEnSistema(t_list* diccionarioClaves, char* clave);
+void destruirDiccionarioClaves(t_list* diccionarioClaves);
 
 #endif /* TABLAS_ADMINISTRATIVAS_H_ */

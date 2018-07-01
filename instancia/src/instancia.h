@@ -36,7 +36,7 @@ t_list * tablaEntradas;
 
 int entradaAReemplazar;
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutexDumpCompactacion;
 
 bool almacenar;
 
