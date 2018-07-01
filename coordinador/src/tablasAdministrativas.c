@@ -55,6 +55,12 @@ void mostrarInstancia(t_instancia * instancia) {
 	fflush(stdout);
 }
 
+void agregarTrabajoActual(t_instancia* instancia, char* clave){
+	instancia->trabajoActual = string_duplicate(clave);
+}
+char* conseguirTrabajoActual(t_instancia* instancia){
+	return instancia->trabajoActual;
+}
 tiempo traerTiempoEjecucion() {
 	tiempo tiempoEjecucionAux = g_tiempoPorEjecucion;
 	return tiempoEjecucionAux;
@@ -345,5 +351,3 @@ void destruirDiccionarioClaves(t_list* diccionarioClaves){
 	list_clean_and_destroy_elements(diccionarioClaves,free);
 
 }
-
-

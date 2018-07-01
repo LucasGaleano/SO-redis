@@ -249,6 +249,11 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		} else {
 			log_debug(g_logger, "le llego el SET  a %s",
 					conexionCliente->nombre);
+		 	t_instancia* instanciaCliente = buscarInstancia(g_tablaDeInstancias,false ,conexionCliente->nombre ,0, NULL);
+			char* claveInstanciaProcesada = conseguirTrabajoActual(instanciaCliente);
+			agregarClaveDeInstancia(instanciaCliente, claveInstanciaProcesada);
+			free(claveInstanciaProcesada);
+
 		}
 		break;
 
@@ -290,6 +295,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		}
 		break;
 	}
+	free(paquete);
 }
 
 void procesarHandshake(t_paquete* paquete, int cliente_fd) {
@@ -363,17 +369,15 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 					g_diccionarioConexiones, instanciaElegida->nombre, 0);
 			if (!instanciaContieneClave(instanciaElegida->claves,
 					sentencia->clave))
-				agregarClaveDeInstancia(instanciaElegida, sentencia->clave);
 
 			instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
 
-			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
-					sentencia->clave, sentencia->valor,
-					instanciaElegida->nombre);
-
+			agregarTrabajoActual(instanciaElegida,sentencia->clave);
 			enviarSet(conexionDeInstancia->socket, sentencia->clave,
 					sentencia->valor);
-			//TODO si no se puede acceder a la instancia, se le avisa al planificador
+			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
+			sentencia->clave, sentencia->valor,
+			instanciaElegida->nombre);
 		}
 
 		free(sentencia->clave);

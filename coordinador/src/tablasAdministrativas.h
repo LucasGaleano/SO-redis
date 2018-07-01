@@ -60,6 +60,8 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar, char* clave);
 void eliminiarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
 void agregarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
+void agregarTrabajoActual(t_instancia* instancia, char* clave);
+char* conseguirTrabajoActual(t_instancia* instancia);
 bool instanciaContieneClave(t_list* claves,char* clave);
 int cantidadEntradasPorClave(char* clave, int tamanioEntradas);
 
