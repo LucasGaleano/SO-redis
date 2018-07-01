@@ -124,11 +124,11 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 			pthread_mutex_unlock(&mutexLog);
 			free(keyAux);
 			free(nombreAux);
-		} else
-		{
-			if(dictionary_has_key(g_clavesTomadas, g_nombreESIactual))
-			{
-				list_destroy_and_destroy_elements(dictionary_remove(g_clavesTomadas, g_nombreESIactual),(void*)free);
+		} else {
+			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				list_destroy_and_destroy_elements(
+						dictionary_remove(g_clavesTomadas, g_nombreESIactual),
+						(void*) free);
 			}
 			sem_post(&continua);
 		}
@@ -164,9 +164,11 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		g_claveTomada = 0;
 		t_claveValor* recv = recibirSet(unPaquete);
 		g_claveGET = recv->clave;
-		pthread_mutex_lock(&mutexClavesTomadas);
-		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
-		pthread_mutex_unlock(&mutexClavesTomadas);
+		if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+			g_claveTomada = list_any_satisfy(
+					dictionary_get(g_clavesTomadas, g_nombreESIactual),
+					(void*) condicionDeTomada);
+		}
 		if (g_claveTomada)
 			enviarRespuesta(g_socketCoordinador, SET_OK);
 		else {
@@ -199,7 +201,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		g_claveGET = recibirGet(unPaquete);
 		pthread_mutex_lock(&mutexClavesTomadas);
 		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
-		if (g_claveTomada || dictionary_has_key(g_bloq,g_claveGET)) {
+		if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
 			g_bloqueo = 1;
 		} else {
 			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
@@ -327,7 +329,7 @@ int condicionDeTomada(char* nodo) {
 }
 
 void claveEstaTomada(char* key, t_list* value) {
-	if (!g_claveTomada && strcmp(g_idESIactual, key) == 0)
+	if (!g_claveTomada && strcmp(g_idESIactual, key) != 0)
 		g_claveTomada = list_any_satisfy(value, (void*) condicionDeTomada);
 }
 
@@ -384,8 +386,7 @@ char* liberarESI(char* key) {
 	return nombre;
 }
 
-void atenderCtrlC(void)
-{
+void atenderCtrlC(void) {
 	log_error(g_logger, "Me llego signal: SIGINT y mato el proceso\n");
 	pthread_cancel(hiloCoordinador);
 	pthread_join(hiloCoordinador, NULL);
