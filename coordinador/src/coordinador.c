@@ -147,71 +147,28 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 
 }
 
-void armarConfigCoordinador(t_configuraciones* g_configuracion,
-		t_config* archivoConfig) {
 
-	g_configuracion->puertoConexion = config_get_string_value(archivoConfig,
-			"PUERTO");
-	g_configuracion->algoritmoDist = config_get_string_value(archivoConfig,
-			"ALGORITMO_DISTRIBUCION");
-	g_configuracion->cantidadEntradas = config_get_int_value(archivoConfig,
-			"CANTIDAD_ENTRADAS");
-	g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
-			"TAMANIO_ENTRADA");
-	g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
 
-}
+void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
-t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
-		t_list* tablaDeInstancias) {
+	switch (recibirHandshake(paquete)) {
+	case PLANIFICADOR:
+		log_debug(g_logger, "se conecto el planificador: %i", cliente_fd);
+		agregarConexion(g_diccionarioConexiones, "planificador", cliente_fd);
+		break;
 
-	sem_wait(&g_mutex_tablas);
-	t_instancia* instanciaElegida = NULL;
+	case ESI:
+		log_info(g_logger, "se conecto un esi: %i", cliente_fd);
+		break;
 
-	if (string_equals_ignore_case(algoritmoDePlanificacion, "LSU"))
-		instanciaElegida = traerInstanciaMasEspacioDisponible(
-				tablaDeInstancias);
+	case INSTANCIA:
+		log_info(g_logger, "se conecto la instancia: %i", cliente_fd);
+		break;
 
-	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
-		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
-
-	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
-		int keyDeClave = (int) string_substring(clave, 0, 1);
-		instanciaElegida = buscarInstancia(tablaDeInstancias, false, NULL,
-				keyDeClave, NULL);
 	}
 
-	sem_post(&g_mutex_tablas);
+	free(paquete);
 
-	return instanciaElegida;
-
-}
-
-void* procesarClienteDesconectado(int cliente_fd) {
-
-	t_conexion* clienteDesconectado = buscarConexion(g_diccionarioConexiones,
-	NULL, cliente_fd);
-	if (clienteDesconectado == NULL) {
-		return 0;
-	}
-	if (string_equals_ignore_case(clienteDesconectado->nombre,
-			"planificador")) {
-		log_error(g_logger,
-				"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",
-				clienteDesconectado->nombre);
-		raise(SIGINT);
-	} else {
-		log_debug(g_logger, "se desconecto %s\n", clienteDesconectado->nombre);
-		t_instancia * instanciaDesconectada = buscarInstancia(
-				g_tablaDeInstancias, false, clienteDesconectado->nombre, 0,
-				NULL);
-		if (instanciaDesconectada != NULL) { //entonces se desconecto un esi
-			instanciaDesconectada->disponible = false;
-			distribuirKeys(g_tablaDeInstancias);
-		}
-		sacarConexion(g_diccionarioConexiones, clienteDesconectado);
-	}
-	return 0;
 }
 
 void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
@@ -227,6 +184,9 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		 * esperamos que todas las ejecuciones terminen.
 		 * las bloqueamos.
 		 * mandamos a hacer la compactacion a todas las instancias.
+		 */
+		 //empezarCompactacionTodasInstancias(g_tablaDeInstancias);
+		 /*
 		 * a la instancia que devolvio error por espacio insuficiente le enviamos
 		 * otra vez trabajo actual como SET_DEFINITIVO
 		 * reanudamos.
@@ -236,8 +196,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	case ERROR_TAMANIO_CLAVE:
-		log_error(g_logger, "%s mando error de tamanio de clave",
-				buscarConexion(g_diccionarioConexiones, NULL, cliente_fd));
+		log_error(g_logger, "%s mando error de tamanio de clave", conexionCliente->nombre);
 		break;
 
 	case SET_OK:
@@ -297,27 +256,6 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 	free(paquete);
 }
 
-void procesarHandshake(t_paquete* paquete, int cliente_fd) {
-
-	switch (recibirHandshake(paquete)) {
-	case PLANIFICADOR:
-		log_debug(g_logger, "se conecto el planificador: %i", cliente_fd);
-		agregarConexion(g_diccionarioConexiones, "planificador", cliente_fd);
-		break;
-
-	case ESI:
-		log_info(g_logger, "se conecto un esi: %i", cliente_fd);
-		break;
-
-	case INSTANCIA:
-		log_info(g_logger, "se conecto la instancia: %i", cliente_fd);
-		break;
-
-	}
-
-	free(paquete);
-
-}
 
 void procesarGET(t_paquete* paquete, int cliente_fd) {
 
@@ -460,7 +398,16 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	free(paquete);
 }
 
-//TODO probar esta funcion
+void procesarNombreESI(t_paquete* paquete, int cliente_fd) {
+
+	char* nombreESI = recibirNombreEsi(paquete);
+
+	agregarConexion(g_diccionarioConexiones, nombreESI, cliente_fd);
+	logTraceSeguro(g_logger, g_mutexLog, "se conecto esi: %s", nombreESI);
+
+	free(paquete);
+}
+
 void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirClaveEliminada(paquete);
@@ -472,15 +419,6 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
 
 }
 
-void procesarNombreESI(t_paquete* paquete, int cliente_fd) {
-
-	char* nombreESI = recibirNombreEsi(paquete);
-
-	agregarConexion(g_diccionarioConexiones, nombreESI, cliente_fd);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto esi: %s", nombreESI);
-
-	free(paquete);
-}
 
 void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 
@@ -513,4 +451,73 @@ void signal_handler(int signum) {
 		printf("CONEXIONES----------------------\n");
 		mostrarDiccionario(g_diccionarioConexiones);
 	}
+}
+
+void* procesarClienteDesconectado(int cliente_fd) {
+
+	t_conexion* clienteDesconectado = buscarConexion(g_diccionarioConexiones,
+	NULL, cliente_fd);
+	if (clienteDesconectado == NULL) {
+		return 0;
+	}
+	if (string_equals_ignore_case(clienteDesconectado->nombre,
+			"planificador")) {
+		log_error(g_logger,
+				"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",
+				clienteDesconectado->nombre);
+		raise(SIGINT);
+	} else {
+		log_debug(g_logger, "se desconecto %s\n", clienteDesconectado->nombre);
+		t_instancia * instanciaDesconectada = buscarInstancia(
+				g_tablaDeInstancias, false, clienteDesconectado->nombre, 0,
+				NULL);
+		if (instanciaDesconectada != NULL) { //entonces se desconecto un esi
+			instanciaDesconectada->disponible = false;
+			distribuirKeys(g_tablaDeInstancias);
+		}
+		sacarConexion(g_diccionarioConexiones, clienteDesconectado);
+	}
+	return 0;
+}
+
+
+void armarConfigCoordinador(t_configuraciones* g_configuracion,
+	t_config* archivoConfig) {
+
+		g_configuracion->puertoConexion = config_get_string_value(archivoConfig,
+			"PUERTO");
+		g_configuracion->algoritmoDist = config_get_string_value(archivoConfig,
+				"ALGORITMO_DISTRIBUCION");
+		g_configuracion->cantidadEntradas = config_get_int_value(archivoConfig,
+					"CANTIDAD_ENTRADAS");
+		g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
+						"TAMANIO_ENTRADA");
+		g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
+
+}
+
+
+t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
+		t_list* tablaDeInstancias) {
+
+	sem_wait(&g_mutex_tablas);
+	t_instancia* instanciaElegida = NULL;
+
+	if (string_equals_ignore_case(algoritmoDePlanificacion, "LSU"))
+		instanciaElegida = traerInstanciaMasEspacioDisponible(
+				tablaDeInstancias);
+
+	if (string_equals_ignore_case(algoritmoDePlanificacion, "EL"))
+		instanciaElegida = traerUltimaInstanciaUsada(tablaDeInstancias);
+
+	if (string_equals_ignore_case(algoritmoDePlanificacion, "KE")) {
+		int keyDeClave = (int) string_substring(clave, 0, 1);
+		instanciaElegida = buscarInstancia(tablaDeInstancias, false, NULL,
+				keyDeClave, NULL);
+	}
+
+	sem_post(&g_mutex_tablas);
+
+	return instanciaElegida;
+
 }
