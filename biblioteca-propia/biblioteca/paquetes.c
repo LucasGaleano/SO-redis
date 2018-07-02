@@ -358,27 +358,17 @@ void enviarAvisoDesconexion(int server_socket){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-/*---*/
-void enviarSolicitusExisteClave(int server_socket, char * clave) {
+/*****/
+void enviarSolicitudAnterior(int server_socket) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
-	unPaquete->codigoOperacion = SOLICITAR_EXISTE_CLAVE;
+	unPaquete->codigoOperacion = SOLICITUD_ANTERIOR;
 
-	serializarMensaje(unPaquete, clave);
+	serializarNumero(unPaquete, 0);
 
 	enviarPaquetes(server_socket, unPaquete);
 }
-
-void enviarRespuestaExisteClave(int server_socket, bool existeClave) {
-	t_paquete * unPaquete = malloc(sizeof(t_paquete));
-
-	unPaquete->codigoOperacion = RESPUESTA_EXISTE_CLAVE;
-
-	serializarRespuestaExisteClave(unPaquete, existeClave);
-
-	enviarPaquetes(server_socket, unPaquete);
-}
-/*---*/
+/*****/
 
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
@@ -444,9 +434,3 @@ t_respuestaValor * recibirRespSolicitudValor(t_paquete * unPaquete){
 char * recibirClaveEliminada(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
-
-/*---*/
-char * recibirSolicitudClaveExiste(t_paquete * unPaquete){
-	return deserializarMensaje(unPaquete->buffer);
-}
-/*---*/

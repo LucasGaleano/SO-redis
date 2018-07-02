@@ -15,9 +15,6 @@ void 	serializarClaveValor			(t_paquete * unPaquete, char * clave, char * valor)
 void	serializarRespuestaStatus		(t_paquete* unPaquete, char * valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 void 	serializarInfoInstancia			(t_paquete * unPaquete, int cantEntradas, int tamanioEntrada, t_list * listaClaves);
 void	serializarExistenciaClaveValor	(t_paquete * unPaquete, bool claveExistente, void * valor);
-/*---*/
-void	serializarRespuestaExisteClave	(t_paquete* unPaquete, bool existeClave);
-/*---*/
 
 /*----------------------------------------Deserializacion----------------------------------------*/
 int 				deserializarNumero					(t_stream * buffer);
@@ -29,10 +26,6 @@ t_claveValor* 		deserializarClaveValor				(t_stream * buffer);
 t_respuestaStatus* 	deserializarRespuestaStatus			(t_stream * buffer);
 t_infoInstancia * 	deserializarInfoInstancia			(t_stream * buffer);
 t_respuestaValor * 	deserializarExistenciaClaveValor	(t_stream * buffer);
-/*---*/
-bool 				deserializarBool					(t_stream* buffer);
-bool			 	deserializarRespuestaExisteClave	(t_stream * buffer);
-/*---*/
 
 /*----------------------------------------Funciones auxiliares----------------------------------------*/
 void *	abrirArchivo	(char * rutaArchivo, size_t * tamArc, FILE ** archivo);

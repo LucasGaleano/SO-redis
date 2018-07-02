@@ -34,5 +34,8 @@ void 		procesarRespuestaSolicitud	(t_paquete * unPaquete);
 /*-------------------------Funciones auxiliares-------------------------*/
 void * 		abrirArchivo				(char * rutaArchivo, size_t * tamArc, FILE ** archivo);
 char * 		proximaSentencia			(char * archivo, int * ip, int* termino);
+/*****/
+void 		procesarSolicitudAnterior	(void);
+/*****/
 
 #endif /* ESI_H_ */
