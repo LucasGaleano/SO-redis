@@ -18,7 +18,7 @@ void iniciarServidor(void* puerto);
 void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente);
 void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente);
 void asignarBloquedas(char** codigos);
-void desbloquearESIs(t_infoBloqueo* nodo);
+void desbloquearESI(char* clave);
 int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void liberarClaves(char* clave);

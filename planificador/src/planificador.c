@@ -200,24 +200,33 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_unlock(&mutexLog);
 		g_claveTomada = 0;
 		g_claveGET = recibirGet(unPaquete);
-		pthread_mutex_lock(&mutexClavesTomadas);
-		dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
-		if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
-			g_bloqueo = 1;
-		} else {
-			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
-				list_add(dictionary_get(g_clavesTomadas, g_nombreESIactual),
-						g_claveGET);
+		if (!esiTieneClave()) {
+			pthread_mutex_lock(&mutexClavesTomadas);
+			dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
+			if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
+				g_bloqueo = 1;
 			} else {
-				aux = list_create();
-				list_add(aux, g_claveGET);
-				dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
+				if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+					list_add(dictionary_get(g_clavesTomadas, g_nombreESIactual),
+							g_claveGET);
+				} else {
+					aux = list_create();
+					list_add(aux, g_claveGET);
+					dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
+				}
+				pthread_mutex_unlock(&mutexClavesTomadas);
+				pthread_mutex_lock(&mutexLog);
+				log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
+						g_nombreESIactual, g_claveGET);
+				pthread_mutex_unlock(&mutexLog);
 			}
-			pthread_mutex_unlock(&mutexClavesTomadas);
+		} else {
 			pthread_mutex_lock(&mutexLog);
-			log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
+			log_trace(g_logger, "%s ya tiene la clave %s tomada",
 					g_nombreESIactual, g_claveGET);
 			pthread_mutex_unlock(&mutexLog);
+			free(g_claveGET);
+			g_claveGET = NULL;
 		}
 		sem_post(&continua);
 		break;
@@ -230,13 +239,8 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					(void*) condicionDeTomada);
 		}
 		if (g_claveTomada) {
-			if (dictionary_has_key(g_bloq, g_claveGET)) {
-				pthread_mutex_lock(&mutexBloqueo);
-				aux = dictionary_remove(g_bloq, g_claveGET);
-				list_iterate(aux, (void*) desbloquearESIs);
-				list_destroy(aux);
-				pthread_mutex_unlock(&mutexBloqueo);
-			}
+			if (dictionary_has_key(g_bloq, g_claveGET))
+				desbloquearESI(g_claveGET);
 			aux = dictionary_get(g_clavesTomadas, g_nombreESIactual);
 			list_remove_and_destroy_by_condition(aux, (void*) condicionDeTomada,
 					(void*) free);
@@ -323,9 +327,20 @@ void liberarClaves(char* clave) {
 				dictionary_remove(g_clavesTomadas, clave), (void*) free);
 }
 
-void desbloquearESIs(t_infoBloqueo* nodo) {
+void desbloquearESI(char* clave) {
+	pthread_mutex_lock(&mutexBloqueo);
+	t_list* lista = dictionary_remove(g_bloq, clave);
+	t_infoBloqueo* nodo = list_remove(lista, 0);
+	pthread_mutex_lock(&mutexListo);
 	dictionary_put(g_listos, nodo->idESI, nodo->data);
-	sem_post(&ESIentrada);
+	pthread_mutex_unlock(&mutexListo);
+	free(nodo->idESI);
+	free(nodo);
+	if(list_is_empty(lista))
+		list_destroy(lista);
+	else
+		dictionary_put(g_bloq, clave, lista);
+	pthread_mutex_unlock(&mutexBloqueo);
 }
 
 int condicionDeTomada(char* nodo) {
@@ -395,6 +410,13 @@ char* liberarESI(char* key) {
 
 	liberarClaves(nombre);
 	return nombre;
+}
+
+int esiTieneClave(void)
+{
+	if(dictionary_has_key(g_clavesTomadas, g_nombreESIactual))
+		return list_any_satisfy(dictionary_get(g_clavesTomadas, g_nombreESIactual), (void*)condicionDeTomada);
+	return 0;
 }
 
 void atenderCtrlC(void) {
