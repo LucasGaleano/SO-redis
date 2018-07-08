@@ -60,6 +60,8 @@ enum cod_op {
 	RESPUESTA_SOLICITAR_VALOR,
 
 	ENVIAR_AVISO_DESCONEXION,
+
+	SOLICITUD_ANTERIOR
 };
 
 enum cod_respuesta {
