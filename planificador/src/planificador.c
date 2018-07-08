@@ -318,12 +318,6 @@ void atenderCoordinador(void* arg) {
 	}
 }
 
-void liberarClaves(char* clave) {
-	if (dictionary_has_key(g_clavesTomadas, clave))
-		list_destroy_and_destroy_elements(
-				dictionary_remove(g_clavesTomadas, clave), (void*) free);
-}
-
 int condicionDeTomada(char* nodo) {
 	return !strcmp(nodo, g_claveGET);
 }

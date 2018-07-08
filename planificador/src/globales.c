@@ -100,3 +100,9 @@ void desbloquearESI(char* clave) {
 		dictionary_put(g_bloq, clave, lista);
 	pthread_mutex_unlock(&mutexBloqueo);
 }
+
+void liberarClaves(char* clave) {
+	if (dictionary_has_key(g_clavesTomadas, clave))
+		list_destroy_and_destroy_elements(
+				dictionary_remove(g_clavesTomadas, clave), (void*) free);
+}

@@ -62,5 +62,6 @@ t_infoListos* g_enEjecucion;
 extern void liberarTodo(void);
 char* liberarESI(char* key);
 void desbloquearESI(char* clave);
+void liberarClaves(char* clave);
 
 #endif /* GLOBALES_H_ */
