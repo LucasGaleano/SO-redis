@@ -41,6 +41,7 @@ pthread_mutex_t mutexLog;
 pthread_mutex_t mutexClavesTomadas;
 sem_t ESIentrada;
 sem_t continua;
+sem_t existenciaClave;
 
 t_dictionary* g_listos;
 t_dictionary* g_bloq;
@@ -54,6 +55,8 @@ int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
 int g_keyMaxima;
+
+t_infoListos* g_enEjecucion;
 
 extern void liberarTodo(void);
 

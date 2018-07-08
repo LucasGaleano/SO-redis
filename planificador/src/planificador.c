@@ -45,6 +45,7 @@ int main(void) {
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
+	sem_init(&existenciaClave, 0, 0);
 
 	g_termino = 0;
 	g_bloqueo = 0;
@@ -204,13 +205,13 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
 			g_bloqueo = 1;
 		} else {
-			if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
-				list_add(dictionary_get(g_clavesTomadas, g_idESIactual),
+			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				list_add(dictionary_get(g_clavesTomadas, g_nombreESIactual),
 						g_claveGET);
 			} else {
 				aux = list_create();
 				list_add(aux, g_claveGET);
-				dictionary_put(g_clavesTomadas, g_idESIactual, aux);
+				dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
 			}
 			pthread_mutex_unlock(&mutexClavesTomadas);
 			pthread_mutex_lock(&mutexLog);
@@ -223,9 +224,9 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	case STORE:
 		g_claveTomada = 0;
 		g_claveGET = recibirStore(unPaquete);
-		if (dictionary_has_key(g_clavesTomadas, g_idESIactual)) {
+		if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
 			g_claveTomada = list_any_satisfy(
-					dictionary_get(g_clavesTomadas, g_idESIactual),
+					dictionary_get(g_clavesTomadas, g_nombreESIactual),
 					(void*) condicionDeTomada);
 		}
 		if (g_claveTomada) {
@@ -236,7 +237,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 				list_destroy(aux);
 				pthread_mutex_unlock(&mutexBloqueo);
 			}
-			aux = dictionary_get(g_clavesTomadas, g_idESIactual);
+			aux = dictionary_get(g_clavesTomadas, g_nombreESIactual);
 			list_remove_and_destroy_by_condition(aux, (void*) condicionDeTomada,
 					(void*) free);
 			pthread_mutex_lock(&mutexLog);
@@ -248,7 +249,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			g_huboError = 1;
 			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
 			enviarRespuesta(g_socketCoordinador, STORE_ERROR);
-			liberarClaves(g_idESIactual);
+			liberarClaves(g_nombreESIactual);
 			pthread_mutex_lock(&mutexLog);
 			if (existeClave(g_claveGET))
 				log_error(g_logger,
@@ -287,7 +288,7 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		pthread_mutex_unlock(&mutexLog);
 		g_huboError = 1;
 		enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
-		liberarClaves(g_idESIactual);
+		liberarClaves(g_nombreESIactual);
 		sem_post(&continua);
 		break;
 	case RESPUESTA_STATUS:
@@ -301,6 +302,9 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		destruirPaquete(unPaquete);
 		liberarTodo();
 		exit(EXIT_FAILURE);
+		break;
+	case RESPUESTA_EXISTE_CLAVE:
+		validarClaveExisteConsola(recibirRespuestaStatus(unPaquete));
 		break;
 	}
 	destruirPaquete(unPaquete);
@@ -329,7 +333,7 @@ int condicionDeTomada(char* nodo) {
 }
 
 void claveEstaTomada(char* key, t_list* value) {
-	if (!g_claveTomada && strcmp(g_idESIactual, key) != 0)
+	if (!g_claveTomada && strcmp(g_nombreESIactual, key) != 0)
 		g_claveTomada = list_any_satisfy(value, (void*) condicionDeTomada);
 }
 
@@ -355,34 +359,41 @@ void planificar(char* algoritmo) {
 		planificarConDesalojo();
 }
 
-static int buscarESIenLista(t_infoBloqueo* nodo) {
-	return !strcmp(g_claveBusqueda, nodo->idESI);
-}
-
-static void buscarESIenBloqueados(char* key, t_list* reg) {
-	if (aBorrar == NULL) {
-		aBorrar = list_remove_by_condition(reg, (void*) buscarESIenLista);
-	}
-}
-
 char* liberarESI(char* key) {
-	aBorrar = NULL;
 	char* nombre;
-	liberarClaves(key);
+
+	void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBloqueados) {
+		bool sonIguales(t_infoBloqueo* nodo) {
+			return string_equals_ignore_case(nodo->idESI, key);
+		}
+
+		void liberarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
+			nombre = strdup(infoBloqueo->data->nombreESI);
+			//free(infoBloqueo->data->nombreESI); // idem del comentario de free de listos
+			free(infoBloqueo->data);
+			free(infoBloqueo->idESI);
+			free(infoBloqueo);
+		}
+
+		list_remove_and_destroy_by_condition(listaBloqueados,
+				(void*) sonIguales, (void*) liberarT_infoBloqueo);
+
+		if (list_is_empty(listaBloqueados)) {
+			dictionary_remove_and_destroy(g_bloq, clave, (void*) list_destroy);
+		}
+	}
+
 	if (dictionary_has_key(g_listos, key)) {
 		nombre = strdup(
 				((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
-		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
+
+		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
 		free(dictionary_remove(g_listos, key));
 	} else {
-		g_claveBusqueda = key;
-		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
-		nombre = strdup(aBorrar->data->nombreESI);
-		free(aBorrar->idESI);
-		free(aBorrar->data->nombreESI);
-		free(aBorrar->data);
-		free(aBorrar);
+		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);
 	}
+
+	liberarClaves(nombre);
 	return nombre;
 }
 

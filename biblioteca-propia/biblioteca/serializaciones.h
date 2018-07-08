@@ -26,6 +26,8 @@ t_claveValor* 		deserializarClaveValor				(t_stream * buffer);
 t_respuestaStatus* 	deserializarRespuestaStatus			(t_stream * buffer);
 t_infoInstancia * 	deserializarInfoInstancia			(t_stream * buffer);
 t_respuestaValor * 	deserializarExistenciaClaveValor	(t_stream * buffer);
+bool 				deserializarBool					(t_stream* buffer);
+bool			 	deserializarRespuestaExisteClave	(t_stream * buffer);
 
 /*----------------------------------------Funciones auxiliares----------------------------------------*/
 void *	abrirArchivo	(char * rutaArchivo, size_t * tamArc, FILE ** archivo);

@@ -35,6 +35,7 @@ void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, ch
 void							enviarClaveEliminada		(int server_socket, char * clave);
 void							enviarAvisoDesconexion		(int server_socket);
 void 							enviarSolicitudAnterior		(int server_socket);
+void 							enviarSolicitudExisteClave	(int server_socket, char * clave);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);
@@ -53,5 +54,6 @@ t_infoInstancia * 				recibirInfoInstancia		(t_paquete * unPaquete);
 char *							recibirSolicitudValor		(t_paquete * unPaquete);
 t_respuestaValor *				recibirRespSolicitudValor	(t_paquete * unPaquete);
 char *							recibirClaveEliminada		(t_paquete * unPaquete);
+void							recibirSolicitudExisteClave	(t_paquete * unPaquete);
 
 #endif /* SRC_PROCESAMIENTOPAQUETES_H_ */
