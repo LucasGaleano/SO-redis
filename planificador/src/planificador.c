@@ -45,7 +45,6 @@ int main(void) {
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
-	sem_init(&existenciaClave, 0, 0);
 
 	g_termino = 0;
 	g_bloqueo = 0;
@@ -303,9 +302,6 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 		liberarTodo();
 		exit(EXIT_FAILURE);
 		break;
-	case RESPUESTA_EXISTE_CLAVE:
-		validarClaveExisteConsola(recibirRespuestaStatus(unPaquete));
-		break;
 	}
 	destruirPaquete(unPaquete);
 }
@@ -359,42 +355,34 @@ void planificar(char* algoritmo) {
 		planificarConDesalojo();
 }
 
+static int buscarESIenLista(t_infoBloqueo* nodo) {
+	return !strcmp(g_claveBusqueda, nodo->idESI);
+}
+
+static void buscarESIenBloqueados(char* key, t_list* reg) {
+	if (aBorrar == NULL) {
+		aBorrar = list_remove_by_condition(reg, (void*) buscarESIenLista);
+	}
+}
 
 char* liberarESI(char* key) {
+	aBorrar = NULL;
 	char* nombre;
-
-	void siEstaBloqueadaPorClaveEliminar(char* clave, t_list* listaBloqueados) {
-		bool sonIguales(t_infoBloqueo* nodo) {
-			return string_equals_ignore_case(nodo->idESI, key);
-		}
-
-		void liberarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
-			nombre = strdup(infoBloqueo->data->nombreESI);
-			//free(infoBloqueo->data->nombreESI); // idem del comentario de free de listos
-			free(infoBloqueo->data);
-			free(infoBloqueo->idESI);
-			free(infoBloqueo);
-		}
-
-		list_remove_and_destroy_by_condition(listaBloqueados,
-				(void*) sonIguales, (void*) liberarT_infoBloqueo);
-
-		if (list_is_empty(listaBloqueados)) {
-			dictionary_remove_and_destroy(g_bloq, clave, (void*) list_destroy);
-		}
-	}
-
+	liberarClaves(key);
 	if (dictionary_has_key(g_listos, key)) {
 		nombre = strdup(
 				((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
-
-		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
+		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(dictionary_remove(g_listos, key));
 	} else {
-		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);
+		g_claveBusqueda = key;
+		dictionary_iterator(g_bloq, (void*) buscarESIenBloqueados);
+		nombre = strdup(aBorrar->data->nombreESI);
+		free(aBorrar->idESI);
+		free(aBorrar->data->nombreESI);
+		free(aBorrar->data);
+		free(aBorrar);
 	}
-
-	liberarClaves(nombre);
 	return nombre;
 }
 

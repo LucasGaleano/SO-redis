@@ -167,17 +167,6 @@ void serializarExistenciaClaveValor(t_paquete * unPaquete, bool claveExistente,
 	memcpy(unPaquete->buffer->data + desplazamiento, valor, tamValor);
 }
 
-void serializarRespuestaExisteClave(t_paquete* unPaquete, bool existeClave) {
-	int tamTotal = sizeof(bool);
-
-	unPaquete->buffer = malloc(sizeof(t_stream));
-	unPaquete->buffer->size = tamTotal;
-
-	unPaquete->buffer->data = malloc(tamTotal);
-
-	memcpy(unPaquete->buffer->data, &existeClave, tamTotal);
-}
-
 /*-------------------------Deserializacion-------------------------*/
 int deserializarNumero(t_stream* buffer) {
 	return *(int*) (buffer->data);
@@ -288,14 +277,6 @@ t_respuestaValor * deserializarExistenciaClaveValor(t_stream * buffer) {
 	}
 
 	return respuesta;
-}
-
-bool deserializarBool(t_stream* buffer) {
-	return *(bool*) (buffer->data);
-}
-
-bool deserializarExisteClave(t_stream * buffer) {
-	return deserializarBool(buffer);
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/

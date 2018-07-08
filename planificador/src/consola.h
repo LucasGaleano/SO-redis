@@ -1,3 +1,10 @@
+/*
+ * consola.h
+ *
+ *  Created on: 20 abr. 2018
+ *      Author: utnso
+ */
+
 #ifndef CONSOLA_H_
 #define CONSOLA_H_
 
