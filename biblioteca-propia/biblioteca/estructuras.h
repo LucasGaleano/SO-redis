@@ -61,7 +61,7 @@ enum cod_op {
 
 	ENVIAR_AVISO_DESCONEXION,
 
-	SOLICITUD_ANTERIOR,
+	ENVIAR_BLOQUEO_ESI,
 };
 
 enum cod_respuesta {

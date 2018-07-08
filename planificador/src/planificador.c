@@ -45,7 +45,6 @@ int main(void) {
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
-	sem_init(&existenciaClave, 0, 0);
 
 	g_termino = 0;
 	g_bloqueo = 0;

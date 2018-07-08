@@ -240,8 +240,8 @@ void desbloquear(char* linea) {
 	if (clave == NULL)
 		return;
 
-	if (!estaBloqueadaLaClave(clave)) {
-		printf("No se puede desbloquear la clave %s que no esta bloqueada.",
+	if (!dictionary_has_key(g_bloq, clave)) {
+		printf("No se puede desbloquear un ESI de una clave %s que no esta bloqueada.\n",
 				clave);
 		free(clave);
 		return;

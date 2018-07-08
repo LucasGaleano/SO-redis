@@ -87,7 +87,7 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case RESPUESTA_SOLICITUD:
 		procesarRespuestaSolicitud(unPaquete);
 		break;
-	case SOLICITUD_ANTERIOR:
+	case ENVIAR_BLOQUEO_ESI:
 		procesarSolicitudAnterior();
 		break;
 	default:
