@@ -146,20 +146,12 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 	if (clave == NULL)
 		return;
 
-	enviarSolicitudClaveExiste(g_socketCoordinador, clave);
-	if(!existe(clave)){
-		printf("No se puede bloquear a un ESI con una clave que no existe.\n");
-		free(clave);
-		return;
-	}
-
 	char* nombreESI = obtenerParametro(linea, 2);
 
 	if (nombreESI == NULL) {
 		free(clave);
 		return;
 	}
-
 
 	if (estaBloqueadoPorLaClave(nombreESI, clave)) {
 		printf("Ya esta bloqueado el %s por la clave %s.\n", nombreESI, clave);
@@ -181,6 +173,14 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 	else {
 		printf("Solo se puede bloquear el %s en estado listo o en ejecucion.\n",
 				nombreESI);
+		free(clave);
+		free(nombreESI);
+		return;
+	}
+
+	if (enEjecucion(nombreESI)) {
+		g_claveGET = strdup(clave);
+		g_bloqueo = 0;
 		free(clave);
 		free(nombreESI);
 		return;
@@ -216,23 +216,14 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 
 		}
 
-		// Se pasa el ESI del estado que este a Bloqueados
+		// Se pasa el ESI del estado listo a Bloqueados
 		t_infoBloqueo* insertar = malloc(sizeof(t_infoBloqueo));
-		if (estaListo(nombreESI)) {
-			insertar->idESI = strdup(obtenerId(nombreESI));
+		insertar->idESI = strdup(obtenerId(nombreESI));
 
-			pthread_mutex_lock(&mutexListo);
-			insertar->data = dictionary_remove(g_listos, insertar->idESI);
+		pthread_mutex_lock(&mutexListo);
+		insertar->data = dictionary_remove(g_listos, insertar->idESI);
 
-			pthread_mutex_unlock(&mutexListo);
-
-		} else {
-
-			insertar->idESI = strdup(g_idESIactual);
-			insertar->data = g_enEjecucion; //TODO hacer copia de g_enEjecucion?? y semaforo de enEjecucion??
-			// replanificar??
-		}
-
+		pthread_mutex_unlock(&mutexListo);
 		pthread_mutex_lock(&mutexBloqueo);
 		list_add(dictionary_get(g_bloq, clave), insertar);
 		pthread_mutex_unlock(&mutexBloqueo);
@@ -249,13 +240,6 @@ void desbloquear(char* linea) {
 	if (clave == NULL)
 		return;
 
-	enviarSolicitudClaveExiste(g_socketCoordinador, clave);
-	if(!existe(clave)){
-		printf("No se puede desbloquear una clave que no existe.\n");
-		free(clave);
-		return;
-	}
-
 	if (!estaBloqueadaLaClave(clave)) {
 		printf("No se puede desbloquear la clave %s que no esta bloqueada.",
 				clave);
@@ -263,63 +247,8 @@ void desbloquear(char* linea) {
 		return;
 	}
 
-	// Se saca al ESI que estaba bloqueando la clave esa clave
-	char* esiQueBloqueaa;
-
-	pthread_mutex_lock(&mutexClavesTomadas);
-	esiQueBloqueaa = esiQueBloquea(clave);
-
-	sacarClave(esiQueBloqueaa, clave);
-
-	if (list_is_empty(dictionary_get(g_clavesTomadas, esiQueBloqueaa))) {
-		dictionary_remove_and_destroy(g_clavesTomadas, esiQueBloqueaa,
-				(void*) free);
-	}
-
-	pthread_mutex_unlock(&mutexClavesTomadas);
-
-	// Si alguien esta bloqueando por la clave se bloquea la clave al primer ESI, si nadie esta bloqueado por la clave solo se le saca la clave al que bloqueaba la clave
-	if (dictionary_has_key(g_bloq, clave)) {
-		// Se pone el primer esi en listos
-		pthread_mutex_lock(&mutexBloqueo);
-		t_infoBloqueo* infoBloqueoPrimero = list_remove(
-				dictionary_get(g_bloq, clave), 0);
-		pthread_mutex_unlock(&mutexBloqueo);
-
-		pthread_mutex_lock(&mutexListo);
-		dictionary_put(g_listos, infoBloqueoPrimero->idESI,
-				infoBloqueoPrimero->data);
-		pthread_mutex_unlock(&mutexListo);
-
-		// Si no hay mas ESIs bloqueados se libera la clave
-		pthread_mutex_lock(&mutexBloqueo);
-		if (list_is_empty(dictionary_get(g_bloq, clave))) {
-			dictionary_remove_and_destroy(g_bloq, clave, (void*) free);
-		}
-		pthread_mutex_unlock(&mutexBloqueo);
-
-		// Se pone la clave en el diccionario de claves bloqueadas
-		if (!dictionary_has_key(g_clavesTomadas,
-				infoBloqueoPrimero->data->nombreESI)) {
-			t_list* listaVacia = list_create();
-			list_add(listaVacia, clave);
-
-			pthread_mutex_lock(&mutexClavesTomadas);
-			dictionary_put(g_clavesTomadas, infoBloqueoPrimero->data->nombreESI,
-					listaVacia);
-			pthread_mutex_unlock(&mutexClavesTomadas);
-		}
-		list_add(
-				dictionary_get(g_clavesTomadas,
-						infoBloqueoPrimero->data->nombreESI), clave);
-
-		free(infoBloqueoPrimero->idESI);
-		//free(infoBloqueoPrimero->data->nombreESI); // todo sacar?
-		free(infoBloqueoPrimero);
-	} else {
-		free(clave);
-	}
-
+	desbloquearESI(clave);
+	free(clave);
 }
 
 void listarProcesos(char* linea) {
@@ -573,7 +502,6 @@ bool estaBloqueadoPorLaClave(char* nombreESI, char* clave) {
 	} else {
 		return false;
 	}
-
 }
 
 bool estaBloqueadoPorElESI(char* claveBloq, char* nombreESIBloq) {
@@ -625,15 +553,11 @@ bool enEjecucion(char* nombreESI) {
 	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
 }
 
-void validarClaveExisteConsola(bool existeClave){
+void validarClaveExisteConsola(bool existeClave) {
 	g_existenciaClave = existeClave;
 	sem_post(&existenciaClave);
 }
 
-bool existe(clave){
-	sem_wait(&existenciaClave);
-	return(g_existenciaClave);
-}
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 
 char* esiQueBloquea(char* claveBuscada) {

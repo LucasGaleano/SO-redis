@@ -22,6 +22,7 @@ void desbloquearESI(char* clave);
 int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void liberarClaves(char* clave);
+void desbloquearESI(char* clave);
 void atenderCoordinador(void* arg);
 char* liberarESI(char* key);
 void atenderCtrlC(void);
