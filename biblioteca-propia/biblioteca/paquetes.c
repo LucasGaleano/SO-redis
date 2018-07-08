@@ -275,7 +275,7 @@ void enviarRespuesta(int server_socket, int codRespuesta) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitudStatus(int server_socket, char * clave) {
+void enviarSolicitusStatus(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;
@@ -358,16 +358,6 @@ void enviarAvisoDesconexion(int server_socket){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitudAnterior(int server_socket) {
-	t_paquete * unPaquete = malloc(sizeof(t_paquete));
-
-	unPaquete->codigoOperacion = SOLICITUD_ANTERIOR;
-
-	serializarNumero(unPaquete, 0);
-
-	enviarPaquetes(server_socket, unPaquete);
-}
-
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
 	return deserializarHandshake(unPaquete->buffer);
@@ -409,7 +399,7 @@ int recibirRespuesta(t_paquete* unPaquete) {
 	return deserializarNumero(unPaquete->buffer);
 }
 
-char * recibirSolicitudStatus(t_paquete * unPaquete){
+char * recibirSolicitusStatus(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 
