@@ -87,10 +87,8 @@ void procesarPaquete(t_paquete * unPaquete, int * client_socket) {
 	case RESPUESTA_SOLICITUD:
 		procesarRespuestaSolicitud(unPaquete);
 		break;
-	/*****/
 	case SOLICITUD_ANTERIOR:
 		procesarSolicitudAnterior();
-	/*****/
 	default:
 		break;
 	}
@@ -165,7 +163,6 @@ void procesarRespuestaSolicitud(t_paquete * unPaquete) {
 	recibirSolicitudes = false;
 }
 
-/*****/
 void procesarSolicitudAnterior() {
 	char* archivoLeido = archivo + ip;
 	int i;
@@ -179,7 +176,6 @@ void procesarSolicitudAnterior() {
 
 	ip = i + 1;
 }
-/*****/
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {

@@ -358,7 +358,6 @@ void enviarAvisoDesconexion(int server_socket){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-/*****/
 void enviarSolicitudAnterior(int server_socket) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
@@ -368,7 +367,6 @@ void enviarSolicitudAnterior(int server_socket) {
 
 	enviarPaquetes(server_socket, unPaquete);
 }
-/*****/
 
 /*-------------------------Recibir-------------------------*/
 int recibirHandshake(t_paquete * unPaquete) {
