@@ -3,6 +3,7 @@
 
 //#include "consola.h"
 #include "algoritmos.h"
+#include "globales.h"
 #include <signal.h>
 
 #define RUTA_CONFIGURACION_PLANIF "/home/utnso/workspace/tp-2018-1c--0/configuraciones/planificador.cfg"
@@ -22,9 +23,7 @@ void desbloquearESI(char* clave);
 int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void liberarClaves(char* clave);
-void desbloquearESI(char* clave);
 void atenderCoordinador(void* arg);
-char* liberarESI(char* key);
 void atenderCtrlC(void);
 
 #endif /* PLANIFICADOR_H_ */

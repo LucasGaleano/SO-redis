@@ -15,6 +15,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <commons/collections/list.h>
+#include <commons/string.h>
 
 typedef struct {
 	int socketESI;
@@ -59,5 +60,7 @@ int g_keyMaxima;
 t_infoListos* g_enEjecucion;
 
 extern void liberarTodo(void);
+char* liberarESI(char* key);
+void desbloquearESI(char* clave);
 
 #endif /* GLOBALES_H_ */
