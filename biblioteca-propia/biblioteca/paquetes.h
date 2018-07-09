@@ -34,7 +34,7 @@ void 							enviarSolicitudValor		(int server_socket, char * clave);
 void 							enviarRespSolicitudValor	(int server_socket, bool claveExistente, char * valor);
 void							enviarClaveEliminada		(int server_socket, char * clave);
 void							enviarAvisoDesconexion		(int server_socket);
-void 							enviarSolicitudAnterior		(int server_socket);
+void 							enviarBloqueoESI			(int server_socket);
 
 /*-----------------------------------Recibir paquetes-----------------------------------*/
 int								recibirHandshake			(t_paquete * unPaquete);
@@ -47,7 +47,7 @@ t_claveValor *					recibirSetDefinitivo		(t_paquete * unPaquete);
 char* 					  		recibirGet					(t_paquete * unPaquete);
 char* 					  		recibirStore				(t_paquete * unPaquete);
 int 							recibirRespuesta			(t_paquete* unPaquete);
-char *							recibirSolicitusStatus		(t_paquete * unPaquete);
+char *							recibirSolicitudStatus		(t_paquete * unPaquete);
 t_respuestaStatus* 				recibirRespuestaStatus		(t_paquete * unPaquete);
 t_infoInstancia * 				recibirInfoInstancia		(t_paquete * unPaquete);
 char *							recibirSolicitudValor		(t_paquete * unPaquete);

@@ -56,10 +56,10 @@ int main(void) {
 			(void*) &puertoLocal);
 
 	log_debug(g_logger, "inicio consola");
-	//iniciarConsola();
+	iniciarConsola();
 
-//	pthread_cancel(hiloCoordinador);
-	pthread_join(hiloCoordinador, NULL); //Eliminar al terminar la consola
+	pthread_cancel(hiloCoordinador);
+	pthread_join(hiloCoordinador, NULL);
 
 	liberarTodo();
 
@@ -213,12 +213,12 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 					list_add(aux, g_claveGET);
 					dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
 				}
-				pthread_mutex_unlock(&mutexClavesTomadas);
 				pthread_mutex_lock(&mutexLog);
 				log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
 						g_nombreESIactual, g_claveGET);
-				pthread_mutex_unlock(&mutexLog);
+				pthread_mutex_unlock(&mutexLog) ;
 			}
+			pthread_mutex_unlock(&mutexClavesTomadas);
 		} else {
 			pthread_mutex_lock(&mutexLog);
 			log_trace(g_logger, "%s ya tiene la clave %s tomada",

@@ -358,7 +358,7 @@ void enviarAvisoDesconexion(int server_socket){
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitudAnterior(int server_socket) {
+void enviarBloqueoESI(int server_socket) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = ENVIAR_BLOQUEO_ESI;

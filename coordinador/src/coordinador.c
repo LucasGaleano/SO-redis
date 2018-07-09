@@ -329,7 +329,7 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(
 			g_diccionarioConexiones, "planificador", 0);
 
-	log_debug(g_logger, "preguntar por STORE %s %s al planificador", sentencia->clave,sentencia->valor);
+	//log_debug(g_logger, "preguntar por STORE %s %s al planificador", sentencia->clave,sentencia->valor);
 	enviarStore(conexionDelPlanificador->socket, clave);
 	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
 

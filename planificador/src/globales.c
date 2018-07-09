@@ -99,6 +99,7 @@ void desbloquearESI(char* clave) {
 	else
 		dictionary_put(g_bloq, clave, lista);
 	pthread_mutex_unlock(&mutexBloqueo);
+	sem_post(&ESIentrada);
 }
 
 void liberarClaves(char* clave) {

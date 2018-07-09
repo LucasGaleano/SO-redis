@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 	//Mapeo el archivo a memoria
 	size_t tamArch;
 	FILE * archivofd;
-	char * rutaScript = argv[1];
+	char * rutaScript = "/home/utnso/workspace/tp-2018-1c--0/esi/Debug/ESI_Simple";//argv[1];
 
 	archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
 
@@ -168,14 +168,9 @@ void procesarSolicitudAnterior() {
 	char* archivoLeido = archivo + ip;
 	int i;
 
-	int cantBarraN = 0;
-	for (i = ip; !(archivoLeido[i] == '\n' && cantBarraN == 1) && string_length(archivoLeido) >= 0; i--){
-		if(archivoLeido[i] == '\n'){
-			cantBarraN++;
-		}
-	}
+	for (i = ip-2 ;archivoLeido[i-1] != '\n' && i != 0; i--);
 
-	ip = i + 1;
+	ip = i;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
@@ -221,10 +216,11 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip))<5 )
 		*termino = 1;
 
-	char * sentencia = calloc(i,sizeof(char));
+	char * sentencia = calloc(i + 1,sizeof(char));
 
 	memcpy(sentencia, archivoNoLeido, i);
 
+	sentencia[i] = '\0';
 
 	return sentencia;
 }

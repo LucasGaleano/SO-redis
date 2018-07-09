@@ -132,6 +132,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					if (g_bloqueo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
+						enviarSolicitudAnterior(g_socketEnEjecucion);
 					}
 					if (g_termino || g_huboError) {
 						if (!g_huboError)
@@ -150,6 +151,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 						pthread_mutex_unlock(&mutexListo);
 					}
 					free(key);
+					g_idESIactual = NULL;
 				}
 				pthread_cleanup_pop(1);
 }
@@ -214,6 +216,7 @@ extern void planificarConDesalojo(void) {
 						pthread_mutex_unlock(&modificacion);
 					}
 					free(key);
+					g_idESIactual = NULL;
 				}
 				pthread_cleanup_pop(1);
 }
