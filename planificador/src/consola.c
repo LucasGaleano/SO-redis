@@ -183,10 +183,10 @@ void bloquear(char* linea) {
 		g_claveGET = strdup(clave);
 		g_bloqueo = 1;
 		g_instruccionConsola = 1;
-		free(clave);
-		free(nombreESI);
 		sem_post(&continua);
 		pthread_mutex_unlock(&mutexInstruccionConsola);
+		free(clave);
+		free(nombreESI);
 		return;
 	}
 
@@ -289,6 +289,14 @@ void killProceso(char* linea) {
 
 	if (nombreESI == NULL)
 		return;
+
+	if(enEjecucion(nombreESI)){
+		pthread_mutex_lock(&mutexInstruccionConsola);
+		g_termino = 1;
+		sem_post(&continua);
+		pthread_mutex_unlock(&mutexInstruccionConsola);
+		free(nombreESI);
+	}
 
 	char* nombre = liberarESI(obtenerId(nombreESI));
 
