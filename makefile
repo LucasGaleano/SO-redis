@@ -1,6 +1,6 @@
 
 
-all: so-commons-library parsi biblioteca
+all: so-commons-library parsi readline biblioteca
 	@tput setaf 2
 	@echo "Terminado"
 	@tput sgr0
@@ -23,7 +23,12 @@ parsi:
 	@echo "parsi  instalada"
 	@tput sgr0
 
-
+readline:
+	$(call mostrarTitulo,$@)
+	sudo apt-get install libreadline6 libreadline6-dev
+	@tput setaf 2
+	@echo "readline  instalada"
+	@tput sgr0
 
 biblioteca:
 	$(call mostrarTitulo,$@)
