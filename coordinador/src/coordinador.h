@@ -54,7 +54,9 @@ void procesarNombreESI(t_paquete* unPaquete,int socketCliente);
 void procesarNombreInstancia(t_paquete* unPaquete,int socketCliente);
 void procesarRespuesta(t_paquete* unPaquete,int socketCliente);
 void* procesarClienteDesconectado(int cliente_fd);
-void procesarClaveEliminada(t_paquete* paquete, int cliente_fd);
+void procesarClaveEliminada(t_paquete* unPaquete, int cliente_fd);
+void procesarAvisoDesconexion(t_paquete* UnPaquete, int cliente_fd);
+void compactarTodasLasInstancias(t_list* tablaDeInstancias, t_list* conexiones);
 void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
 void armarConfigCoordinador(t_configuraciones *configuracion, t_config *config);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,

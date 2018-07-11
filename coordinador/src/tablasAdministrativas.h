@@ -24,6 +24,16 @@ tiempo g_tiempoPorEjecucion;
 
 typedef struct{
 	char* nombre;
+	int socket;
+}t_conexion;
+
+typedef struct {
+	char *clave;
+	char *valor;
+} t_sentencia;
+
+typedef struct{
+	char* nombre;
 	int espacioOcupado;
 	int espacioMaximo;
 	int tamanioEntrada;
@@ -31,14 +41,10 @@ typedef struct{
 	tiempo ultimaModificacion;
 	int primerLetra;
 	int ultimaLetra;
-	char * trabajoActual;
+	t_sentencia *trabajoActual;
 	t_list* claves;
+	sem_t instanciaMutex;
 }t_instancia;
-
-typedef struct{
-	char* nombre;
-	int socket;
-}t_conexion;
 
 
 sem_t g_mutex_tablas;
@@ -60,10 +66,14 @@ void mostrarTablaInstancia(t_list* tablaDeInstancias);
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaInstanciasNoDisponibles ,char* nombre,int letraAEncontrar, char* clave);
 void eliminiarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
 void agregarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar);
-void agregarTrabajoActual(t_instancia* instancia, char* clave);
-char* conseguirTrabajoActual(t_instancia* instancia);
+void agregarTrabajoActual(t_instancia* instancia, char* clave, char* valor);
+t_sentencia* conseguirTrabajoActual(t_instancia* instancia);
 bool instanciaContieneClave(t_list* claves,char* clave);
 int cantidadEntradasPorClave(char* clave, int tamanioEntradas);
+void bloquearInstancia(t_instancia* instancia);
+void desbloquearInstancia(t_instancia* instancia);
+void bloquearTodasLasInstancias(t_list* tablaDeInstancias);
+void desbloquearTodasLasInstancias(t_list* tablaDeInstancias);
 
 t_list* crearDiccionarioConexiones(void);
 t_conexion* crearConexion(char* nombre, int socket);

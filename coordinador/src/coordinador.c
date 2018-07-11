@@ -140,14 +140,16 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		procesarClaveEliminada(paquete, cliente_fd);
 		break;
 
+	case ENVIAR_AVISO_DESCONEXION:
+		;
+		procesarAvisoDesconexion(paquete, cliente_fd);
+
 	default:
 		printf("codigo no reconocido\n");
 		break;
 	}
 
 }
-
-
 
 void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
@@ -176,73 +178,92 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 	int respuesta = recibirRespuesta(paquete);
 	t_conexion* conexionCliente = buscarConexion(g_diccionarioConexiones, NULL,
 			cliente_fd);
+	t_instancia* instanciaCliente = buscarInstancia(g_tablaDeInstancias, false, conexionCliente->nombre, 0, NULL);
+	bool esPlanificadorElCliente = (strcmp(conexionCliente->nombre,
+			"planificador") == 0);
+
 	switch (respuesta) {
 
 	case ERROR_ESPACIO_INSUFICIENTE:
-		/*
-		 * TODO
-		 * esperamos que todas las ejecuciones terminen.
-		 * las bloqueamos.
-		 * mandamos a hacer la compactacion a todas las instancias.
-		 */
-		 //empezarCompactacionTodasInstancias(g_tablaDeInstancias);
-		 /*
-		 * a la instancia que devolvio error por espacio insuficiente le enviamos
-		 * otra vez trabajo actual como SET_DEFINITIVO
-		 * reanudamos.
-		 *
-		 * */
+
+		bloquearTodasLasInstancias(g_tablaDeInstancias);
+
+		compactarTodasLasInstancias(g_tablaDeInstancias,
+				g_diccionarioConexiones);
+		desbloquearTodasLasInstancias(g_tablaDeInstancias);
+
+		t_sentencia* trabajoInstanciaErrorSet = conseguirTrabajoActual(
+				instanciaCliente);
+		enviarSetDefinitivo(conexionCliente->socket,
+				trabajoInstanciaErrorSet->clave,
+				trabajoInstanciaErrorSet->valor);
+		bloquearInstancia(instanciaCliente);
+		free(trabajoInstanciaErrorSet->clave);
+		free(trabajoInstanciaErrorSet->valor);
+		free(trabajoInstanciaErrorSet);
 
 		break;
 
 	case ERROR_TAMANIO_CLAVE:
-		log_error(g_logger, "%s mando error de tamanio de clave", conexionCliente->nombre);
+		log_error(g_logger, "%s mando error de tamanio de clave",
+				conexionCliente->nombre);
 		break;
 
 	case SET_OK:
-		if (strcmp(conexionCliente->nombre, "planificador") == 0) {
+		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = true;
 			log_debug(g_logger, "%s acepto el SET", conexionCliente->nombre);
 		} else {
 			log_debug(g_logger, "le llego el SET  a %s",
 					conexionCliente->nombre);
-		 	t_instancia* instanciaCliente = buscarInstancia(g_tablaDeInstancias,false ,conexionCliente->nombre ,0, NULL);
-			char* claveInstanciaProcesada = conseguirTrabajoActual(instanciaCliente);
-			agregarClaveDeInstancia(instanciaCliente, claveInstanciaProcesada);
-			free(claveInstanciaProcesada);
-
+			desbloquearInstancia(instanciaCliente);
+			t_sentencia* TrabajoInstanciaProcesada = conseguirTrabajoActual(
+					instanciaCliente);
+			agregarClaveDeInstancia(instanciaCliente,
+					TrabajoInstanciaProcesada->clave);
+			free(TrabajoInstanciaProcesada->clave);
+			free(TrabajoInstanciaProcesada->valor);
+			free(TrabajoInstanciaProcesada);
 		}
 		break;
 
-	case SET_DEFINITIVO_ERROR:
+	case SET_DEFINITIVO_OK:
+		;
+		desbloquearInstancia(instanciaCliente);
+		break;
 
+	case SET_DEFINITIVO_ERROR:
+		;
+		desbloquearInstancia(instanciaCliente);
 		break;
 
 	case SET_ERROR:
-		if (strcmp(conexionCliente->nombre, "planificador") == 0) {
+		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = false;
 			log_error(g_logger, "%s no acepto el SET", conexionCliente->nombre);
 		} else {
 			log_error(g_logger, "hubo un error con el SET de la %s",
 					conexionCliente->nombre);
+			desbloquearInstancia(instanciaCliente);
 		}
 		break;
 
 	case STORE_OK:
-		if (strcmp(conexionCliente->nombre, "planificador") == 0) {
+		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_store);
 			g_respuesta = true;
 			log_debug(g_logger, "%s acepto el STORE", conexionCliente->nombre);
 		} else {
 			log_debug(g_logger, "le llego el STORE a %s",
 					conexionCliente->nombre);
+			desbloquearInstancia(instanciaCliente);
 		}
 		break;
 
 	case STORE_ERROR:
-		if (strcmp(conexionCliente->nombre, "planificador") == 0) {
+		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_store);
 			g_respuesta = false;
 			log_error(g_logger, "%s no acepto el STORE",
@@ -250,12 +271,12 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		} else {
 			log_error(g_logger, "hubo un error con el STORE de la %s",
 					conexionCliente->nombre);
+			desbloquearInstancia(instanciaCliente);
 		}
 		break;
 	}
 	free(paquete);
 }
-
 
 void procesarGET(t_paquete* paquete, int cliente_fd) {
 
@@ -279,10 +300,11 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 	if (!existeClaveEnSistema(g_diccionarioClaves, sentencia->clave)) {
 		log_error(g_logger, "SET - la clave %s no existe.", sentencia->clave);
 		enviarRespuesta(conexionDelPlanificador->socket,
-							ERROR_CLAVE_NO_IDENTIFICADA);
+				ERROR_CLAVE_NO_IDENTIFICADA);
 	} else {
 
-		log_debug(g_logger, "preguntar por SET %s %s al planificador", sentencia->clave,sentencia->valor);
+		log_debug(g_logger, "preguntar por SET %s %s al planificador",
+				sentencia->clave, sentencia->valor);
 		enviarSet(conexionDelPlanificador->socket, sentencia->clave,
 				sentencia->valor);
 		sem_wait(&g_mutex_respuesta_set); //espera respuesta set
@@ -307,14 +329,16 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 			if (!instanciaContieneClave(instanciaElegida->claves,
 					sentencia->clave))
 
-			instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
+				instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
 
-			agregarTrabajoActual(instanciaElegida,sentencia->clave);
+			agregarTrabajoActual(instanciaElegida, sentencia->clave,
+					sentencia->valor);
+			bloquearInstancia(instanciaElegida);
 			enviarSet(conexionDeInstancia->socket, sentencia->clave,
 					sentencia->valor);
 			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
-			sentencia->clave, sentencia->valor,
-			instanciaElegida->nombre);
+					sentencia->clave, sentencia->valor,
+					instanciaElegida->nombre);
 		}
 
 		free(sentencia->clave);
@@ -334,9 +358,11 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
 
 	if (g_respuesta == true) {
-		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, false, NULL, 0, clave);
-		if(instanciaElegida == NULL){ //si no esta busca en las desconectadas
-			instanciaElegida = buscarInstancia(g_tablaDeInstancias, true, NULL, 0, clave);
+		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,
+				false, NULL, 0, clave);
+		if (instanciaElegida == NULL) { //si no esta busca en las desconectadas
+			instanciaElegida = buscarInstancia(g_tablaDeInstancias, true, NULL,
+					0, clave);
 		}
 		if (existeClaveEnSistema(g_diccionarioClaves, clave)) {
 			if (instanciaElegida != NULL) {
@@ -347,6 +373,8 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 					t_conexion* conexionDeInstancia = buscarConexion(
 							g_diccionarioConexiones, instanciaElegida->nombre,
 							0);
+
+					bloquearInstancia(instanciaElegida);
 					enviarStore(conexionDeInstancia->socket, clave);
 					logTraceSeguro(g_logger, g_mutexLog,
 							"ENVIAR STORE %s a %s\n", clave,
@@ -385,9 +413,9 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 				g_configuracion->cantidadEntradas,
 				g_configuracion->tamanioEntradas);
 		agregarInstancia(g_tablaDeInstancias, instanciaNueva);
-	} else {
-		instanciaNueva->disponible = true;
 	}
+
+	instanciaNueva->disponible = true;
 
 	agregarConexion(g_diccionarioConexiones, instanciaNueva->nombre,
 			cliente_fd);
@@ -419,6 +447,9 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
 
 }
 
+void procesarAvisoDesconexion(t_paquete* paquete, int cliente_fd) {
+	//TODO implemetar
+}
 
 void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 
@@ -473,6 +504,10 @@ void* procesarClienteDesconectado(int cliente_fd) {
 				NULL);
 		if (instanciaDesconectada != NULL) { //entonces se desconecto un esi
 			instanciaDesconectada->disponible = false;
+			int sval;
+			sem_getvalue(&instanciaDesconectada->instanciaMutex, &sval);
+			if (sval < 1)
+				sem_post(&instanciaDesconectada->instanciaMutex);
 			distribuirKeys(g_tablaDeInstancias);
 		}
 		sacarConexion(g_diccionarioConexiones, clienteDesconectado);
@@ -480,22 +515,33 @@ void* procesarClienteDesconectado(int cliente_fd) {
 	return 0;
 }
 
+void compactarTodasLasInstancias(t_list* tablaDeInstancias,
+		t_list* diccionarioConexiones) {
 
-void armarConfigCoordinador(t_configuraciones* g_configuracion,
-	t_config* archivoConfig) {
-
-		g_configuracion->puertoConexion = config_get_string_value(archivoConfig,
-			"PUERTO");
-		g_configuracion->algoritmoDist = config_get_string_value(archivoConfig,
-				"ALGORITMO_DISTRIBUCION");
-		g_configuracion->cantidadEntradas = config_get_int_value(archivoConfig,
-					"CANTIDAD_ENTRADAS");
-		g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
-						"TAMANIO_ENTRADA");
-		g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
-
+	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
+		t_instancia* instanciaElegida = list_get(tablaDeInstancias, i);
+		if (instanciaElegida->disponible) {
+			t_conexion* instanciaConexion = buscarConexion(
+					diccionarioConexiones, instanciaElegida->nombre, 0);
+			enviarCompactacion(instanciaConexion->socket);
+		}
+	}
 }
 
+void armarConfigCoordinador(t_configuraciones* g_configuracion,
+		t_config* archivoConfig) {
+
+	g_configuracion->puertoConexion = config_get_string_value(archivoConfig,
+			"PUERTO");
+	g_configuracion->algoritmoDist = config_get_string_value(archivoConfig,
+			"ALGORITMO_DISTRIBUCION");
+	g_configuracion->cantidadEntradas = config_get_int_value(archivoConfig,
+			"CANTIDAD_ENTRADAS");
+	g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
+			"TAMANIO_ENTRADA");
+	g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
+
+}
 
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion, char* clave,
 		t_list* tablaDeInstancias) {

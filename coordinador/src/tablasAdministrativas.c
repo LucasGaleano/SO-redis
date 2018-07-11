@@ -29,6 +29,7 @@ t_instancia* crearInstancia(char* nombre,int cantidadEntradas, int tamanioEntrad
 	aux->ultimaLetra = 0;
 	aux->trabajoActual = NULL;
 	aux->claves = list_create();
+	sem_init(&aux->instanciaMutex,0,1);
 
 	return aux;
 
@@ -55,10 +56,31 @@ void mostrarInstancia(t_instancia * instancia) {
 	fflush(stdout);
 }
 
-void agregarTrabajoActual(t_instancia* instancia, char* clave){
-	instancia->trabajoActual = string_duplicate(clave);
+void bloquearInstancia(t_instancia* instancia){
+	sem_wait(&instancia->instanciaMutex);
 }
-char* conseguirTrabajoActual(t_instancia* instancia){
+
+void desbloquearInstancia(t_instancia* instancia){
+	sem_post(&instancia->instanciaMutex);
+}
+
+void bloquearTodasLasInstancias(t_list* tablaDeInstancias){
+	for(int i=0; i<list_size(tablaDeInstancias); i++)
+		bloquearInstancia(list_get(tablaDeInstancias,i));
+}
+
+void desbloquearTodasLasInstancias(t_list* tablaDeInstancias){
+	for(int i=0; i<list_size(tablaDeInstancias); i++)
+		desbloquearInstancia(list_get(tablaDeInstancias,i));
+}
+
+void agregarTrabajoActual(t_instancia* instancia, char* clave, char* valor){
+	t_sentencia *sentencia = malloc(sizeof(t_sentencia));
+	sentencia->clave = string_duplicate(clave);
+	sentencia->valor = string_duplicate(valor);
+	instancia->trabajoActual = sentencia;
+}
+t_sentencia* conseguirTrabajoActual(t_instancia* instancia){
 	return instancia->trabajoActual;
 }
 tiempo traerTiempoEjecucion() {
