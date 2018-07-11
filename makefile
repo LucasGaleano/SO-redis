@@ -1,6 +1,6 @@
 
 
-all: so-commons-library parsi readline biblioteca
+all: so-commons-library parsi readline biblioteca pruebas-ESI
 	@tput setaf 2
 	@echo "Terminado"
 	@tput sgr0
@@ -23,12 +23,14 @@ parsi:
 	@echo "parsi  instalada"
 	@tput sgr0
 
+
 readline:
 	$(call mostrarTitulo,$@)
 	sudo apt-get install libreadline6 libreadline6-dev
 	@tput setaf 2
 	@echo "readline  instalada"
 	@tput sgr0
+
 
 biblioteca:
 	$(call mostrarTitulo,$@)
@@ -39,6 +41,15 @@ biblioteca:
 	@tput setaf 2
 	@echo "Biblioteca Instalada"
 	@tput sgr0
+
+
+pruebas-ESI:
+	$(call mostrarTitulo,$@)
+	git clone https://github.com/sisoputnfrba/Pruebas-ESI.git
+	@tput setaf 2
+	@echo "Pruebas descargadas"
+	@tput sgr0
+
 	
 clean:
 	$(call mostrarTitulo,$@)
@@ -46,6 +57,7 @@ clean:
 	rm -rf /usr/include/biblioteca
 	rm -rf /usr/lib/libbiblioteca-propia.so
 	rm -rf ../parsi
+	rm -rf ../Pruebas-ESI
 	@tput setaf 2
 	@echo "Desinstalado"
 	@tput sgr0
