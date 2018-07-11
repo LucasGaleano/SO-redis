@@ -192,6 +192,7 @@ void bloquear(char* linea) {
 
 	// Si la clave no estaba bloqueada, se bloquea para el idESI
 	if (!estaBloqueadaLaClave(clave)) {
+		puts("No estaba bloqueada la clave");
 		// Se agrega al diccionario de clavesBloqueadas por el idESI la clave a bloquear
 		if (!dictionary_has_key(g_clavesTomadas, nombreESI)) {
 			t_list* listaVacia = list_create();
@@ -245,7 +246,8 @@ void desbloquear(char* linea) {
 		return;
 
 	if (!dictionary_has_key(g_bloq, clave)) {
-		printf("No se puede desbloquear un ESI de una clave %s que no esta bloqueada.\n",
+		printf(
+				"No se puede desbloquear un ESI de una clave %s que no esta bloqueada.\n",
 				clave);
 		free(clave);
 		return;
@@ -290,7 +292,7 @@ void killProceso(char* linea) {
 	if (nombreESI == NULL)
 		return;
 
-	if(enEjecucion(nombreESI)){
+	if (enEjecucion(nombreESI)) {
 		pthread_mutex_lock(&mutexInstruccionConsola);
 		g_termino = 1;
 		sem_post(&continua);
@@ -478,21 +480,17 @@ char* obtenerId(char* nombreESI) {
 
 bool estaListo(char* nombreESI) {
 
-	if (!dictionary_has_key(g_listos, obtenerId(nombreESI))) {
-		return false;
-	} else {
-		bool boolean = false;
+	bool boolean = false;
 
-		void _estaListoESI(char* idESI, t_infoListos* infoESIListo) {
-			if (string_equals_ignore_case(nombreESI, infoESIListo->nombreESI)) {
-				boolean = true;
-			}
+	void _estaListoESI(char* idESI, t_infoListos* infoESIListo) {
+		if (string_equals_ignore_case(nombreESI, infoESIListo->nombreESI)) {
+			boolean = true;
 		}
-
-		dictionary_iterator(g_listos, (void*) _estaListoESI);
-
-		return boolean;
 	}
+
+	dictionary_iterator(g_listos, (void*) _estaListoESI);
+
+	return boolean;
 
 }
 
@@ -536,6 +534,9 @@ bool estaBloqueadoPorElESI(char* claveBloq, char* nombreESIBloq) {
 bool estaBloqueadaLaClave(char* clave) {
 	bool boolean = false;
 
+	if(dictionary_has_key(g_bloq, clave))
+		return true;
+
 	void _estaClaveBloqueada(char* nombreESI, t_list* clavesBloqueadas) {
 		if (!boolean) {
 			boolean = estaBloqueadoPorElESI(clave, nombreESI);
@@ -564,7 +565,6 @@ bool estaBloqueado(char* nombreESI) {
 bool enEjecucion(char* nombreESI) {
 	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
 }
-
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 
