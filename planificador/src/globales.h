@@ -40,6 +40,7 @@ pthread_mutex_t mutexListo;
 pthread_mutex_t modificacion;
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexClavesTomadas;
+pthread_mutex_t mutexInstruccionConsola;
 sem_t ESIentrada;
 sem_t continua;
 
@@ -55,12 +56,13 @@ int g_socketCoordinador;
 char* g_algoritmo;
 double g_alfa;
 int g_keyMaxima;
+int g_instruccionConsola;
 
 t_infoListos* g_enEjecucion;
 
 extern void liberarTodo(void);
-char* liberarESI(char* key);
-void desbloquearESI(char* clave);
-void liberarClaves(char* clave);
+extern char* liberarESI(char* key);
+extern void desbloquearESI(char* clave);
+extern void liberarClaves(char* clave);
 
 #endif /* GLOBALES_H_ */

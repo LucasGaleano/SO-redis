@@ -132,7 +132,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					if (g_bloqueo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
-						enviarSolicitudAnterior(g_socketEnEjecucion);
+						enviarBloqueoESI(g_socketEnEjecucion);
 					}
 					if (g_termino || g_huboError) {
 						if (!g_huboError)
@@ -187,6 +187,7 @@ extern void planificarConDesalojo(void) {
 					if (g_bloqueo) {
 						g_bloqueo = 0;
 						bloquear(aEjecutar, cont, key);
+						enviarBloqueoESI(g_socketEnEjecucion);
 						aEjecutar = NULL;
 					}
 					if (g_termino || g_huboError) {

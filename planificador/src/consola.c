@@ -140,7 +140,7 @@ void continuarPlanificacion(void) {
 	pthread_mutex_unlock(&mutexConsola);
 }
 
-void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad posible
+void bloquear(char* linea) {
 	char* clave = obtenerParametro(linea, 1);
 
 	if (clave == NULL)
@@ -179,10 +179,14 @@ void bloquear(char* linea) { // TODO se bloqueará en la próxima oportunidad po
 	}
 
 	if (enEjecucion(nombreESI)) {
+		pthread_mutex_lock(&mutexInstruccionConsola);
 		g_claveGET = strdup(clave);
-		g_bloqueo = 0;
+		g_bloqueo = 1;
+		g_instruccionConsola = 1;
 		free(clave);
 		free(nombreESI);
+		sem_post(&continua);
+		pthread_mutex_unlock(&mutexInstruccionConsola);
 		return;
 	}
 
@@ -553,10 +557,6 @@ bool enEjecucion(char* nombreESI) {
 	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
 }
 
-void validarClaveExisteConsola(bool existeClave) {
-	g_existenciaClave = existeClave;
-	sem_post(&existenciaClave);
-}
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 

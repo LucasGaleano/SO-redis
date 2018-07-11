@@ -42,6 +42,7 @@ int main(void) {
 	pthread_mutex_init(&modificacion, NULL);
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexClavesTomadas, NULL);
+	pthread_mutex_init(&mutexInstruccionConsola, NULL);
 
 	sem_init(&ESIentrada, 0, 0);
 	sem_init(&continua, 0, 0);
@@ -49,6 +50,7 @@ int main(void) {
 	g_termino = 0;
 	g_bloqueo = 0;
 	g_huboError = 0;
+	g_instruccionConsola = 0;
 
 	pthread_create(&hiloAlgoritmos, NULL, (void*) planificar, algoritmo);
 	pthread_create(&hiloCoordinador, NULL, (void*) atenderCoordinador, NULL);
@@ -158,141 +160,165 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	t_list* aux;
 	switch (unPaquete->codigoOperacion) {
 	case SET:
-		pthread_mutex_lock(&mutexLog);
-		log_debug(g_logger, "Me ha llegado un SET");
-		pthread_mutex_unlock(&mutexLog);
-		g_claveTomada = 0;
-		t_claveValor* recv = recibirSet(unPaquete);
-		g_claveGET = recv->clave;
-		if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
-			g_claveTomada = list_any_satisfy(
-					dictionary_get(g_clavesTomadas, g_nombreESIactual),
-					(void*) condicionDeTomada);
-		}
-		if (g_claveTomada)
-			enviarRespuesta(g_socketCoordinador, SET_OK);
-		else {
-			enviarRespuesta(g_socketCoordinador, SET_ERROR);
-			g_huboError = 1;
-			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
-			liberarClaves(g_nombreESIactual);
+		pthread_mutex_lock(&mutexInstruccionConsola);
+		if (!g_instruccionConsola) {
 			pthread_mutex_lock(&mutexLog);
-			if (existeClave(g_claveGET))
-				log_error(g_logger,
-						"%s se aborta por SET sobre clave no tomada",
-						g_nombreESIactual);
-			else
-				log_error(g_logger,
-						"%s se aborta por SET sobre clave inexistente",
-						g_nombreESIactual);
+			log_debug(g_logger, "Me ha llegado un SET");
 			pthread_mutex_unlock(&mutexLog);
-		}
-		free(recv->clave);
-		free(recv->valor);
-		free(recv);
-		g_claveGET = NULL;
-		sem_post(&continua);
+			g_claveTomada = 0;
+			t_claveValor* recv = recibirSet(unPaquete);
+			g_claveGET = recv->clave;
+			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				g_claveTomada = list_any_satisfy(
+						dictionary_get(g_clavesTomadas, g_nombreESIactual),
+						(void*) condicionDeTomada);
+			}
+			if (g_claveTomada)
+				enviarRespuesta(g_socketCoordinador, SET_OK);
+			else {
+				enviarRespuesta(g_socketCoordinador, SET_ERROR);
+				g_huboError = 1;
+				enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
+				liberarClaves(g_nombreESIactual);
+				pthread_mutex_lock(&mutexLog);
+				if (existeClave(g_claveGET))
+					log_error(g_logger,
+							"%s se aborta por SET sobre clave no tomada",
+							g_nombreESIactual);
+				else
+					log_error(g_logger,
+							"%s se aborta por SET sobre clave inexistente",
+							g_nombreESIactual);
+				pthread_mutex_unlock(&mutexLog);
+			}
+			free(recv->clave);
+			free(recv->valor);
+			free(recv);
+			g_claveGET = NULL;
+			sem_post(&continua);
+		} else
+			g_instruccionConsola = 0;
+		pthread_mutex_unlock(&mutexInstruccionConsola);
 		break;
 	case GET:
-		pthread_mutex_lock(&mutexLog);
-		log_debug(g_logger, "Me ha llegado un GET");
-		pthread_mutex_unlock(&mutexLog);
-		g_claveTomada = 0;
-		g_claveGET = recibirGet(unPaquete);
-		if (!esiTieneClave()) {
-			pthread_mutex_lock(&mutexClavesTomadas);
-			dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
-			if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
-				g_bloqueo = 1;
-			} else {
-				if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
-					list_add(dictionary_get(g_clavesTomadas, g_nombreESIactual),
-							g_claveGET);
-				} else {
-					aux = list_create();
-					list_add(aux, g_claveGET);
-					dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
-				}
-				pthread_mutex_lock(&mutexLog);
-				log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
-						g_nombreESIactual, g_claveGET);
-				pthread_mutex_unlock(&mutexLog) ;
-			}
-			pthread_mutex_unlock(&mutexClavesTomadas);
-		} else {
+		pthread_mutex_lock(&mutexInstruccionConsola);
+		if (!g_instruccionConsola) {
 			pthread_mutex_lock(&mutexLog);
-			log_trace(g_logger, "%s ya tiene la clave %s tomada",
-					g_nombreESIactual, g_claveGET);
+			log_debug(g_logger, "Me ha llegado un GET");
 			pthread_mutex_unlock(&mutexLog);
-			free(g_claveGET);
-			g_claveGET = NULL;
-		}
-		sem_post(&continua);
+			g_claveTomada = 0;
+			g_claveGET = recibirGet(unPaquete);
+			if (!esiTieneClave()) {
+				pthread_mutex_lock(&mutexClavesTomadas);
+				dictionary_iterator(g_clavesTomadas, (void*) claveEstaTomada);
+				if (g_claveTomada || dictionary_has_key(g_bloq, g_claveGET)) {
+					g_bloqueo = 1;
+				} else {
+					if (dictionary_has_key(g_clavesTomadas,
+							g_nombreESIactual)) {
+						list_add(
+								dictionary_get(g_clavesTomadas,
+										g_nombreESIactual), g_claveGET);
+					} else {
+						aux = list_create();
+						list_add(aux, g_claveGET);
+						dictionary_put(g_clavesTomadas, g_nombreESIactual, aux);
+					}
+					pthread_mutex_lock(&mutexLog);
+					log_trace(g_logger, "%s ha tomado la clave %s exitosamente",
+							g_nombreESIactual, g_claveGET);
+					pthread_mutex_unlock(&mutexLog);
+				}
+				pthread_mutex_unlock(&mutexClavesTomadas);
+			} else {
+				pthread_mutex_lock(&mutexLog);
+				log_trace(g_logger, "%s ya tiene la clave %s tomada",
+						g_nombreESIactual, g_claveGET);
+				pthread_mutex_unlock(&mutexLog);
+				free(g_claveGET);
+				g_claveGET = NULL;
+			}
+			sem_post(&continua);
+		} else
+			g_instruccionConsola = 0;
+		pthread_mutex_unlock(&mutexInstruccionConsola);
 		break;
 	case STORE:
-		g_claveTomada = 0;
-		g_claveGET = recibirStore(unPaquete);
-		if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
-			g_claveTomada = list_any_satisfy(
-					dictionary_get(g_clavesTomadas, g_nombreESIactual),
-					(void*) condicionDeTomada);
-		}
-		if (g_claveTomada) {
-			if (dictionary_has_key(g_bloq, g_claveGET))
-				desbloquearESI(g_claveGET);
-			aux = dictionary_get(g_clavesTomadas, g_nombreESIactual);
-			list_remove_and_destroy_by_condition(aux, (void*) condicionDeTomada,
-					(void*) free);
-			pthread_mutex_lock(&mutexLog);
-			log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
-					g_nombreESIactual, g_claveGET);
-			pthread_mutex_unlock(&mutexLog);
-			enviarRespuesta(g_socketCoordinador, STORE_OK);
-		} else {
-			g_huboError = 1;
-			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
-			enviarRespuesta(g_socketCoordinador, STORE_ERROR);
-			liberarClaves(g_nombreESIactual);
-			pthread_mutex_lock(&mutexLog);
-			if (existeClave(g_claveGET))
-				log_error(g_logger,
-						"%s se aborta por STORE sobre clave no tomada",
-						g_nombreESIactual);
-			else
-				log_error(g_logger,
-						"%s se aborta por STORE sobre clave inexistente",
-						g_nombreESIactual);
-			pthread_mutex_unlock(&mutexLog);
-		}
-		free(g_claveGET);
-		g_claveGET = NULL;
-		sem_post(&continua);
+		pthread_mutex_lock(&mutexInstruccionConsola);
+		if (!g_instruccionConsola) {
+			g_claveTomada = 0;
+			g_claveGET = recibirStore(unPaquete);
+			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				g_claveTomada = list_any_satisfy(
+						dictionary_get(g_clavesTomadas, g_nombreESIactual),
+						(void*) condicionDeTomada);
+			}
+			if (g_claveTomada) {
+				if (dictionary_has_key(g_bloq, g_claveGET))
+					desbloquearESI(g_claveGET);
+				aux = dictionary_get(g_clavesTomadas, g_nombreESIactual);
+				list_remove_and_destroy_by_condition(aux,
+						(void*) condicionDeTomada, (void*) free);
+				pthread_mutex_lock(&mutexLog);
+				log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
+						g_nombreESIactual, g_claveGET);
+				pthread_mutex_unlock(&mutexLog);
+				enviarRespuesta(g_socketCoordinador, STORE_OK);
+			} else {
+				g_huboError = 1;
+				enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
+				enviarRespuesta(g_socketCoordinador, STORE_ERROR);
+				liberarClaves(g_nombreESIactual);
+				pthread_mutex_lock(&mutexLog);
+				if (existeClave(g_claveGET))
+					log_error(g_logger,
+							"%s se aborta por STORE sobre clave no tomada",
+							g_nombreESIactual);
+				else
+					log_error(g_logger,
+							"%s se aborta por STORE sobre clave inexistente",
+							g_nombreESIactual);
+				pthread_mutex_unlock(&mutexLog);
+			}
+			free(g_claveGET);
+			g_claveGET = NULL;
+			sem_post(&continua);
+		} else
+			g_instruccionConsola = 0;
+		pthread_mutex_unlock(&mutexInstruccionConsola);
 		break;
 	case RESPUESTA_SOLICITUD:
-		pthread_mutex_lock(&mutexLog);
-		switch (recibirRespuesta(unPaquete)) {
-		case ERROR_TAMANIO_CLAVE:
-			log_error(g_logger, "Se aborta %s por clave mayor a 40 caracteres",
-					g_nombreESIactual);
-			break;
-		case ERROR_CLAVE_NO_IDENTIFICADA:
-			log_error(g_logger, "Se aborta %s por una clave no identificada",
-					g_nombreESIactual);
-			break;
-		case ERROR_CLAVE_INACCESIBLE:
-			log_error(g_logger, "Se aborta %s por clave inaccesible",
-					g_nombreESIactual);
-			break;
-		case ERROR_ESPACIO_INSUFICIENTE:
-			log_error(g_logger, "Se aborta %s por espacio insuficiente",
-					g_nombreESIactual);
-			break;
-		}
-		pthread_mutex_unlock(&mutexLog);
-		g_huboError = 1;
-		enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
-		liberarClaves(g_nombreESIactual);
-		sem_post(&continua);
+		pthread_mutex_lock(&mutexInstruccionConsola);
+		if (!g_instruccionConsola) {
+			pthread_mutex_lock(&mutexLog);
+			switch (recibirRespuesta(unPaquete)) {
+			case ERROR_TAMANIO_CLAVE:
+				log_error(g_logger,
+						"Se aborta %s por clave mayor a 40 caracteres",
+						g_nombreESIactual);
+				break;
+			case ERROR_CLAVE_NO_IDENTIFICADA:
+				log_error(g_logger,
+						"Se aborta %s por una clave no identificada",
+						g_nombreESIactual);
+				break;
+			case ERROR_CLAVE_INACCESIBLE:
+				log_error(g_logger, "Se aborta %s por clave inaccesible",
+						g_nombreESIactual);
+				break;
+			case ERROR_ESPACIO_INSUFICIENTE:
+				log_error(g_logger, "Se aborta %s por espacio insuficiente",
+						g_nombreESIactual);
+				break;
+			}
+			pthread_mutex_unlock(&mutexLog);
+			g_huboError = 1;
+			enviarRespuesta(g_socketEnEjecucion, ABORTO_ESI);
+			liberarClaves(g_nombreESIactual);
+			sem_post(&continua);
+		} else
+			g_instruccionConsola = 0;
+		pthread_mutex_unlock(&mutexInstruccionConsola);
 		break;
 	case RESPUESTA_STATUS:
 		mostrarPorConsola(recibirRespuestaStatus(unPaquete));
@@ -348,10 +374,11 @@ void planificar(char* algoritmo) {
 		planificarConDesalojo();
 }
 
-int esiTieneClave(void)
-{
-	if(dictionary_has_key(g_clavesTomadas, g_nombreESIactual))
-		return list_any_satisfy(dictionary_get(g_clavesTomadas, g_nombreESIactual), (void*)condicionDeTomada);
+int esiTieneClave(void) {
+	if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual))
+		return list_any_satisfy(
+				dictionary_get(g_clavesTomadas, g_nombreESIactual),
+				(void*) condicionDeTomada);
 	return 0;
 }
 

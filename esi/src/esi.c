@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 	//Mapeo el archivo a memoria
 	size_t tamArch;
 	FILE * archivofd;
-	char * rutaScript = "/home/utnso/workspace/tp-2018-1c--0/esi/Debug/ESI_Simple";//argv[1];
+	char * rutaScript = argv[1];
 
 	archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
 
