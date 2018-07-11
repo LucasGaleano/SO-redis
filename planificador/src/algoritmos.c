@@ -27,7 +27,7 @@ static char* asignarID(int *val) {
 		free(auxKey);
 		auxKey = string_itoa(*val);
 		(*val)++;
-	} while (!dictionary_has_key(g_listos, auxKey));
+	} while (!dictionary_has_key(g_listos, auxKey) && *val <= g_keyMaxima);
 	return auxKey;
 }
 
@@ -56,8 +56,8 @@ static void bloquear(t_infoListos* bloq, int nuevoReal, char* key) {
 }
 
 static void liberarSalida(void* arg) {
-	free(g_claveGET);
-	free(g_idESIactual);
+	/*free(g_claveGET);
+	 free(g_idESIactual);*/
 }
 
 static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
@@ -75,13 +75,15 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 	for (; i <= g_keyMaxima; i++) {
 		free(auxKey);
 		auxKey = asignarID(&i);
-		actual = dictionary_get(g_listos, auxKey);
-		double prox = calculadorProx(actual->estAnterior, actual->realAnterior,
-				actual->tEnEspera);
-		if (ponderacion(unValor, prox)) {
-			unValor = prox;
-			free(key);
-			key = strdup(auxKey);
+		if (dictionary_has_key(g_listos, auxKey)) {
+			actual = dictionary_get(g_listos, auxKey);
+			double prox = calculadorProx(actual->estAnterior,
+					actual->realAnterior, actual->tEnEspera);
+			if (ponderacion(unValor, prox)) {
+				unValor = prox;
+				free(key);
+				key = strdup(auxKey);
+			}
 		}
 	}
 	log_trace(g_logger, "Se ejecuta %s",
