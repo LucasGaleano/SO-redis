@@ -36,9 +36,10 @@ t_instancia* crearInstancia(char* nombre,int cantidadEntradas, int tamanioEntrad
 }
 
 void destruirInstancia(t_instancia * instancia) {
-	free(instancia->trabajoActual);
+	//free(instancia->trabajoActual);
 	free(instancia->nombre);
-	list_destroy(instancia->claves);
+	list_destroy_and_destroy_elements(instancia->claves, (void*)free);
+	sem_destroy(&instancia->instanciaMutex);
 	free(instancia);
 }
 
@@ -180,7 +181,7 @@ void mostrarDiccionario(t_list* diccionario) {
 
 t_conexion* crearConexion(char* nombre, int socket){
 	t_conexion* nuevaConexion = malloc(sizeof(t_conexion));
-	nuevaConexion->nombre = string_duplicate(nombre);
+	nuevaConexion->nombre = strdup(nombre);
 	nuevaConexion->socket = socket;
 	return nuevaConexion;
 }
@@ -309,10 +310,9 @@ void sacarConexion(t_list* diccionario, t_conexion* conexion){
 	int index;
 	for (index = 0;index<list_size(diccionario);index++){
 		t_conexion* aux = list_get(diccionario,index);
-		if(strcmp(aux->nombre,conexion->nombre) == 0){
-			aux = list_remove(diccionario,index);
-			cerrarConexion(aux);
-			destruirConexion(aux);
+		if(string_equals_ignore_case(aux->nombre,conexion->nombre)){
+			t_conexion* auxABorrar = list_remove(diccionario,index);
+			cerrarConexion(auxABorrar);
 		}
 	}
 }
@@ -321,11 +321,13 @@ void cerrarConexion(void* conexion) {
 	t_conexion* conexionACerrar = (t_conexion*)conexion;
 	printf("cerrando %s\n",conexionACerrar->nombre);
 	close(conexionACerrar->socket);
+	printf("socket: %d", conexionACerrar->socket);
 }
 
 void destruirConexion(void* conexion){
 		t_conexion* conexionACerrar = (t_conexion*)conexion;
 		free(conexionACerrar->nombre);
+		conexionACerrar->nombre=NULL;
 		free(conexionACerrar);
 }
 
