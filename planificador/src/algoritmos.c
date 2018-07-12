@@ -103,6 +103,8 @@ extern void planificarSinDesalojo(char* algoritmo) {
 	pthread_cleanup_push((void*) liberarSalida, NULL)
 				;
 				while (1) {
+					pthread_mutex_lock(&mutexConsola);
+					pthread_mutex_unlock(&mutexConsola);
 					g_enEjecucion = NULL;
 					cont = 0;
 					g_huboError = 0;
@@ -122,9 +124,8 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
 					while (!g_termino && !g_bloqueo && !g_huboError) {
-						pthread_mutex_lock(&mutexConsola);
 						enviarSolicitudEjecucion(g_socketEnEjecucion);
-						pthread_mutex_unlock(&mutexConsola);
+
 						cont++;
 						sem_wait(&continua);
 						pthread_mutex_lock(&mutexLog);
