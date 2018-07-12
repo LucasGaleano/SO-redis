@@ -104,7 +104,7 @@ extern void planificarSinDesalojo(char* algoritmo) {
 				;
 				while (1) {
 					pthread_mutex_lock(&mutexConsola);
-					pthread_mutex_unlock(&mutexConsola);
+					pthread_mutex_unlock(&mutexConsola); //sdf
 					g_enEjecucion = NULL;
 					cont = 0;
 					g_huboError = 0;
