@@ -84,8 +84,7 @@ t_sentencia* conseguirTrabajoActual(t_instancia* instancia){
 	return instancia->trabajoActual;
 }
 tiempo traerTiempoEjecucion() {
-	tiempo tiempoEjecucionAux = g_tiempoPorEjecucion;
-	return tiempoEjecucionAux;
+	return g_tiempoPorEjecucion;
 }
 
 t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {

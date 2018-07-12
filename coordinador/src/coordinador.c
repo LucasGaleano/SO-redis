@@ -297,6 +297,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 	t_claveValor* sentencia = recibirSet(paquete);
 	t_conexion* conexionDelPlanificador = buscarConexion(
 			g_diccionarioConexiones, "planificador", 0);
+	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 	if (!existeClaveEnSistema(g_diccionarioClaves, sentencia->clave)) {
 		log_error(g_logger, "SET - la clave %s no existe.", sentencia->clave);
@@ -309,6 +310,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 		enviarSet(conexionDelPlanificador->socket, sentencia->clave,
 				sentencia->valor);
 		sem_wait(&g_mutex_respuesta_set); //espera respuesta set
+
 
 		t_instancia* instanciaElegida = PlanificarInstancia(
 				g_configuracion->algoritmoDist, sentencia->clave,
@@ -323,7 +325,7 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 				raise(SIGINT);
 			}
 
-			g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
+
 
 			t_conexion* conexionDeInstancia = buscarConexion(
 					g_diccionarioConexiones, instanciaElegida->nombre, 0);
@@ -356,6 +358,7 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
 	//log_debug(g_logger, "preguntar por STORE %s %s al planificador", sentencia->clave,sentencia->valor);
 	enviarStore(conexionDelPlanificador->socket, clave);
+	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
 
 	if (g_respuesta == true) {
@@ -369,7 +372,7 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 			if (instanciaElegida != NULL) {
 				if (instanciaElegida->disponible == true) {
 					//mostrarInstancia(instanciaElegida);
-					g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
+
 
 					t_conexion* conexionDeInstancia = buscarConexion(
 							g_diccionarioConexiones, instanciaElegida->nombre,
