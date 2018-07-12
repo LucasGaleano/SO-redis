@@ -10,6 +10,7 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 /*TABLA DE INSTANCIAS
  *
@@ -25,6 +26,7 @@ tiempo g_tiempoPorEjecucion;
 typedef struct{
 	char* nombre;
 	int socket;
+	pthread_t tid;
 }t_conexion;
 
 typedef struct {

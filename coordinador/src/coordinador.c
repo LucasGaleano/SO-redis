@@ -74,6 +74,7 @@ void* procesarPeticion(void* cliente_fd) {
 
 		if ((recvError = recv(*(int*) cliente_fd, buffer, 1000, 0)) <= 0) {
 			procesarClienteDesconectado(*(int*) cliente_fd);
+			free(buffer);
 			return 0;
 		}
 
@@ -97,51 +98,41 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
-
 		procesarHandshake(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_NOMBRE_INSTANCIA:
-		;
-
 		procesarNombreInstancia(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_NOMBRE_ESI:
-		;
 		procesarNombreESI(paquete, cliente_fd);
 		break;
 
 	case SET:
-		;
 		usleep(g_configuracion->retardo * 1000);
 		procesarSET(paquete, cliente_fd);
 		break;
 
 	case GET:
-		;
 		usleep(g_configuracion->retardo * 1000);
 		procesarGET(paquete, cliente_fd);
 		break;
 
 	case STORE:
-		;
 		usleep(g_configuracion->retardo * 1000);
 		procesarSTORE(paquete, cliente_fd);
 		break;
 
 	case RESPUESTA_SOLICITUD:
-		;
 		procesarRespuesta(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_CLAVE_ELIMINADA:
-		;
 		procesarClaveEliminada(paquete, cliente_fd);
 		break;
 
 	case ENVIAR_AVISO_DESCONEXION:
-		;
 		procesarAvisoDesconexion(paquete, cliente_fd);
 		break;
 
@@ -149,6 +140,8 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		printf("codigo no reconocido\n");
 		break;
 	}
+
+	destruirPaquete(paquete);
 
 }
 
@@ -169,9 +162,6 @@ void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	}
-
-	free(paquete);
-
 }
 
 void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
@@ -276,7 +266,6 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		}
 		break;
 	}
-	free(paquete);
 }
 
 void procesarGET(t_paquete* paquete, int cliente_fd) {
@@ -289,7 +278,6 @@ void procesarGET(t_paquete* paquete, int cliente_fd) {
 	log_debug(g_logger, "enviar GET al planificador: %i, clave: %s\n",
 			conexionDelPlanificador->socket, clave);
 	free(clave);
-	free(paquete);
 }
 
 void procesarSET(t_paquete* paquete, int cliente_fd) {
@@ -342,9 +330,9 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 		free(sentencia->clave);
 		free(sentencia->valor);
 		free(sentencia);
-		free(paquete);
 	}
 }
+
 void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 
 	char* clave = recibirStore(paquete);
@@ -398,7 +386,7 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 		}
 	}
 
-	free(paquete);
+	free(clave);
 }
 
 void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
@@ -422,7 +410,8 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	enviarInfoInstancia(cliente_fd, g_configuracion->cantidadEntradas,
 			g_configuracion->tamanioEntradas, instanciaNueva->claves);
 	logTraceSeguro(g_logger, g_mutexLog, "se conecto instancia: %s", nombre);
-	free(paquete);
+
+	free(nombre);
 }
 
 void procesarNombreESI(t_paquete* paquete, int cliente_fd) {
@@ -432,7 +421,7 @@ void procesarNombreESI(t_paquete* paquete, int cliente_fd) {
 	agregarConexion(g_diccionarioConexiones, nombreESI, cliente_fd);
 	logTraceSeguro(g_logger, g_mutexLog, "se conecto esi: %s", nombreESI);
 
-	free(paquete);
+	free(nombreESI);
 }
 
 void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
@@ -443,6 +432,8 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
 	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,
 	false, conexionDeInstancia->nombre, 0, NULL);
 	eliminiarClaveDeInstancia(instanciaElegida, clave);
+
+	free(clave);
 
 }
 
@@ -458,6 +449,7 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 	sem_wait(&mutexLog);
 	log_trace(logger, mensaje);
 	sem_post(&mutexLog);
+	free(mensaje);
 }
 
 void signal_handler(int signum) {
@@ -465,10 +457,14 @@ void signal_handler(int signum) {
 	if (signum == SIGINT) {
 		log_error(g_logger, "Cerrando conexiones\n");
 		cerrarTodasLasConexiones(g_diccionarioConexiones);
+
+		list_destroy_and_destroy_elements(g_tablaDeInstancias,(void*)destruirInstancia);
+
 		sem_destroy(&g_mutexLog);
 		sem_destroy(&g_mutex_tablas);
 		sem_destroy(&g_mutex_respuesta_set);
 		sem_destroy(&g_mutex_respuesta_store);
+
 		exit(0);
 	}
 	if (signum == SIGUSR1) {

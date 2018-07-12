@@ -125,8 +125,9 @@ extern void planificarSinDesalojo(char* algoritmo) {
 					pthread_mutex_unlock(&mutexListo);
 					g_socketEnEjecucion = aEjecutar->socketESI;
 					while (!g_termino && !g_bloqueo && !g_huboError) {
+						pthread_mutex_lock(&mutexConsola);
 						enviarSolicitudEjecucion(g_socketEnEjecucion);
-
+						pthread_mutex_unlock(&mutexConsola);
 						cont++;
 						sem_wait(&continua);
 						pthread_mutex_lock(&mutexLog);
@@ -171,6 +172,8 @@ extern void planificarConDesalojo(void) {
 					cont = 0;
 					g_huboError = 0;
 					sem_wait(&ESIentrada);
+					pthread_mutex_lock(&mutexConsola);
+					pthread_mutex_unlock(&mutexConsola);
 					pthread_mutex_lock(&mutexListo);
 					key = calcularSiguiente((void*) calcularProximaRafaga,
 							(void*) esMayor);
@@ -183,8 +186,8 @@ extern void planificarConDesalojo(void) {
 					do {
 						pthread_mutex_lock(&mutexConsola);
 						enviarSolicitudEjecucion(g_socketEnEjecucion);
-						cont++;
 						pthread_mutex_unlock(&mutexConsola);
+						cont++;
 						sem_wait(&continua);
 					} while (!g_termino && !g_bloqueo && !g_huboModificacion
 							&& !g_huboError);
