@@ -11,6 +11,7 @@
 #include <biblioteca/sockets.h>
 #include <biblioteca/paquetes.h>
 #include <biblioteca/estructuras.h>
+#include "consola.h"
 
 void procesarPaquete(t_paquete*, int*);
 void recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente);
@@ -23,5 +24,6 @@ int condicionDeTomada(char* nodo);
 void claveEstaTomada(char* key, t_list* value);
 void atenderCoordinador(void* arg);
 void atenderCtrlC(void);
+int esiTieneClave(void);
 
 #endif /* PLANIFICADOR_H_ */

@@ -143,6 +143,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 	case ENVIAR_AVISO_DESCONEXION:
 		;
 		procesarAvisoDesconexion(paquete, cliente_fd);
+		break;
 
 	default:
 		printf("codigo no reconocido\n");

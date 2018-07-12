@@ -11,7 +11,7 @@
 #include <time.h>
 #include <commons/string.h>
 #include <stdlib.h>
-#include <biblioteca/estructuras.h>
+#include <biblioteca/sockets.h>
 #include <commons/collections/list.h>
 
 #include "globales.h"
