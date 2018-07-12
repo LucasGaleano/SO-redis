@@ -192,7 +192,6 @@ void bloquear(char* linea) {
 
 	// Si la clave no estaba bloqueada, se bloquea para el idESI
 	if (!estaBloqueadaLaClave(clave)) {
-		puts("No estaba bloqueada la clave");
 		// Se agrega al diccionario de clavesBloqueadas por el idESI la clave a bloquear
 		if (!dictionary_has_key(g_clavesTomadas, nombreESI)) {
 			t_list* listaVacia = list_create();
@@ -211,7 +210,6 @@ void bloquear(char* linea) {
 
 	// Si la clave esta bloqueada, se coloca al idESI en la lista de esis esperando a esa clave
 	else {
-
 		if (!dictionary_has_key(g_bloq, clave)) {
 			t_list* listaVacia = list_create();
 
@@ -232,6 +230,7 @@ void bloquear(char* linea) {
 		pthread_mutex_lock(&mutexBloqueo);
 		list_add(dictionary_get(g_bloq, clave), insertar);
 		pthread_mutex_unlock(&mutexBloqueo);
+
 	}
 
 	free(nombreESI);
@@ -247,13 +246,14 @@ void desbloquear(char* linea) {
 
 	if (!dictionary_has_key(g_bloq, clave)) {
 		printf(
-				"No se puede desbloquear un ESI de una clave %s que no esta bloqueada.\n",
+				"No se puede desbloquear un ESI de la clave %s que no esta bloqueada.\n",
 				clave);
 		free(clave);
 		return;
 	}
 
 	desbloquearESI(clave);
+
 	free(clave);
 }
 
@@ -263,7 +263,8 @@ void listarProcesos(char* linea) {
 	if (clave == NULL)
 		return;
 
-	if (!dictionary_has_key(g_bloq, clave)) {
+	if (!dictionary_has_key(g_bloq, clave)
+			|| list_is_empty(dictionary_get(g_bloq, clave))) {
 		printf("Ningun ESI esta bloqueado por la clave %s.\n", clave);
 		free(clave);
 		return;
@@ -497,7 +498,8 @@ bool estaListo(char* nombreESI) {
 bool estaBloqueadoPorLaClave(char* nombreESI, char* clave) {
 
 	if (!dictionary_is_empty(g_bloq)) {
-		if (dictionary_has_key(g_bloq, clave)) {
+		if (dictionary_has_key(g_bloq, clave)
+				&& !list_is_empty(dictionary_get(g_bloq, clave))) {
 
 			bool _sonIguales(t_infoBloqueo* infoBloqueo) {
 				return string_equals_ignore_case(infoBloqueo->data->nombreESI,
@@ -534,7 +536,7 @@ bool estaBloqueadoPorElESI(char* claveBloq, char* nombreESIBloq) {
 bool estaBloqueadaLaClave(char* clave) {
 	bool boolean = false;
 
-	if(dictionary_has_key(g_bloq, clave))
+	if (dictionary_has_key(g_bloq, clave))
 		return true;
 
 	void _estaClaveBloqueada(char* nombreESI, t_list* clavesBloqueadas) {
@@ -563,33 +565,12 @@ bool estaBloqueado(char* nombreESI) {
 }
 
 bool enEjecucion(char* nombreESI) {
+	if (estaBloqueado(nombreESI))
+		return false;
 	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
 }
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
-
-char* esiQueBloquea(char* claveBuscada) {
-
-	char* esiQueBloqueaa;
-	bool boolean = false;
-
-	void _sonIgualesLasClavesBloqueadas(char* clave) {
-		if (string_equals_ignore_case(clave, claveBuscada))
-			boolean = true;
-	}
-
-	void _decirESIQueBloqueaClave(char* nombreESI, t_list* clavesTomadas) {
-		if (!g_bool) {
-			list_iterate(clavesTomadas, (void*) _sonIgualesLasClavesBloqueadas);
-			if (boolean) {
-				esiQueBloqueaa = nombreESI;
-			}
-		}
-	}
-
-	dictionary_iterator(g_clavesTomadas, (void*) _decirESIQueBloqueaClave);
-	return esiQueBloqueaa;
-}
 
 bool sonIgualesClaves(char* claveActual) {
 	return string_equals_ignore_case(g_clave, claveActual);
@@ -659,9 +640,10 @@ void crearIndiceEspera(t_infoBloqueo* esiBloqueado) {
 void creoElementosEnPosibleDeadlock(t_dictionary* diccionario,
 		void (*creoIndiceMatriz)(void*)) {
 	void _creoElementoEnPosibleDeadlock(char* elemento, t_list* lista) {
-
-		list_iterate(lista, (void*) creoIndiceMatriz);
-		indice(elemento, diccionario);
+		if(!list_is_empty(lista)){
+			list_iterate(lista, (void*) creoIndiceMatriz);
+			indice(elemento, diccionario);
+		}
 	}
 
 	dictionary_iterator(diccionario, (void*) _creoElementoEnPosibleDeadlock);
@@ -679,9 +661,11 @@ void asignarEnMatrizEspera(t_infoBloqueo* infoESIBloqueado) {
 
 void asignoMatriz(t_dictionary* diccionario, void (*asignarTipoMatriz)(void*)) {
 	void _asignarMatriz(char* elemento, t_list* lista) {
-		free(g_elemento);
-		g_elemento = strdup(elemento);
-		list_iterate(lista, (void*) asignarTipoMatriz);
+		if(!list_is_empty(lista)){
+			free(g_elemento);
+			g_elemento = strdup(elemento);
+			list_iterate(lista, (void*) asignarTipoMatriz);
+		}
 	}
 
 	dictionary_iterator(diccionario, (void*) _asignarMatriz);

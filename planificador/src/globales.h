@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <commons/collections/list.h>
 #include <string.h>
+#include <commons/string.h>
 
 typedef struct {
 	int socketESI;
