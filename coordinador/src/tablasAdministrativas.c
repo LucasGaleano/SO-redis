@@ -97,7 +97,7 @@ t_instancia* traerUltimaInstanciaUsada(t_list* tablaDeInstancias) {
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 
 		aux = list_get(tablaDeInstancias, i);
-		if (fechaMasReciente > aux->ultimaModificacion && aux->disponible) {
+		if (fechaMasReciente >= aux->ultimaModificacion && aux->disponible) {
 			fechaMasReciente = aux->ultimaModificacion;
 			ultimaInstanciaUsada = aux;
 		}
