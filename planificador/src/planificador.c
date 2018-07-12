@@ -368,10 +368,10 @@ void iniciarServidor(void* puerto) {
 }
 
 void planificar(char* algoritmo) {
-	if (strcmp(algoritmo, "SJF-SD") == 0 || strcmp(algoritmo, "HRRN") == 0)
-		planificarSinDesalojo(algoritmo);
-	else
-		planificarConDesalojo();
+		if (strcmp(algoritmo, "SJF-SD") == 0 || strcmp(algoritmo, "HRRN") == 0)
+				planificarSinDesalojo(algoritmo);
+			else
+				planificarConDesalojo();
 }
 
 int esiTieneClave(void) {
