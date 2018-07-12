@@ -295,8 +295,7 @@ void procesarGET(t_paquete* paquete, int cliente_fd) {
 void procesarSET(t_paquete* paquete, int cliente_fd) {
 
 	t_claveValor* sentencia = recibirSet(paquete);
-	t_conexion* conexionDelPlanificador = buscarConexion(
-			g_diccionarioConexiones, "planificador", 0);
+	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones, "planificador", 0);
 	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 	if (!existeClaveEnSistema(g_diccionarioClaves, sentencia->clave)) {
@@ -311,10 +310,11 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 				sentencia->valor);
 		sem_wait(&g_mutex_respuesta_set); //espera respuesta set
 
+		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false,NULL,0,sentencia->clave);
+		if(instanciaElegida == NULL){
+			instanciaElegida = PlanificarInstancia(g_configuracion->algoritmoDist, sentencia->clave,g_tablaDeInstancias);
+		}
 
-		t_instancia* instanciaElegida = PlanificarInstancia(
-				g_configuracion->algoritmoDist, sentencia->clave,
-				g_tablaDeInstancias);
 
 		if (g_respuesta == true) {
 
@@ -322,26 +322,21 @@ void procesarSET(t_paquete* paquete, int cliente_fd) {
 				log_error(g_logger,
 						"no se pudo planificar una instancia para la clave: %s",
 						sentencia->clave);
-				raise(SIGINT);
+				enviarRespuesta(conexionDelPlanificador->socket,ERROR_CLAVE_INACCESIBLE);
+				return;
 			}
 
 
 
-			t_conexion* conexionDeInstancia = buscarConexion(
-					g_diccionarioConexiones, instanciaElegida->nombre, 0);
-			if (!instanciaContieneClave(instanciaElegida->claves,
-					sentencia->clave))
+			t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
 
-				instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
 
-			agregarTrabajoActual(instanciaElegida, sentencia->clave,
-					sentencia->valor);
+			instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
+
+			agregarTrabajoActual(instanciaElegida, sentencia->clave,sentencia->valor);
 			bloquearInstancia(instanciaElegida);
-			enviarSet(conexionDeInstancia->socket, sentencia->clave,
-					sentencia->valor);
-			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",
-					sentencia->clave, sentencia->valor,
-					instanciaElegida->nombre);
+			enviarSet(conexionDeInstancia->socket, sentencia->clave,sentencia->valor);
+			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",sentencia->clave, sentencia->valor,instanciaElegida->nombre);
 		}
 
 		free(sentencia->clave);
