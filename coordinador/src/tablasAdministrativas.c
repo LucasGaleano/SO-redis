@@ -374,3 +374,16 @@ void destruirDiccionarioClaves(t_list* diccionarioClaves){
 	list_clean_and_destroy_elements(diccionarioClaves,free);
 
 }
+
+void bloquearPeticion(sem_t mutexPeticion){
+	printf("bloquear peticion");
+	sem_wait(&mutexPeticion);
+	printf("bloqueado peticion");
+}
+
+
+void desbloquearPeticion(sem_t mutexPeticion){
+	printf("desbloquear peticion");
+	sem_post(&mutexPeticion);
+	printf("desbloqueado peticion");
+}

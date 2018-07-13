@@ -77,6 +77,9 @@ void desbloquearInstancia(t_instancia* instancia);
 void bloquearTodasLasInstancias(t_list* tablaDeInstancias);
 void desbloquearTodasLasInstancias(t_list* tablaDeInstancias);
 
+void bloquearPeticion(sem_t mutexPeticion);
+void desbloquearPeticion(sem_t mutexPeticion);
+
 t_list* crearDiccionarioConexiones(void);
 t_conexion* crearConexion(char* nombre, int socket);
 void agregarConexion(t_list * diccionario, char * clave , int valor);

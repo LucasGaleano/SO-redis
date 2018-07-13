@@ -50,7 +50,10 @@ int iniciarServidor(char* puerto) {
 	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	agregarConexion(g_diccionarioConexiones, "coordinador", sockfd);
 
+	int yes = 1;
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,&yes,sizeof(int));
 	bind(sockfd, res->ai_addr, res->ai_addrlen);
+
 	//TODO cerrar o free adrrinfo
 
 	if (-1 == listen(sockfd, 10))
@@ -115,7 +118,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	case SET:
-		sem_wait(&g_peticion);
+		bloquearPeticion(g_peticion);
 		usleep(g_configuracion->retardo * 1000);
 		procesarSET(paquete, cliente_fd);
 		break;
@@ -126,7 +129,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	case STORE:
-		sem_wait(&g_peticion);
+		bloquearPeticion(g_peticion);
 		usleep(g_configuracion->retardo * 1000);
 		procesarSTORE(paquete, cliente_fd);
 		break;
@@ -239,7 +242,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 			free(TrabajoInstanciaProcesada->clave);
 			free(TrabajoInstanciaProcesada->valor);
 			free(TrabajoInstanciaProcesada);
-			sem_post(&g_peticion);
+			desbloquearPeticion(g_peticion);
 		}
 
 		break;
@@ -248,14 +251,14 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		;
 		logSeguro("debug",g_mutexLog, "%s acepto el SET DEFINITIVO", instanciaCliente->nombre);
 		desbloquearTodasLasInstancias(g_tablaDeInstancias);
-		sem_post(&g_peticion);
+		desbloquearPeticion(g_peticion);
 		break;
 
 	case SET_DEFINITIVO_ERROR:
 		;
 		logSeguro("error",g_mutexLog, "%s acepto el SET DEFINITIVO", instanciaCliente->nombre);
 		desbloquearTodasLasInstancias(g_tablaDeInstancias);
-		sem_post(&g_peticion);
+		desbloquearPeticion(g_peticion);
 		break;
 
 	case SET_ERROR:
@@ -282,7 +285,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 			logSeguro("debug",g_mutexLog, "le llego el STORE a %s",
 					conexionCliente->nombre);
 			desbloquearInstancia(instanciaCliente);
-			sem_post(&g_peticion);
+			desbloquearPeticion(g_peticion);;
 
 		}
 		break;
@@ -297,7 +300,7 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 			logSeguro("error",g_mutexLog, "hubo un error con el STORE de la %s",
 					conexionCliente->nombre);
 			desbloquearInstancia(instanciaCliente);
-			sem_post(&g_peticion);
+			desbloquearPeticion(g_peticion);;
 		}
 		break;
 	}
