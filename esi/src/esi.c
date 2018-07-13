@@ -115,6 +115,7 @@ void procesarSolicitudEjecucion() {
 	if (parsed.valido) {
 		switch (parsed.keyword) {
 		case GET:
+			sleep(9999999);
 			log_trace(logESI, "GET\tclave: <%s>\n",
 					parsed.argumentos.GET.clave);
 			enviarGet(socketCoordinador, parsed.argumentos.GET.clave);

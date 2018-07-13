@@ -58,6 +58,7 @@ int g_socketCoordinador;
 int g_huboError;
 int g_keyMaxima;
 int g_instruccionConsola;
+int g_huboModificacion;
 char* g_algoritmo;
 double g_alfa;
 double g_est;
