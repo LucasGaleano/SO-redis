@@ -266,6 +266,7 @@ void enviarStore(int server_socket, char * clave) {
 }
 
 void enviarRespuesta(int server_socket, int codRespuesta) {
+	printf("socket: %d\n", server_socket); //todo
 	t_paquete* unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = RESPUESTA_SOLICITUD;

@@ -306,7 +306,7 @@ void killProceso(char* linea) {
 		sem_post(&continua);
 		pthread_mutex_unlock(&mutexInstruccionConsola);
 		free(nombreESI);
-	}
+	}//
 
 	int obtenerSocket(char* nombreESI){
 		if(estaListo(nombreESI)){
