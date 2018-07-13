@@ -1,7 +1,7 @@
 #ifndef PLANIFICADOR_H_
 #define PLANIFICADOR_H_
 
-//#include "consola.h"
+#include "consola.h"
 #include "algoritmos.h"
 #include "globales.h"
 #include <signal.h>
@@ -11,7 +11,6 @@
 #include <biblioteca/sockets.h>
 #include <biblioteca/paquetes.h>
 #include <biblioteca/estructuras.h>
-#include "consola.h"
 
 void procesarPaquete(t_paquete*, int*);
 void recibirHandshakePlanif(t_paquete* unPaquete, int* socketCliente);

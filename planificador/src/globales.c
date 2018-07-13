@@ -73,10 +73,15 @@ char* liberarESI(char* key) {
 	}
 
 	if (dictionary_has_key(g_listos, key)) {
-		nombre = strdup(
-				((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
-
+		/*---*/
+		t_infoListos* esi = malloc(sizeof(t_infoListos));
+		esi = dictionary_get(g_listos, key);
+		g_huboError = 1;
+		enviarRespuesta(esi->socketESI, ABORTO_ESI);
+		/*---*/
+		nombre = strdup(esi->nombreESI);
 		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
+		//free(esi);
 		free(dictionary_remove(g_listos, key));
 	} else {
 		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);

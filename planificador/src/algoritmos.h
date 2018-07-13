@@ -18,7 +18,6 @@
 
 int g_termino;
 int g_bloqueo;
-int g_huboError;
 int g_tEjecucion;
 int g_claveTomada;
 

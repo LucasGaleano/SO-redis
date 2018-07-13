@@ -12,11 +12,13 @@
 #include <commons/collections/dictionary.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/string.h>
+#include <commons/collections/list.h>
 #include <semaphore.h>
 #include <stdlib.h>
-#include <commons/collections/list.h>
 #include <string.h>
-#include <commons/string.h>
+#include <biblioteca/estructuras.h>
+#include <biblioteca/paquetes.h>
 
 typedef struct {
 	int socketESI;
@@ -52,12 +54,13 @@ t_dictionary* g_clavesTomadas;
 t_log* g_logger;
 t_config* g_con;
 
-double g_est;
 int g_socketCoordinador;
-char* g_algoritmo;
-double g_alfa;
+int g_huboError;
 int g_keyMaxima;
 int g_instruccionConsola;
+char* g_algoritmo;
+double g_alfa;
+double g_est;
 
 t_infoListos* g_enEjecucion;
 
