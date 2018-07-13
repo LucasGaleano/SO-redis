@@ -65,6 +65,11 @@ void conectarInstancia() {
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
 			INSTANCIA);
 
+	if(socketCoordinador == -1){
+		log_error(logInstancia, "No esta conectado el coordinador");
+		exit(EXIT_FAILURE);
+	}
+
 	enviarNombreInstancia(socketCoordinador, nombreInstancia);
 
 	//Destruyo la configuracion
