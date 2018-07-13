@@ -65,6 +65,11 @@ void conectarInstancia() {
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
 			INSTANCIA);
 
+	if(socketCoordinador == -1){
+		log_error(logInstancia, "No esta conectado el coordinador");
+		exit(EXIT_FAILURE);
+	}
+
 	enviarNombreInstancia(socketCoordinador, nombreInstancia);
 
 	//Destruyo la configuracion
@@ -458,10 +463,12 @@ void aumentarTiempoReferenciadoATodos(t_list * tabla) {
 	list_iterate(tabla, (void *) aumentarTiempoReferenciado);
 }
 
-void aumentarTiempoReferenciadoMenosAClave(char * clave) {
+void aumentarTiempoReferenciadoMenosAClave(char* clave) {
 	bool entradasMenosUna(t_tabla_entradas * entrada) {
 		return !string_equals_ignore_case(entrada->clave, clave);
 	}
+
+	log_trace(logInstancia, "clave: %s", clave);
 
 	t_list * listaFiltrada = list_filter(tablaEntradas,
 			(void *) entradasMenosUna);
@@ -470,7 +477,8 @@ void aumentarTiempoReferenciadoMenosAClave(char * clave) {
 
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
-	entradaBuscada->tiempoReferenciado = 0;
+	if(entradaBuscada != NULL)
+		entradaBuscada->tiempoReferenciado = 0;
 
 	list_destroy(listaFiltrada);
 }

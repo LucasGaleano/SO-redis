@@ -8,7 +8,7 @@ int main(void) {
 
 	signal(SIGINT, (void*) atenderCtrlC);
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
-	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
+	g_logger = log_create("log.log", "Planificador", 0, LOG_LEVEL_TRACE);
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
