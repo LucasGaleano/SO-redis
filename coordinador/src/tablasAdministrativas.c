@@ -58,21 +58,29 @@ void mostrarInstancia(t_instancia * instancia) {
 }
 
 void bloquearInstancia(t_instancia* instancia){
+	printf("bloquear %s\n", instancia->nombre);
 	sem_wait(&instancia->instanciaMutex);
+	printf("bloqueada %s\n", instancia->nombre);
 }
 
 void desbloquearInstancia(t_instancia* instancia){
+	printf("desbloquear %s\n", instancia->nombre);
 	sem_post(&instancia->instanciaMutex);
+	printf("desbloqueada %s\n", instancia->nombre);
 }
 
 void bloquearTodasLasInstancias(t_list* tablaDeInstancias){
-	for(int i=0; i<list_size(tablaDeInstancias); i++)
-		bloquearInstancia(list_get(tablaDeInstancias,i));
+	for(int i=0; i<list_size(tablaDeInstancias); i++){
+		t_instancia* aux = list_get(tablaDeInstancias,i);
+		bloquearInstancia(aux);
+	}
 }
 
 void desbloquearTodasLasInstancias(t_list* tablaDeInstancias){
-	for(int i=0; i<list_size(tablaDeInstancias); i++)
-		desbloquearInstancia(list_get(tablaDeInstancias,i));
+	for(int i=0; i<list_size(tablaDeInstancias); i++){
+		t_instancia* aux = list_get(tablaDeInstancias,i);
+		desbloquearInstancia(aux);
+	}
 }
 
 void agregarTrabajoActual(t_instancia* instancia, char* clave, char* valor){
@@ -225,8 +233,7 @@ void eliminiarClaveDeInstancia(t_instancia* instancia, char* claveAEliminar) {
 		char* clave = list_get(claves, i);
 		if (strcmp(clave, claveAEliminar) == 0) {
 			char* claveEliminada = list_remove(claves, i);
-			int entradasOcupadas = cantidadEntradasPorClave(clave,instancia->tamanioEntrada);
-			instancia->espacioOcupado -= entradasOcupadas;
+			instancia->espacioOcupado--;
 			free(claveEliminada);
 			break;
 		}
@@ -237,13 +244,7 @@ void agregarClaveDeInstancia(t_instancia* instancia, char* clave){
 
 	char *claveAgregar = string_duplicate(clave);
 	list_add(instancia->claves,claveAgregar);
-	int entradasOcupadas = cantidadEntradasPorClave(clave,instancia->tamanioEntrada);
-	instancia->espacioOcupado += entradasOcupadas;
-}
-
-int cantidadEntradasPorClave(char* clave, int tamanioEntrada){
-	int lenClave = string_length(clave);
-	return (lenClave/tamanioEntrada + (lenClave%tamanioEntrada != 0));
+	instancia->espacioOcupado ++;
 }
 
 t_instancia* buscarInstancia(t_list* tablaDeInstancias,bool buscaNoDisponibles, char* nombre,
@@ -321,7 +322,6 @@ void cerrarConexion(void* conexion) {
 	t_conexion* conexionACerrar = (t_conexion*)conexion;
 	printf("cerrando %s\n",conexionACerrar->nombre);
 	close(conexionACerrar->socket);
-	printf("socket: %d", conexionACerrar->socket);
 }
 
 void destruirConexion(void* conexion){

@@ -1,5 +1,4 @@
 #include "coordinador.h"
-//TODO hacer funcion logSeguro y reemplazar logTraceSeguro
 
 int main(void) {
 
@@ -11,16 +10,20 @@ int main(void) {
 	g_configuracion = malloc(sizeof(t_configuraciones));
 	g_respuesta = true;
 
+	g_config = config_create(PATH_CONFIG);
+	armarConfigCoordinador(g_configuracion, g_config);
+
 	g_logger = log_create("coordinador.log", "coordinador", true,
 			LOG_LEVEL_TRACE);
 
-	t_config* config = config_create(PATH_CONFIG);
-	armarConfigCoordinador(g_configuracion, config);
+	g_loggerDebug = log_create("coordinador.log", "coordinador",
+			false, LOG_LEVEL_TRACE);
 
 	sem_init(&g_mutexLog, 0, 1);
 	sem_init(&g_mutex_tablas, 0, 1);
 	sem_init(&g_mutex_respuesta_set, 0, 0);
 	sem_init(&g_mutex_respuesta_store, 0, 0);
+	sem_init(&g_peticion, 0, 1);
 
 	iniciarServidor(g_configuracion->puertoConexion);
 
@@ -75,6 +78,7 @@ void* procesarPeticion(void* cliente_fd) {
 		if ((recvError = recv(*(int*) cliente_fd, buffer, 1000, 0)) <= 0) {
 			procesarClienteDesconectado(*(int*) cliente_fd);
 			free(buffer);
+			pthread_exit(0);
 			return 0;
 		}
 
@@ -95,6 +99,7 @@ void* procesarPeticion(void* cliente_fd) {
 
 void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 
+
 	switch (paquete->codigoOperacion) {
 
 	case HANDSHAKE:
@@ -110,6 +115,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	case SET:
+		sem_wait(&g_peticion);
 		usleep(g_configuracion->retardo * 1000);
 		procesarSET(paquete, cliente_fd);
 		break;
@@ -120,6 +126,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	case STORE:
+		sem_wait(&g_peticion);
 		usleep(g_configuracion->retardo * 1000);
 		procesarSTORE(paquete, cliente_fd);
 		break;
@@ -149,16 +156,16 @@ void procesarHandshake(t_paquete* paquete, int cliente_fd) {
 
 	switch (recibirHandshake(paquete)) {
 	case PLANIFICADOR:
-		log_debug(g_logger, "se conecto el planificador: %i", cliente_fd);
+		logSeguro("info",g_mutexLog, "se conecto el planificador: %i", cliente_fd);
 		agregarConexion(g_diccionarioConexiones, "planificador", cliente_fd);
 		break;
 
 	case ESI:
-		log_info(g_logger, "se conecto un esi: %i", cliente_fd);
+		logSeguro("debug",g_mutexLog, "se conecto un esi: %i", cliente_fd);
 		break;
 
 	case INSTANCIA:
-		log_info(g_logger, "se conecto la instancia: %i", cliente_fd);
+		logSeguro("debug",g_mutexLog, "se conecto la instancia: %i", cliente_fd);
 		break;
 
 	}
@@ -169,7 +176,8 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 	int respuesta = recibirRespuesta(paquete);
 	t_conexion* conexionCliente = buscarConexion(g_diccionarioConexiones, NULL,
 			cliente_fd);
-	t_instancia* instanciaCliente = buscarInstancia(g_tablaDeInstancias, false, conexionCliente->nombre, 0, NULL);
+	t_instancia* instanciaCliente = buscarInstancia(g_tablaDeInstancias, false,
+			conexionCliente->nombre, 0, NULL);
 	bool esPlanificadorElCliente = (strcmp(conexionCliente->nombre,
 			"planificador") == 0);
 
@@ -177,79 +185,105 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 
 	case ERROR_ESPACIO_INSUFICIENTE:
 
-		bloquearTodasLasInstancias(g_tablaDeInstancias);
 
+		logSeguro("error",g_mutexLog,"error espacio insuficiente %s",instanciaCliente->nombre);
+		desbloquearInstancia(instanciaCliente);
+		bloquearTodasLasInstancias(g_tablaDeInstancias);
+		logSeguro("debug",g_mutexLog,"bloqueadas todas instancias");
 		compactarTodasLasInstancias(g_tablaDeInstancias,
 				g_diccionarioConexiones);
-		desbloquearTodasLasInstancias(g_tablaDeInstancias);
 
-		t_sentencia* trabajoInstanciaErrorSet = conseguirTrabajoActual(
-				instanciaCliente);
+		//desbloquearTodasLasInstancias(g_tablaDeInstancias);
+		//CONTINUAR CUANDO SE DESBLOQUEAN TODAS
+		bloquearTodasLasInstancias(g_tablaDeInstancias);
+
+		t_sentencia* trabajoInstanciaErrorSet = conseguirTrabajoActual(instanciaCliente);
+
+		bloquearInstancia(instanciaCliente);
 		enviarSetDefinitivo(conexionCliente->socket,
 				trabajoInstanciaErrorSet->clave,
 				trabajoInstanciaErrorSet->valor);
-		bloquearInstancia(instanciaCliente);
+
 		free(trabajoInstanciaErrorSet->clave);
 		free(trabajoInstanciaErrorSet->valor);
 		free(trabajoInstanciaErrorSet);
 
 		break;
 
+	case COMPACTAR:
+		logSeguro("debug",g_mutexLog,"%s termino compactacion", instanciaCliente->nombre);
+		desbloquearInstancia(instanciaCliente);
+		break;
+
 	case ERROR_TAMANIO_CLAVE:
-		log_error(g_logger, "%s mando error de tamanio de clave",
+		logSeguro("error",g_mutexLog, "%s mando error de tamanio de clave",
 				conexionCliente->nombre);
+
 		break;
 
 	case SET_OK:
 		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = true;
-			log_debug(g_logger, "%s acepto el SET", conexionCliente->nombre);
+			logSeguro("debug",g_mutexLog, "%s acepto el SET", conexionCliente->nombre);
 		} else {
-			log_debug(g_logger, "le llego el SET  a %s",
-					conexionCliente->nombre);
-			desbloquearInstancia(instanciaCliente);
 			t_sentencia* TrabajoInstanciaProcesada = conseguirTrabajoActual(
 					instanciaCliente);
+			logSeguro("debug",g_mutexLog, "le llego el SET %s a %s",
+					TrabajoInstanciaProcesada->clave, conexionCliente->nombre);
+
+
 			agregarClaveDeInstancia(instanciaCliente,
 					TrabajoInstanciaProcesada->clave);
+			desbloquearInstancia(instanciaCliente);
 			free(TrabajoInstanciaProcesada->clave);
 			free(TrabajoInstanciaProcesada->valor);
 			free(TrabajoInstanciaProcesada);
+			sem_post(&g_peticion);
 		}
+
 		break;
 
 	case SET_DEFINITIVO_OK:
 		;
-		desbloquearInstancia(instanciaCliente);
+		logSeguro("debug",g_mutexLog, "%s acepto el SET DEFINITIVO", instanciaCliente->nombre);
+		desbloquearTodasLasInstancias(g_tablaDeInstancias);
+		sem_post(&g_peticion);
 		break;
 
 	case SET_DEFINITIVO_ERROR:
 		;
-		desbloquearInstancia(instanciaCliente);
+		logSeguro("error",g_mutexLog, "%s acepto el SET DEFINITIVO", instanciaCliente->nombre);
+		desbloquearTodasLasInstancias(g_tablaDeInstancias);
+		sem_post(&g_peticion);
 		break;
 
 	case SET_ERROR:
 		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_set);
 			g_respuesta = false;
-			log_error(g_logger, "%s no acepto el SET", conexionCliente->nombre);
+			logSeguro("warning",g_mutexLog, "%s no acepto el SET",
+					conexionCliente->nombre);
 		} else {
-			log_error(g_logger, "hubo un error con el SET de la %s",
+			logSeguro("error",g_mutexLog, "hubo un error con el SET de la %s",
 					conexionCliente->nombre);
 			desbloquearInstancia(instanciaCliente);
+			sem_post(&g_peticion);
 		}
+
 		break;
 
 	case STORE_OK:
 		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_store);
 			g_respuesta = true;
-			log_debug(g_logger, "%s acepto el STORE", conexionCliente->nombre);
+			logSeguro("debug",g_mutexLog, "%s acepto el STORE", conexionCliente->nombre);
 		} else {
-			log_debug(g_logger, "le llego el STORE a %s",
+			logSeguro("debug",g_mutexLog, "le llego el STORE a %s",
 					conexionCliente->nombre);
 			desbloquearInstancia(instanciaCliente);
+			sem_post(&g_peticion);
+
 		}
 		break;
 
@@ -257,12 +291,13 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 		if (esPlanificadorElCliente) {
 			sem_post(&g_mutex_respuesta_store);
 			g_respuesta = false;
-			log_error(g_logger, "%s no acepto el STORE",
+			logSeguro("warning",g_mutexLog, "%s no acepto el STORE",
 					conexionCliente->nombre);
 		} else {
-			log_error(g_logger, "hubo un error con el STORE de la %s",
+			logSeguro("error",g_mutexLog, "hubo un error con el STORE de la %s",
 					conexionCliente->nombre);
 			desbloquearInstancia(instanciaCliente);
+			sem_post(&g_peticion);
 		}
 		break;
 	}
@@ -275,56 +310,62 @@ void procesarGET(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(
 			g_diccionarioConexiones, "planificador", 0);
 	enviarGet(conexionDelPlanificador->socket, clave);
-	log_debug(g_logger, "enviar GET al planificador: %i, clave: %s\n",
+	logSeguro("info",g_mutexLog, "enviar GET al planificador: %i, clave: %s\n",
 			conexionDelPlanificador->socket, clave);
 	free(clave);
+
 }
 
 void procesarSET(t_paquete* paquete, int cliente_fd) {
 
 	t_claveValor* sentencia = recibirSet(paquete);
-	t_conexion* conexionDelPlanificador = buscarConexion(g_diccionarioConexiones, "planificador", 0);
+	t_conexion* conexionDelPlanificador = buscarConexion(
+			g_diccionarioConexiones, "planificador", 0);
 	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
 
 	if (!existeClaveEnSistema(g_diccionarioClaves, sentencia->clave)) {
-		log_error(g_logger, "SET - la clave %s no existe.", sentencia->clave);
+		logSeguro("warning",g_mutexLog, "SET - la clave %s no existe.", sentencia->clave);
 		enviarRespuesta(conexionDelPlanificador->socket,
 				ERROR_CLAVE_NO_IDENTIFICADA);
 	} else {
 
-		log_debug(g_logger, "preguntar por SET %s %s al planificador",
+		logSeguro("debug",g_mutexLog, "preguntar por SET %s %s al planificador",
 				sentencia->clave, sentencia->valor);
 		enviarSet(conexionDelPlanificador->socket, sentencia->clave,
 				sentencia->valor);
 		sem_wait(&g_mutex_respuesta_set); //espera respuesta set
 
-		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,false,NULL,0,sentencia->clave);
-		if(instanciaElegida == NULL){
-			instanciaElegida = PlanificarInstancia(g_configuracion->algoritmoDist, sentencia->clave,g_tablaDeInstancias);
+		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,
+		false, NULL, 0, sentencia->clave);
+		if (instanciaElegida == NULL) {
+			instanciaElegida = PlanificarInstancia(
+					g_configuracion->algoritmoDist, sentencia->clave,
+					g_tablaDeInstancias);
 		}
-
 
 		if (g_respuesta == true) {
 
 			if (instanciaElegida == NULL) {
-				log_error(g_logger,
+				logSeguro("error",g_mutexLog,
 						"no se pudo planificar una instancia para la clave: %s",
 						sentencia->clave);
-				enviarRespuesta(conexionDelPlanificador->socket,ERROR_CLAVE_INACCESIBLE);
+				enviarRespuesta(conexionDelPlanificador->socket,
+						ERROR_CLAVE_INACCESIBLE);
 				return;
 			}
 
-
-
-			t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones, instanciaElegida->nombre, 0);
-
+			t_conexion* conexionDeInstancia = buscarConexion(
+					g_diccionarioConexiones, instanciaElegida->nombre, 0);
 
 			instanciaElegida->ultimaModificacion = g_tiempoPorEjecucion;
 
-			agregarTrabajoActual(instanciaElegida, sentencia->clave,sentencia->valor);
+			agregarTrabajoActual(instanciaElegida, sentencia->clave,
+					sentencia->valor);
 			bloquearInstancia(instanciaElegida);
-			enviarSet(conexionDeInstancia->socket, sentencia->clave,sentencia->valor);
-			logTraceSeguro(g_logger, g_mutexLog, "enviando SET %s %s a %s",sentencia->clave, sentencia->valor,instanciaElegida->nombre);
+			logSeguro("info", g_mutexLog, "ENVIAR SET %s %s a %s",sentencia->clave, sentencia->valor,instanciaElegida->nombre);
+			enviarSet(conexionDeInstancia->socket, sentencia->clave,
+					sentencia->valor);
+
 		}
 
 		free(sentencia->clave);
@@ -339,52 +380,50 @@ void procesarSTORE(t_paquete* paquete, int cliente_fd) {
 	t_conexion* conexionDelPlanificador = buscarConexion(
 			g_diccionarioConexiones, "planificador", 0);
 
-	//log_debug(g_logger, "preguntar por STORE %s %s al planificador", sentencia->clave,sentencia->valor);
+	logSeguro("debug",g_mutexLog, "preguntar por STORE %s al planificador", clave);
 	enviarStore(conexionDelPlanificador->socket, clave);
 	g_tiempoPorEjecucion = g_tiempoPorEjecucion + 1;
-	sem_wait(&g_mutex_respuesta_store); //espera respuesta store
+	sem_wait(&g_mutex_respuesta_store); //espera respuesta store del planificador
 
-	if (g_respuesta == true) {
-		t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,
-				false, NULL, 0, clave);
-		if (instanciaElegida == NULL) { //si no esta busca en las desconectadas
-			instanciaElegida = buscarInstancia(g_tablaDeInstancias, true, NULL,
-					0, clave);
-		}
-		if (existeClaveEnSistema(g_diccionarioClaves, clave)) {
-			if (instanciaElegida != NULL) {
-				if (instanciaElegida->disponible == true) {
-					//mostrarInstancia(instanciaElegida);
-
-
-					t_conexion* conexionDeInstancia = buscarConexion(
-							g_diccionarioConexiones, instanciaElegida->nombre,
-							0);
-
-					bloquearInstancia(instanciaElegida);
-					enviarStore(conexionDeInstancia->socket, clave);
-					logTraceSeguro(g_logger, g_mutexLog,
-							"ENVIAR STORE %s a %s\n", clave,
-							instanciaElegida->nombre);
-
-				} else {
-					log_error(g_logger,
-							"la clave %s se encuentra en la %s pero esta desconectada.",
-							clave, instanciaElegida->nombre);
-					enviarRespuesta(conexionDelPlanificador->socket,
-							ERROR_CLAVE_INACCESIBLE);
-				}
-			} else {
-				log_error(g_logger,
-						"la clave %s no se encuentra en ninguna instancia.",
-						clave); //no hacer nada
-			}
-		} else {
-			log_error(g_logger, "STORE - la clave %s no existe.", clave);
-			enviarRespuesta(conexionDelPlanificador->socket,
-					ERROR_CLAVE_NO_IDENTIFICADA);
-		}
+	if (g_respuesta == false) {
+		return;
 	}
+
+	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias, false,
+			NULL, 0, clave);
+
+	if (instanciaElegida == NULL) { //si no esta busca en las desconectadas
+		instanciaElegida = buscarInstancia(g_tablaDeInstancias, true, NULL, 0,
+				clave);
+	}
+	if (!existeClaveEnSistema(g_diccionarioClaves, clave)) {
+		logSeguro("error",g_mutexLog, "STORE - la clave %s no existe.", clave);
+		enviarRespuesta(conexionDelPlanificador->socket,
+				ERROR_CLAVE_NO_IDENTIFICADA);
+		return;
+	}
+	if (instanciaElegida == NULL) {
+		logSeguro("warning",g_mutexLog,
+				"la clave %s no se encuentra en ninguna instancia.", clave); //no hacer nada
+		return;
+	}
+
+	if (instanciaElegida->disponible == false) {
+		logSeguro("error",g_mutexLog,
+				"la clave %s se encuentra en la %s pero esta desconectada.",
+				clave, instanciaElegida->nombre);
+		enviarRespuesta(conexionDelPlanificador->socket,
+				ERROR_CLAVE_INACCESIBLE);
+		return;
+	}
+
+	t_conexion* conexionDeInstancia = buscarConexion(g_diccionarioConexiones,
+			instanciaElegida->nombre, 0);
+
+	bloquearInstancia(instanciaElegida);
+	enviarStore(conexionDeInstancia->socket, clave);
+	logSeguro("info", g_mutexLog, "ENVIAR STORE %s a %s\n", clave,
+			instanciaElegida->nombre);
 
 	free(clave);
 }
@@ -409,7 +448,7 @@ void procesarNombreInstancia(t_paquete* paquete, int cliente_fd) {
 	distribuirKeys(g_tablaDeInstancias);
 	enviarInfoInstancia(cliente_fd, g_configuracion->cantidadEntradas,
 			g_configuracion->tamanioEntradas, instanciaNueva->claves);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto instancia: %s", nombre);
+	logSeguro("info", g_mutexLog, "se conecto instancia: %s", nombre);
 
 	free(nombre);
 }
@@ -419,7 +458,7 @@ void procesarNombreESI(t_paquete* paquete, int cliente_fd) {
 	char* nombreESI = recibirNombreEsi(paquete);
 
 	agregarConexion(g_diccionarioConexiones, nombreESI, cliente_fd);
-	logTraceSeguro(g_logger, g_mutexLog, "se conecto esi: %s", nombreESI);
+	logSeguro("info", g_mutexLog, "se conecto esi: %s", nombreESI);
 
 	free(nombreESI);
 }
@@ -432,6 +471,8 @@ void procesarClaveEliminada(t_paquete* paquete, int cliente_fd) {
 	t_instancia* instanciaElegida = buscarInstancia(g_tablaDeInstancias,
 	false, conexionDeInstancia->nombre, 0, NULL);
 	eliminiarClaveDeInstancia(instanciaElegida, clave);
+	logSeguro("info", g_mutexLog, "se elimino la clave %s de %s", clave,
+			instanciaElegida->nombre);
 
 	free(clave);
 
@@ -441,13 +482,39 @@ void procesarAvisoDesconexion(t_paquete* paquete, int cliente_fd) {
 	//TODO implemetar
 }
 
-void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
+void logSeguro(char* nivelLog, sem_t mutexLog, char* format, ...) {
 
 	va_list ap;
 	va_start(ap, format);
 	char* mensaje = string_from_vformat(format, ap);
 	sem_wait(&mutexLog);
-	log_trace(logger, mensaje);
+
+	if (string_equals_ignore_case("trace", nivelLog)) {
+		if(g_configuracion->logDebug)
+			log_trace(g_logger, mensaje);
+		else
+			log_trace(g_loggerDebug, mensaje);
+	}
+
+	if (string_equals_ignore_case("debug", nivelLog)) {
+		if(g_configuracion->logDebug)
+			log_debug(g_logger, mensaje);
+		else
+			log_debug(g_loggerDebug, mensaje);
+	}
+
+	if (string_equals_ignore_case("info", nivelLog)) {
+		log_info(g_logger, mensaje);
+	}
+
+	if (string_equals_ignore_case("warning", nivelLog)) {
+		log_warning(g_logger, mensaje);
+	}
+
+	if (string_equals_ignore_case("error", nivelLog)) {
+		log_error(g_logger, mensaje);
+	}
+
 	sem_post(&mutexLog);
 	free(mensaje);
 }
@@ -455,21 +522,23 @@ void logTraceSeguro(t_log* logger, sem_t mutexLog, char* format, ...) {
 void signal_handler(int signum) {
 
 	if (signum == SIGINT) {
-		log_error(g_logger, "Cerrando conexiones\n");
+		logSeguro("error",g_mutexLog ,"Cerrando conexiones\n");
 		cerrarTodasLasConexiones(g_diccionarioConexiones);
 
-		list_destroy_and_destroy_elements(g_tablaDeInstancias,(void*)destruirInstancia);
+		list_destroy_and_destroy_elements(g_tablaDeInstancias,
+				(void*) destruirInstancia);
 
 		sem_destroy(&g_mutexLog);
 		sem_destroy(&g_mutex_tablas);
 		sem_destroy(&g_mutex_respuesta_set);
 		sem_destroy(&g_mutex_respuesta_store);
-
+		config_destroy(g_config);
 		exit(0);
 	}
 	if (signum == SIGUSR1) {
-		t_config* config = config_create(PATH_CONFIG);
-		armarConfigCoordinador(g_configuracion, config);
+		config_destroy(g_config);
+		g_config = config_create(PATH_CONFIG);
+		armarConfigCoordinador(g_configuracion, g_config);
 		printf("algortimo planificaion actual: %s\n\n",
 				g_configuracion->algoritmoDist);
 		printf("INSTANCIAS----------------------\n");
@@ -488,12 +557,12 @@ void* procesarClienteDesconectado(int cliente_fd) {
 	}
 	if (string_equals_ignore_case(clienteDesconectado->nombre,
 			"planificador")) {
-		log_error(g_logger,
+		logSeguro("error",g_mutexLog,
 				"se desconecto %s\n\n\t\t --------ESTADO INSEGURO-------\n",
 				clienteDesconectado->nombre);
 		raise(SIGINT);
 	} else {
-		log_debug(g_logger, "se desconecto %s\n", clienteDesconectado->nombre);
+		logSeguro("warning",g_mutexLog, "se desconecto %s\n", clienteDesconectado->nombre);
 		t_instancia * instanciaDesconectada = buscarInstancia(
 				g_tablaDeInstancias, false, clienteDesconectado->nombre, 0,
 				NULL);
@@ -515,10 +584,12 @@ void compactarTodasLasInstancias(t_list* tablaDeInstancias,
 
 	for (int i = 0; i < list_size(tablaDeInstancias); i++) {
 		t_instancia* instanciaElegida = list_get(tablaDeInstancias, i);
+		logSeguro("debug",g_mutexLog,"instancia elegida para bloquear %s",instanciaElegida->nombre);
 		if (instanciaElegida->disponible) {
-			t_conexion* instanciaConexion = buscarConexion(
-					diccionarioConexiones, instanciaElegida->nombre, 0);
+			t_conexion* instanciaConexion = buscarConexion(diccionarioConexiones, instanciaElegida->nombre, 0);
+			logSeguro("debug",g_mutexLog,"enviar compactacion a %s",instanciaElegida->nombre);
 			enviarCompactacion(instanciaConexion->socket);
+
 		}
 	}
 }
@@ -535,6 +606,8 @@ void armarConfigCoordinador(t_configuraciones* g_configuracion,
 	g_configuracion->tamanioEntradas = config_get_int_value(archivoConfig,
 			"TAMANIO_ENTRADA");
 	g_configuracion->retardo = config_get_int_value(archivoConfig, "RETARDO");
+	g_configuracion->logDebug = config_get_int_value(archivoConfig,
+			"DEBUG_MODE");
 
 }
 

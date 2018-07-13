@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "tablasAdministrativas.h"
 #include <commons/config.h>
 #include <commons/log.h>
@@ -25,12 +26,15 @@ typedef struct{
 	int cantidadEntradas;
 	int tamanioEntradas;
 	int retardo;
+	int logDebug;
 }t_configuraciones;
 
 
 /*------------------------Globales-------------------------*/
 
+t_config* g_config;
 t_log* g_logger;
+t_log* g_loggerDebug;
 t_configuraciones* g_configuracion;
 t_list* g_tablaDeInstancias;
 t_list* g_diccionarioConexiones;
@@ -38,6 +42,7 @@ t_list* g_diccionarioClaves;
 sem_t g_mutexLog;
 sem_t g_mutex_respuesta_set;
 sem_t g_mutex_respuesta_store;
+sem_t g_peticion;
 bool g_respuesta;
 
 
@@ -57,7 +62,7 @@ void* procesarClienteDesconectado(int cliente_fd);
 void procesarClaveEliminada(t_paquete* unPaquete, int cliente_fd);
 void procesarAvisoDesconexion(t_paquete* UnPaquete, int cliente_fd);
 void compactarTodasLasInstancias(t_list* tablaDeInstancias, t_list* conexiones);
-void logTraceSeguro(t_log* logger,sem_t a,char* format,...);
+void logSeguro(char* logLevel,sem_t a,char* format,...);
 void armarConfigCoordinador(t_configuraciones *configuracion, t_config *config);
 t_instancia* PlanificarInstancia(char* algoritmoDePlanificacion,
 																	char* Clave,
