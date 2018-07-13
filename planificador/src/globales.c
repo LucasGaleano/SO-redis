@@ -59,6 +59,8 @@ char* liberarESI(char* key) {
 		void liberarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
 			nombre = strdup(infoBloqueo->data->nombreESI);
 			//free(infoBloqueo->data->nombreESI); // idem del comentario de free de listos
+			g_huboError = 1;
+			enviarRespuesta(infoBloqueo->data->socketESI, ABORTO_ESI);
 			free(infoBloqueo->data);
 			free(infoBloqueo->idESI);
 			free(infoBloqueo);
@@ -73,12 +75,10 @@ char* liberarESI(char* key) {
 	}
 
 	if (dictionary_has_key(g_listos, key)) {
-		/*---*/
 		t_infoListos* esi = malloc(sizeof(t_infoListos));
 		esi = dictionary_get(g_listos, key);
 		g_huboError = 1;
 		enviarRespuesta(esi->socketESI, ABORTO_ESI);
-		/*---*/
 		nombre = strdup(esi->nombreESI);
 		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
 		//free(esi);
