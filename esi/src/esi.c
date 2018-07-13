@@ -13,17 +13,19 @@ int main(int argc, char **argv) {
 
 	archivo = abrirArchivo(rutaScript, &tamArch, &archivofd);
 
-	//Setteo la ip para que arranque a leer desede el principio del archivo
-	ip = 0;
+	if (archivo != MAP_FAILED) {
+		//Setteo la ip para que arranque a leer desede el principio del archivo
+		ip = 0;
 
-	//Conecto esi con planificador y coordinador
-	conectarEsi();
+		//Conecto esi con planificador y coordinador
+		conectarEsi();
 
-	//Quedo a la espera de solicitudes
-	recibirSolicitudes = true;
-	while (recibirSolicitudes) {
-		gestionarSolicitudes(socketPlanificador, (void*) procesarPaquete,
-				logESI);
+		//Quedo a la espera de solicitudes
+		recibirSolicitudes = true;
+		while (recibirSolicitudes) {
+			gestionarSolicitudes(socketPlanificador, (void*) procesarPaquete,
+					logESI);
+		}
 	}
 
 	//Cierro el archivo
@@ -120,8 +122,8 @@ void procesarSolicitudEjecucion() {
 		case SET:
 			log_trace(logESI, "SET\tclave: <%s>\tvalor: <%s>\n",
 					parsed.argumentos.SET.clave, parsed.argumentos.SET.valor);
-			if(strlen(parsed.argumentos.SET.clave) > 40){
-				enviarRespuesta(socketCoordinador,ERROR_TAMANIO_CLAVE);
+			if (strlen(parsed.argumentos.SET.clave) > 40) {
+				enviarRespuesta(socketCoordinador, ERROR_TAMANIO_CLAVE);
 				//TODO liberar memoria
 				exit(1);
 			}
@@ -168,13 +170,15 @@ void procesarSolicitudAnterior() {
 	char* archivoLeido = archivo + ip;
 	int i;
 
-	for (i = ip-2 ;archivoLeido[i-1] != '\n' && i != 0; i--);
+	for (i = ip - 2; archivoLeido[i - 1] != '\n' && i != 0; i--)
+		;
 
 	ip = i;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
 void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
+
 //Abro el archivo
 	*archivo = fopen(rutaArchivo, "r");
 
@@ -186,7 +190,6 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 
 //Copio informacion del archivo
 	struct stat statArch;
-
 	stat(rutaArchivo, &statArch);
 
 //Tamaño del archivo que voy a leer
@@ -195,6 +198,7 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 //Leo el total del archivo y lo asigno al buffer
 	int fd = fileno(*archivo);
 	void * dataArchivo = mmap(0, *tamArc, PROT_READ, MAP_SHARED, fd, 0);
+
 
 //Confirmo la lectura del archivo
 	log_debug(logESI, "Abrio el archivo: %s", rutaArchivo);
@@ -212,11 +216,12 @@ char * proximaSentencia(char * archivo, int * ip, int * termino) {
 		;
 
 	*ip = *ip + i + 1;
-	log_debug(logESI, "tamanio de lo que queda del archivo: %i",strlen(archivo + (*ip)));
-	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip))<5 )
+	log_debug(logESI, "tamanio de lo que queda del archivo: %i",
+			strlen(archivo + (*ip)));
+	if (string_length(archivoNoLeido) < i || strlen(archivo + (*ip)) < 5)
 		*termino = 1;
 
-	char * sentencia = calloc(i + 1,sizeof(char));
+	char * sentencia = calloc(i + 1, sizeof(char));
 
 	memcpy(sentencia, archivoNoLeido, i);
 
