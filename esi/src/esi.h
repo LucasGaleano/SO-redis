@@ -19,7 +19,8 @@ int socketPlanificador;
 bool recibirSolicitudes;
 
 void * archivo;
-int ip;
+int ipActual;
+int ipAnterior;
 
 /*-------------------------Conexion-------------------------*/
 void 		conectarEsi					(void);

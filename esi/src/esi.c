@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
 
 	if (archivo != MAP_FAILED) {
 		//Setteo la ip para que arranque a leer desede el principio del archivo
-		ip = 0;
+		ipActual = 0;
+		ipAnterior = 0;
 
 		//Conecto esi con planificador y coordinador
 		conectarEsi();
@@ -103,7 +104,7 @@ void procesarSolicitudEjecucion() {
 
 	int termino = 0;
 
-	char * sentencia = proximaSentencia(archivo, &ip, &termino);
+	char * sentencia = proximaSentencia(archivo, &ipActual, &termino);
 
 	if (termino)
 		enviarEjecucionTerminada(socketPlanificador);
@@ -167,13 +168,7 @@ void procesarRespuestaSolicitud(t_paquete * unPaquete) {
 }
 
 void procesarSolicitudAnterior() {
-	char* archivoLeido = archivo + ip;
-	int i;
-
-	for (i = ip - 2; archivoLeido[i - 1] != '\n' && i != 0; i--)
-		;
-
-	ip = i;
+	ipActual = ipAnterior;
 }
 
 /*-------------------------Funciones auxiliares-------------------------*/
@@ -208,6 +203,8 @@ void * abrirArchivo(char * rutaArchivo, size_t * tamArc, FILE ** archivo) {
 
 char * proximaSentencia(char * archivo, int * ip, int * termino) {
 	char * archivoNoLeido = archivo + (*ip);
+
+	ipAnterior= *ip;
 
 	int i;
 
