@@ -25,7 +25,7 @@ void 							enviarGet					(int server_socket, char * clave);
 void 							enviarSet					(int server_socket, char * clave, char * valor);
 void 							enviarSetDefinitivo			(int server_socket, char * clave, char * valor);
 void 							enviarStore					(int server_socket, char * clave);
-void 							enviarSolicitusStatus		(int server_socket, char * clave);
+void 							enviarSolicitudStatus		(int server_socket, char * clave);
 void 							enviarRespuesta				(int server_socket, int codRespuesta);
 void 							enviarRespuestaStatus		(int server_socket, char* valor, char * nomInstanciaActual, char * nomIntanciaPosible);
 void 							enviarInfoInstancia			(int server_socket, int cantEntradas, int tamanioEntrada, t_list * listaClaves);

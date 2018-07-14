@@ -28,61 +28,61 @@ void ejecutarComando(char* linea, bool* ejecutar) {
 	char* Comando = obtenerParametro(linea, 0);
 
 	// MAN
-	if (string_equals_ignore_case(Comando, "man")) {
+	if (strcmp(Comando, "man") == 0) {
 		ejecutarMan();
 		return;
 	}
 
 	// PAUSAR PLANIFICACIÓN
-	if (string_equals_ignore_case(Comando, "pausar")) {
+	if (strcmp(Comando, "pausar") == 0) {
 		pausarPlanificacion();
 		return;
 	}
 
 	// CONTINUAR PLANIFICACIÓN
-	if (string_equals_ignore_case(Comando, "continuar")) {
+	if (strcmp(Comando, "continuar") == 0) {
 		continuarPlanificacion();
 		return;
 	}
 
 	// BLOQUEAR
-	if (string_equals_ignore_case(Comando, "bloquear")) {
+	if (strcmp(Comando, "bloquear") == 0) {
 		bloquear(linea);
 		return;
 	}
 
 	// DESBLOQUEAR
-	if (string_equals_ignore_case(Comando, "desbloquear")) {
+	if (strcmp(Comando, "desbloquear") == 0) {
 		desbloquear(linea);
 		return;
 	}
 
 	// LISTAR PROCESOS
-	if (string_equals_ignore_case(Comando, "listar")) {
+	if (strcmp(Comando, "listar") == 0) {
 		listarProcesos(linea);
 		return;
 	}
 
 	// KILL PROCESO
-	if (string_equals_ignore_case(Comando, "kill")) {
+	if (strcmp(Comando, "kill") == 0) {
 		killProceso(linea);
 		return;
 	}
 
 	// STATUS
-	if (string_equals_ignore_case(Comando, "status")) {
+	if (strcmp(Comando, "status") == 0) {
 		status(linea);
 		return;
 	}
 
 	// DEADLOCK
-	if (string_equals_ignore_case(Comando, "deadlock")) {
+	if (strcmp(Comando, "deadlock") == 0) {
 		deadlock();
 		return;
 	}
 
 	// SALIR DE LA CONSOLA
-	if (string_equals_ignore_case(Comando, "exit")) {
+	if (strcmp(Comando, "exit") == 0) {
 		salirConsola(ejecutar);
 
 		return;
@@ -301,11 +301,41 @@ void killProceso(char* linea) {
 		free(nombreESI);
 	}
 
+	int obtenerSocket(char* nombreESI) {
+		if (estaListo(nombreESI)) {
+			return ((t_infoListos*) dictionary_get(g_listos,
+					obtenerId(nombreESI)))->socketESI;
+		} else {
+			puts("Estoy bloqueado"); //todo
+			int socket;
+			void buscarESI(char* clave, t_list* esisBLoqueados) {
+				int j;
+				for (j = 0; j < list_size(esisBLoqueados); j++) {
+					t_infoListos* esi = list_get(esisBLoqueados, j);
+					if (strcmp(esi->nombreESI, nombreESI) == 0) {
+						socket = esi->socketESI;
+						break;
+					}
+
+				}
+			}
+			dictionary_iterator(g_bloq, (void*) buscarESI);
+			printf("socket %d\n", socket); //todo
+			return socket;
+		}
+	}
+
+	int socket = obtenerSocket(nombreESI);
+	printf("socket: %d\n", socket); //todo
+	//g_huboError = 1;
+	enviarRespuesta(obtenerSocket(nombreESI), ABORTO_ESI);
+
 	char* nombre = liberarESI(obtenerId(nombreESI));
 
 // Libero memoria
 	free(nombreESI);
 	free(nombre);
+	puts("Termina kill");
 }
 
 void status(char* linea) {
@@ -315,7 +345,7 @@ void status(char* linea) {
 	if (clave == NULL)
 		return;
 
-	enviarSolicitusStatus(g_socketCoordinador, clave);
+	enviarSolicitudStatus(g_socketCoordinador, clave);
 
 // muestro ESIs bloqueados a la espera de dicha clave
 	char* lineaExtra = string_new();
@@ -445,7 +475,7 @@ char* obtenerParametro(char* linea, int parametro) {
 }
 
 static void decirIdESI(t_infoBloqueo* infoESI) {
-	if (string_equals_ignore_case(infoESI->data->nombreESI, g_nombreESI))
+	if (strcmp(infoESI->data->nombreESI, g_nombreESI) == 0)
 		g_idESI = infoESI->idESI;
 }
 
@@ -454,7 +484,7 @@ static void averiguarIdESIBloq(char* clave, t_list* esisBloqueados) {
 }
 
 static void averiguarIdESIListos(char* idESI, t_infoListos* infoESI) {
-	if (string_equals_ignore_case(infoESI->nombreESI, g_nombreESI))
+	if (strcmp(infoESI->nombreESI, g_nombreESI) == 0)
 		g_idESI = idESI;
 }
 
@@ -484,7 +514,7 @@ bool estaListo(char* nombreESI) {
 	bool boolean = false;
 
 	void _estaListoESI(char* idESI, t_infoListos* infoESIListo) {
-		if (string_equals_ignore_case(nombreESI, infoESIListo->nombreESI)) {
+		if (strcmp(nombreESI, infoESIListo->nombreESI) == 0) {
 			boolean = true;
 		}
 	}
@@ -502,8 +532,7 @@ bool estaBloqueadoPorLaClave(char* nombreESI, char* clave) {
 				&& !list_is_empty(dictionary_get(g_bloq, clave))) {
 
 			bool _sonIguales(t_infoBloqueo* infoBloqueo) {
-				return string_equals_ignore_case(infoBloqueo->data->nombreESI,
-						nombreESI);
+				return (strcmp(infoBloqueo->data->nombreESI, nombreESI) == 0);
 			}
 
 			return list_any_satisfy(dictionary_get(g_bloq, clave),
@@ -520,6 +549,7 @@ bool estaBloqueadoPorElESI(char* claveBloq, char* nombreESIBloq) {
 	if (!dictionary_is_empty(g_clavesTomadas)) {
 		if (dictionary_has_key(g_clavesTomadas, nombreESIBloq)) {
 
+			free(g_clave);
 			g_clave = claveBloq;
 
 			return list_any_satisfy(
@@ -565,24 +595,15 @@ bool estaBloqueado(char* nombreESI) {
 }
 
 bool enEjecucion(char* nombreESI) {
-	if (estaBloqueado(nombreESI))
+	if (estaBloqueado(nombreESI) || g_nombreESIactual == NULL)
 		return false;
-	return string_equals_ignore_case(nombreESI, g_nombreESIactual);
+	return (strcmp(nombreESI, g_nombreESIactual) == 0);
 }
 
 /*------------------------------Auxiliares-desbloquear----------------------------*/
 
 bool sonIgualesClaves(char* claveActual) {
-	return string_equals_ignore_case(g_clave, claveActual);
-}
-
-void sacarClave(char* nombreESI, char* clave) {
-
-	g_clave = clave;
-
-	list_remove_and_destroy_by_condition(
-			dictionary_get(g_clavesTomadas, nombreESI),
-			(void*) sonIgualesClaves, (void*) free);
+	return (strcmp(g_clave, claveActual) == 0);
 }
 
 /*------------------------------Auxiliares-Status------------------------------*/
@@ -640,7 +661,7 @@ void crearIndiceEspera(t_infoBloqueo* esiBloqueado) {
 void creoElementosEnPosibleDeadlock(t_dictionary* diccionario,
 		void (*creoIndiceMatriz)(void*)) {
 	void _creoElementoEnPosibleDeadlock(char* elemento, t_list* lista) {
-		if(!list_is_empty(lista)){
+		if (!list_is_empty(lista)) {
 			list_iterate(lista, (void*) creoIndiceMatriz);
 			indice(elemento, diccionario);
 		}
@@ -661,7 +682,7 @@ void asignarEnMatrizEspera(t_infoBloqueo* infoESIBloqueado) {
 
 void asignoMatriz(t_dictionary* diccionario, void (*asignarTipoMatriz)(void*)) {
 	void _asignarMatriz(char* elemento, t_list* lista) {
-		if(!list_is_empty(lista)){
+		if (!list_is_empty(lista)) {
 			free(g_elemento);
 			g_elemento = strdup(elemento);
 			list_iterate(lista, (void*) asignarTipoMatriz);
