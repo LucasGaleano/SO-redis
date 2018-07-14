@@ -30,66 +30,76 @@ void ejecutarComando(char* linea, bool* ejecutar) {
 	// MAN
 	if (strcmp(Comando, "man") == 0) {
 		ejecutarMan();
+		free(Comando);
 		return;
 	}
 
 	// PAUSAR PLANIFICACIÓN
 	if (strcmp(Comando, "pausar") == 0) {
 		pausarPlanificacion();
+		free(Comando);
 		return;
 	}
 
 	// CONTINUAR PLANIFICACIÓN
 	if (strcmp(Comando, "continuar") == 0) {
 		continuarPlanificacion();
+		free(Comando);
 		return;
 	}
 
 	// BLOQUEAR
 	if (strcmp(Comando, "bloquear") == 0) {
 		bloquear(linea);
+		free(Comando);
 		return;
 	}
 
 	// DESBLOQUEAR
 	if (strcmp(Comando, "desbloquear") == 0) {
 		desbloquear(linea);
+		free(Comando);
 		return;
 	}
 
 	// LISTAR PROCESOS
 	if (strcmp(Comando, "listar") == 0) {
 		listarProcesos(linea);
+		free(Comando);
 		return;
 	}
 
 	// KILL PROCESO
 	if (strcmp(Comando, "kill") == 0) {
 		killProceso(linea);
+		free(Comando);
 		return;
 	}
 
 	// STATUS
 	if (strcmp(Comando, "status") == 0) {
 		status(linea);
+		free(Comando);
 		return;
 	}
 
 	// DEADLOCK
 	if (strcmp(Comando, "deadlock") == 0) {
 		deadlock();
+		free(Comando);
 		return;
 	}
 
 	// SALIR DE LA CONSOLA
 	if (strcmp(Comando, "exit") == 0) {
 		salirConsola(ejecutar);
-
+		free(Comando);
 		return;
 	}
 
 	// NO RECONOCER COMANDO
 	printf("No se ha encontrado el comando %s \n", Comando);
+	free(Comando);
 }
 
 /*-------------------------------Comandos------------------------------*/
@@ -248,7 +258,8 @@ void desbloquear(char* linea) {
 		return;
 
 	pthread_mutex_lock(&mutexBloqueo);
-	if (!dictionary_has_key(g_bloq, clave) || list_is_empty(dictionary_get(g_bloq, clave))) {
+	if (!dictionary_has_key(g_bloq, clave)
+			|| list_is_empty(dictionary_get(g_bloq, clave))) {
 		pthread_mutex_unlock(&mutexBloqueo);
 		printf(
 				"No se puede desbloquear un ESI de la clave %s que no esta bloqueada.\n",
@@ -285,10 +296,8 @@ void listarProcesos(char* linea) {
 
 	pthread_mutex_lock(&mutexBloqueo);
 	for (i = 0; i < list_size(dictionary_get(g_bloq, clave)); i++) {
-		t_infoBloqueo* infoBloqueo = malloc(sizeof(t_infoBloqueo));
-		infoBloqueo = list_get(dictionary_get(g_bloq, clave), i);
-
-		printf("	%s \n", infoBloqueo->data->nombreESI);
+		printf("	%s \n",
+				((t_infoBloqueo*) list_get(dictionary_get(g_bloq, clave), i))->data->nombreESI);
 	}
 	pthread_mutex_unlock(&mutexBloqueo);
 
@@ -312,43 +321,36 @@ void killProceso(char* linea) {
 
 	int obtenerSocket(char* nombreESI) {
 
-
 		if (estaListo(nombreESI)) {
 			return ((t_infoListos*) dictionary_get(g_listos,
 					obtenerId(nombreESI)))->socketESI;
 		} else {
-			puts("Estoy bloqueado"); //todo
 			int socket;
 			void buscarESI(char* clave, t_list* esisBLoqueados) {
 				int j;
 				for (j = 0; j < list_size(esisBLoqueados); j++) {
-					t_infoListos* esi = list_get(esisBLoqueados, j);
-					if (strcmp(esi->nombreESI, nombreESI) == 0) {
-						socket = esi->socketESI;
+					t_infoBloqueo* esi = list_get(esisBLoqueados, j);
+					if (strcmp(esi->data->nombreESI, nombreESI) == 0) {
+						socket = esi->data->socketESI;
 						break;
 					}
-
+					free(esi);
 				}
+
 			}
 			dictionary_iterator(g_bloq, (void*) buscarESI);
-			printf("socket %d\n", socket); //todo
 			return socket;
 		}
 	}
 
-	//int socket = obtenerSocket(nombreESI);
-	//printf("socket: %d\n", socket); //todo
-	//g_huboError = 1;
-	pthread_mutex_lock(&mutexListo);
-	enviarRespuesta(obtenerSocket(nombreESI), ABORTO_ESI);
-	pthread_mutex_unlock(&mutexListo);
-
-	char* nombre = liberarESI(obtenerId(nombreESI));
+	if (estaBloqueado(nombreESI) || estaListo(nombreESI)) {
+		pthread_mutex_lock(&mutexListo);
+		enviarRespuesta(obtenerSocket(nombreESI), ABORTO_ESI);
+		pthread_mutex_unlock(&mutexListo);
+	}
 
 // Libero memoria
 	free(nombreESI);
-	free(nombre);
-	puts("Termina kill");
 }
 
 void status(char* linea) {
@@ -473,8 +475,13 @@ char* obtenerParametro(char* linea, int parametro) {
 
 	char** palabras = string_split(linea, " ");
 
-	if (palabras[parametro] == NULL)
+	if (palabras[parametro] == NULL) {
+		int i;
+		for (i = 0; palabras[i] != NULL; i++)
+			free(palabras[i]);
+		free(palabras);
 		return NULL;
+	}
 
 	char* palabra = strdup(palabras[parametro]);
 
@@ -552,8 +559,7 @@ bool estaBloqueadoPorLaClave(char* nombreESI, char* clave) {
 
 			return list_any_satisfy(dictionary_get(g_bloq, clave),
 					(void*) _sonIguales);
-		}
-		else {
+		} else {
 			pthread_mutex_unlock(&mutexBloqueo);
 			return false;
 		}
