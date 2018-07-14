@@ -103,7 +103,9 @@ void desbloquearESI(char* clave) {
 		dictionary_put(g_bloq, clave, lista);
 	pthread_mutex_unlock(&mutexBloqueo);
 	sem_post(&ESIentrada);
+	pthread_mutex_lock(&modificacion);
 	g_huboModificacion = 1;
+	pthread_mutex_unlock(&modificacion);
 }
 
 void liberarClaves(char* clave) {

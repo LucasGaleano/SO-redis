@@ -81,9 +81,6 @@ void asignarBloquedas(char** codigos) {
 void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 	t_infoListos *dat;
 	char* keyAux, *nombreAux;
-	pthread_mutex_lock(&mutexLog);
-	log_debug(g_logger, "Me ha llegado una solicitud");
-	pthread_mutex_unlock(&mutexLog);
 	switch (unPaquete->codigoOperacion) {
 	case HANDSHAKE:
 		recibirHandshakePlanif(unPaquete, socketCliente);
@@ -102,18 +99,15 @@ void procesarPaqueteESIs(t_paquete* unPaquete, int* socketCliente) {
 		dictionary_put(g_listos, keyAux, dat);
 		pthread_mutex_unlock(&mutexListo);
 		free(keyAux);
+		pthread_mutex_lock(&modificacion);
+		g_huboModificacion = 1;
+		pthread_mutex_unlock(&modificacion);
 		sem_post(&ESIentrada);
 		pthread_mutex_lock(&mutexLog);
 		log_info(g_logger, "Se conecto exitosamente el %s", dat->nombreESI);
 		pthread_mutex_unlock(&mutexLog);
-		pthread_mutex_lock(&modificacion);
-		g_huboModificacion = 1;
-		pthread_mutex_unlock(&modificacion);
 		break;
 	case TERMINO_ESI:
-		pthread_mutex_lock(&mutexLog);
-		log_debug(g_logger, "%s me avisa que finalizo", g_nombreESIactual);
-		pthread_mutex_unlock(&mutexLog);
 		g_termino = 1;
 		break;
 	case ENVIAR_ERROR:
@@ -166,20 +160,15 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	case SET:
 		pthread_mutex_lock(&mutexInstruccionConsola);
 		if (!g_instruccionConsola) {
-			pthread_mutex_lock(&mutexLog);
-			log_debug(g_logger, "Me ha llegado un SET");
-			pthread_mutex_unlock(&mutexLog);
 			g_claveTomada = 0;
 			t_claveValor* recv = recibirSet(unPaquete);
 			g_claveGET = recv->clave;
-			log_debug(g_logger, "clave %s: ", g_claveGET);
 			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
 				pthread_mutex_lock(&mutexClavesTomadas);
 				g_claveTomada = list_any_satisfy(
 						dictionary_get(g_clavesTomadas, g_nombreESIactual),
 						(void*) condicionDeTomada);
 				pthread_mutex_unlock(&mutexClavesTomadas);
-				log_debug(g_logger, "tomada %d: ", g_claveTomada);
 			}
 			if (g_claveTomada)
 				enviarRespuesta(g_socketCoordinador, SET_OK);
@@ -211,9 +200,6 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 	case GET:
 		pthread_mutex_lock(&mutexInstruccionConsola);
 		if (!g_instruccionConsola) {
-			pthread_mutex_lock(&mutexLog);
-			log_debug(g_logger, "Me ha llegado un GET");
-			pthread_mutex_unlock(&mutexLog);
 			g_claveTomada = 0;
 			g_claveGET = recibirGet(unPaquete);
 			if (!esiTieneClave()) {

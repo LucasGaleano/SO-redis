@@ -7,9 +7,7 @@ static double calcularProximaRafaga(double estimadoAnterior,
 
 static double calcularRR(double estimadoAnterior, double realAnterior,
 		double tEnEspera) {
-	return (1
-			+ tEnEspera
-					/ calcularProximaRafaga(estimadoAnterior, realAnterior, 0));
+	return 1 + (tEnEspera/calcularProximaRafaga(estimadoAnterior, realAnterior, 0));
 }
 
 static int esMenor(int comp1, int comp2) {
@@ -88,6 +86,7 @@ static char* calcularSiguiente(double (*calculadorProx)(double, double, double),
 	}
 	log_trace(g_logger, "Se ejecuta %s",
 			((t_infoListos*) (dictionary_get(g_listos, key)))->nombreESI);
+	log_warning(g_logger, "estimacion: %.2f", unValor);
 	free(auxKey);
 	return key;
 }
@@ -164,11 +163,11 @@ extern void planificarConDesalojo(void) {
 				int cont;
 				t_infoListos *aEjecutar = NULL;
 				char* key = NULL;
+				sem_wait(&ESIentrada);
 				g_huboModificacion = 0;
 				while (1) {
 					cont = 0;
 					g_huboError = 0;
-					sem_wait(&ESIentrada);
 					pthread_mutex_lock(&mutexConsola);
 					pthread_mutex_unlock(&mutexConsola);
 					pthread_mutex_lock(&mutexListo);
@@ -222,6 +221,7 @@ extern void planificarConDesalojo(void) {
 					}
 					free(key);
 					g_idESIactual = NULL;
+					sem_wait(&ESIentrada);
 				}
 				pthread_cleanup_pop(1);
 }
