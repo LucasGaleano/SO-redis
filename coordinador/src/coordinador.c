@@ -233,9 +233,9 @@ void procesarRespuesta(t_paquete* paquete, int cliente_fd) {
 			agregarClaveDeInstancia(instanciaCliente,
 					TrabajoInstanciaProcesada->clave);
 			desbloquearInstancia(instanciaCliente);
-			free(TrabajoInstanciaProcesada->clave);
-			free(TrabajoInstanciaProcesada->valor);
-			free(TrabajoInstanciaProcesada);
+//			free(TrabajoInstanciaProcesada->clave);
+//			free(TrabajoInstanciaProcesada->valor);
+//			//free(TrabajoInstanciaProcesada);
 			desbloquearPeticion(&g_peticion);
 		}
 
@@ -505,12 +505,14 @@ void procesarCompactar(t_paquete* paquete, int cliente_fd) {
 				g_tablaDeInstancias);
 		t_sentencia* trabajoInstanciaErrorSet = conseguirTrabajoActual(
 				instanciaConErrorSet);
+
 		enviarSetDefinitivo(conexionCliente->socket,
 				trabajoInstanciaErrorSet->clave,
 				trabajoInstanciaErrorSet->valor);
-		free(trabajoInstanciaErrorSet->clave);
-		free(trabajoInstanciaErrorSet->valor);
-		free(trabajoInstanciaErrorSet);
+
+		//free(trabajoInstanciaErrorSet->clave);
+		//free(trabajoInstanciaErrorSet->valor);
+		//free(trabajoInstanciaErrorSet);
 		desbloquearPeticion(&g_peticion);
 	}
 	desbloquearInstancia(instanciaCliente);

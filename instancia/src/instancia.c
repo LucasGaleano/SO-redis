@@ -65,7 +65,7 @@ void conectarInstancia() {
 	socketCoordinador = conectarCliente(coordinadorIP, coordinadorPuerto,
 			INSTANCIA);
 
-	if(socketCoordinador == -1){
+	if (socketCoordinador == -1) {
 		log_error(logInstancia, "No esta conectado el coordinador");
 		exit(EXIT_FAILURE);
 	}
@@ -162,22 +162,59 @@ void procesarSet(t_paquete * unPaquete, int client_socket) {
 				"La clave existe por lo que la elimino y guardo el valor nuevo \n");
 	}
 
-	int respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
+	int entradasNecesarias = entradasNecesariaParaUnTamanio(
+			string_length(claveValor->valor));
 
-	switch (respuesta) {
-	case CANTIDAD_INDEX_LIBRES_INEXISTENTES:
-		enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
-		log_error(logInstancia, "Error espacio insuficiente");
-		aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
-		break;
-	default:
-		enviarRespuesta(client_socket, SET_OK);
-		void * valor = buscarValorSegunClave(claveValor->clave);
-		log_trace(logInstancia, "El valor de la clave guardada es: %s",
-				(char *) valor);
-		free(valor);
-		aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
-		break;
+	int entradasLibres = cantidadIndexLibres();
+
+	int respuesta;
+
+	if (entradasNecesarias <= entradasLibres) {
+		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
+		if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
+			enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+		} else {
+			enviarRespuesta(client_socket, SET_OK);
+			void * valor = buscarValorSegunClave(claveValor->clave);
+			log_trace(logInstancia, "El valor de la clave guardada es: %s",
+					(char *) valor);
+			free(valor);
+			aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
+		}
+	} else {
+		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo: %s",
+				algoritmoReemplazo);
+
+		if (string_equals_ignore_case(algoritmoReemplazo, "CIRC")) {
+			algoritmoReemplazoCircular(claveValor->clave, claveValor->valor);
+		}
+
+		if (string_equals_ignore_case(algoritmoReemplazo, "LRU")) {
+			algoritmoReemplazoLeastRecentlyUsed(claveValor->clave,
+					claveValor->valor);
+		}
+
+		if (string_equals_ignore_case(algoritmoReemplazo, "BSU")) {
+			algoritmoReemplazoBiggestSpaceUsed(claveValor->clave,
+					claveValor->valor);
+		}
+
+		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
+
+		if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
+			enviarRespuesta(client_socket, ERROR_ESPACIO_INSUFICIENTE);
+			log_error(logInstancia, "Error espacio insuficiente");
+			aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
+		} else {
+			enviarRespuesta(client_socket, SET_OK);
+			void * valor = buscarValorSegunClave(claveValor->clave);
+			log_trace(logInstancia, "El valor de la clave guardada es: %s",
+					(char *) valor);
+			free(valor);
+			aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
+
+		}
+
 	}
 
 	mostrarBitmap();
@@ -201,34 +238,6 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
-		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo: %s", algoritmoReemplazo);
-
-		if (string_equals_ignore_case(algoritmoReemplazo, "CIRC")) {
-			algoritmoReemplazoCircular(claveValor->clave, claveValor->valor);
-		}
-
-		if (string_equals_ignore_case(algoritmoReemplazo, "LRU")) {
-			algoritmoReemplazoLeastRecentlyUsed(claveValor->clave,
-					claveValor->valor);
-		}
-
-		if (string_equals_ignore_case(algoritmoReemplazo, "BSU")) {
-			algoritmoReemplazoBiggestSpaceUsed(claveValor->clave,
-					claveValor->valor);
-		}
-
-		mostrarBitmap();
-
-		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
-
-	}
-
-	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES){
-		compactar();
-		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
-	}
-
-	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		enviarRespuesta(client_socket, SET_DEFINITIVO_ERROR);
 		log_error(logInstancia, "Error espacio insuficiente");
 	} else {
@@ -237,6 +246,7 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 		log_trace(logInstancia, "El valor de la clave guardada es: %s",
 				(char *) valor);
 		free(valor);
+
 	}
 
 	free(claveValor->clave);
@@ -485,7 +495,7 @@ void aumentarTiempoReferenciadoMenosAClave(char* clave) {
 
 	t_tabla_entradas * entradaBuscada = buscarEntrada(clave);
 
-	if(entradaBuscada != NULL)
+	if (entradaBuscada != NULL)
 		entradaBuscada->tiempoReferenciado = 0;
 
 	list_destroy(listaFiltrada);
