@@ -22,7 +22,6 @@ int g_tEjecucion;
 int g_claveTomada;
 
 int g_socketEnEjecucion;
-int g_huboModificacion;
 char* g_claveGET;
 char* g_idESIactual;
 char* g_nombreESIactual;

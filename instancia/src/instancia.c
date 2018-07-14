@@ -223,6 +223,11 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 
 	}
 
+	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES){
+		compactar();
+		respuesta = agregarClaveValor(claveValor->clave, claveValor->valor);
+	}
+
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
 		enviarRespuesta(client_socket, SET_DEFINITIVO_ERROR);
 		log_error(logInstancia, "Error espacio insuficiente");

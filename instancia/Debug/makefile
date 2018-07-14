@@ -26,7 +26,7 @@ endif
 all: instancia
 
 dependents:
-	-cd /home/utnso/workspace/tp-2018-1c--0/biblioteca-propia/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/tp-2018-1c--0/biblioteca-propia/Debug && $(MAKE) clean all
 
 # Tool invocations
 instancia: $(OBJS) $(USER_OBJS) /home/utnso/workspace/tp-2018-1c--0/biblioteca-propia/Debug/libbiblioteca-propia.so

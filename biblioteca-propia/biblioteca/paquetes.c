@@ -275,7 +275,7 @@ void enviarRespuesta(int server_socket, int codRespuesta) {
 	enviarPaquetes(server_socket, unPaquete);
 }
 
-void enviarSolicitusStatus(int server_socket, char * clave) {
+void enviarSolicitudStatus(int server_socket, char * clave) {
 	t_paquete * unPaquete = malloc(sizeof(t_paquete));
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;

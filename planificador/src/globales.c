@@ -58,9 +58,7 @@ char* liberarESI(char* key) {
 
 		void liberarT_infoBloqueo(t_infoBloqueo* infoBloqueo) {
 			nombre = strdup(infoBloqueo->data->nombreESI);
-			//free(infoBloqueo->data->nombreESI); // idem del comentario de free de listos
-			g_huboError = 1;
-			enviarRespuesta(infoBloqueo->data->socketESI, ABORTO_ESI);
+			free(infoBloqueo->data->nombreESI);
 			free(infoBloqueo->data);
 			free(infoBloqueo->idESI);
 			free(infoBloqueo);
@@ -75,13 +73,10 @@ char* liberarESI(char* key) {
 	}
 
 	if (dictionary_has_key(g_listos, key)) {
-		t_infoListos* esi = malloc(sizeof(t_infoListos));
-		esi = dictionary_get(g_listos, key);
-		g_huboError = 1;
-		enviarRespuesta(esi->socketESI, ABORTO_ESI);
-		nombre = strdup(esi->nombreESI);
-		//free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI); // TODO Sin esto anda y no hay memory leaks, pero ver si se saca.
-		//free(esi);
+		pthread_mutex_lock(&mutexListo);
+		nombre = strdup(((t_infoListos*)dictionary_get(g_listos, key))->nombreESI);
+		pthread_mutex_unlock(&mutexListo);
+		free(((t_infoListos*) dictionary_get(g_listos, key))->nombreESI);
 		free(dictionary_remove(g_listos, key));
 	} else {
 		dictionary_iterator(g_bloq, (void*) siEstaBloqueadaPorClaveEliminar);
@@ -98,14 +93,15 @@ void desbloquearESI(char* clave) {
 	pthread_mutex_lock(&mutexListo);
 	dictionary_put(g_listos, nodo->idESI, nodo->data);
 	pthread_mutex_unlock(&mutexListo);
-	free(nodo->idESI);
-	free(nodo);
 	if(list_is_empty(lista))
 		list_destroy(lista);
 	else
 		dictionary_put(g_bloq, clave, lista);
 	pthread_mutex_unlock(&mutexBloqueo);
 	sem_post(&ESIentrada);
+	pthread_mutex_lock(&modificacion);
+	g_huboModificacion = 1;
+	pthread_mutex_unlock(&modificacion);
 }
 
 void liberarClaves(char* clave) {
