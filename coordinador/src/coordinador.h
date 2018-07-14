@@ -63,6 +63,7 @@ void* procesarClienteDesconectado(int cliente_fd);
 void procesarClaveEliminada(t_paquete* unPaquete, int cliente_fd);
 void procesarCompactar(t_paquete* paquete, int cliente_fd);
 void procesarStatus(t_paquete* paquete,int cliente_fd);
+void procesarValor(t_paquete* paquete, int cliente_fd);
 void compactarTodasLasInstancias(t_list* tablaDeInstancias, t_list* conexiones);
 void logSeguro(char* logLevel,sem_t a,char* format,...);
 void armarConfigCoordinador(t_configuraciones *configuracion, t_config *config);

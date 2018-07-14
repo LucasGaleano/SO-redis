@@ -34,7 +34,7 @@ int main(void) {
 	asignarBloquedas(config_get_array_value(g_con, "CLAVES_BLOQUEADAS"));
 
 	char* algoritmo = config_get_string_value(g_con, "ALGORITMO_PLANIFICACION");
-	g_alfa = (config_get_int_value(g_con, "ALFA") / 100);
+	g_alfa = (config_get_double_value(g_con, "ALFA") / 100);
 
 	pthread_mutex_init(&mutexBloqueo, NULL);
 	pthread_mutex_init(&mutexConsola, NULL);

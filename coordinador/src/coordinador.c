@@ -150,6 +150,10 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		procesarStatus(paquete, cliente_fd);
 		break;
 
+	case SOLICITAR_VALOR:
+		procesarValor(paquete, cliente_fd);
+		break;
+
 	default:
 		printf("codigo no reconocido\n");
 		break;
@@ -517,7 +521,6 @@ void procesarStatus(t_paquete* paquete, int cliente_fd) {
 
 	char *clave = recibirSolicitudStatus(paquete);
 
-	char *nombreInstanciaPosible;
 	char *nombreInstanciaActual;
 
 	t_instancia *instanciaActual = buscarInstancia(g_tablaDeInstancias, true,
@@ -528,18 +531,45 @@ void procesarStatus(t_paquete* paquete, int cliente_fd) {
 	else
 		nombreInstanciaActual = instanciaActual->nombre;
 
+	if (nombreInstanciaActual == NULL) {
+		t_instancia *instanciaPosible = PlanificarInstancia(
+				g_configuracion->algoritmoDist, clave, g_tablaDeInstancias);
+		if(instanciaPosible == NULL)
+			enviarRespuestaStatus(cliente_fd, "", "", "");
+		else
+			enviarRespuestaStatus(cliente_fd, "", "", instanciaPosible->nombre);
+		return;
+	}
+
+	t_conexion* conexionInstancia = buscarConexion(g_diccionarioConexiones,
+			nombreInstanciaActual, 0);
+	enviarSolicitudValor(conexionInstancia->socket, clave);
+}
+
+void procesarValor(t_paquete * paquete, int cliente_fd) {
+
+	char * valor = recibirSolicitudValor(paquete);
+
+	char *nombreInstanciaPosible;
+
+	t_conexion* conexionInstancia = buscarConexion(g_diccionarioConexiones,NULL,cliente_fd);
+	t_instancia* instanciaActual = buscarInstancia(g_tablaDeInstancias,true,conexionInstancia->nombre,0,NULL);
+
 	t_instancia *instanciaPosible = PlanificarInstancia(
-			g_configuracion->algoritmoDist, clave, g_tablaDeInstancias);
+			g_configuracion->algoritmoDist, valor, g_tablaDeInstancias);
 
 	if (instanciaPosible == NULL)
 		nombreInstanciaPosible = "";
 	else
 		nombreInstanciaPosible = instanciaPosible->nombre;
 
-	logSeguro("debug", g_mutexLog, "status %s %s", nombreInstanciaActual,
+	logSeguro("debug", g_mutexLog, "status %s %s", instanciaActual->nombre,
 			nombreInstanciaPosible);
-	enviarRespuestaStatus(cliente_fd, "", nombreInstanciaActual,
+
+	enviarRespuestaStatus(cliente_fd, valor, instanciaActual->nombre,
 			nombreInstanciaPosible);
+
+	free(valor);
 }
 
 void logSeguro(char* nivelLog, sem_t mutexLog, char* format, ...) {
