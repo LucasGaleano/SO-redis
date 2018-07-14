@@ -1,5 +1,5 @@
 #include "planificador.h"
-
+//
 int g_intervaloReconexion;
 char* g_claveBusqueda;
 t_infoBloqueo* aBorrar;

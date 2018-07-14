@@ -1,5 +1,5 @@
 #include "algoritmos.h"
-//
+/////
 static double calcularProximaRafaga(double estimadoAnterior,
 		double realAnterior, double arg) {
 	return estimadoAnterior * g_alfa + realAnterior * (1 - g_alfa);

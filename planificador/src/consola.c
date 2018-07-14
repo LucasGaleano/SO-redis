@@ -307,7 +307,7 @@ void killProceso(char* linea) {
 		pthread_mutex_unlock(&mutexInstruccionConsola);
 		free(nombreESI);
 	}//
-
+//
 	int obtenerSocket(char* nombreESI){
 		if(estaListo(nombreESI)){
 			return ((t_infoListos*) dictionary_get(g_listos, obtenerId(nombreESI)))->socketESI;
