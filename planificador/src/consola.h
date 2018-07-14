@@ -74,10 +74,10 @@ int **				crearMatriz								(int, int);
 void 				ponerMatrizTodoNulo						(int **, int, int);
 void 				crearIndiceAsignacion					(char*);
 void 				crearIndiceEspera						(t_infoBloqueo*);
-void 				creoElementosEnPosibleDeadlock			(t_dictionary*, void (*creoIndiceMatriz)(void*));
+void 				creoElementosEnPosibleDeadlock			(t_dictionary* diccionario,void (creoIndiceMatriz)(void));
 void 				asignarEnMatrizAsignacion				(char*);
 void 				asignarEnMatrizEspera					(t_infoBloqueo*);
-void 				asignoMatriz							(t_dictionary*, void (*asignarTipoMatriz)(void*));
+void 				asignoMatriz							(t_dictionary* diccionario, void (asignarTipoMatriz)(void));
 char* 				esiEnDeadlock							(int);
 
 #endif /* CONSOLA_H_ */

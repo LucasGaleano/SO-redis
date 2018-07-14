@@ -8,7 +8,7 @@ int main(void) {
 
 	signal(SIGINT, (void*) atenderCtrlC);
 	g_con = config_create(RUTA_CONFIGURACION_PLANIF);
-	g_logger = log_create("log.log", "Planificador", 0, LOG_LEVEL_TRACE);
+	g_logger = log_create("log.log", "Planificador", 1, LOG_LEVEL_TRACE);
 	char* ip = config_get_string_value(g_con, "COORDINADOR_IP");
 	int puertoCoordinador = config_get_int_value(g_con, "COORDINADOR_PUERTO");
 	g_socketCoordinador = conectarCliente(ip, puertoCoordinador, PLANIFICADOR);
@@ -149,9 +149,13 @@ static int existeClave(char* clave) {
 		if (!existe)
 			existe = list_any_satisfy(lista, (void*) condicionDeTomada);
 	}
+	pthread_mutex_lock(&mutexBloqueo);
 	dictionary_iterator(g_bloq, (void*) buscarEnbloq);
+	pthread_mutex_unlock(&mutexBloqueo);
 	if (!existe) {
+		pthread_mutex_lock(&mutexClavesTomadas);
 		dictionary_iterator(g_clavesTomadas, (void*) buscarEnClavesTomadas);
+		pthread_mutex_unlock(&mutexClavesTomadas);
 	}
 	return existe;
 }
@@ -168,10 +172,14 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			g_claveTomada = 0;
 			t_claveValor* recv = recibirSet(unPaquete);
 			g_claveGET = recv->clave;
+			log_debug(g_logger, "clave %s: ", g_claveGET);
 			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				pthread_mutex_lock(&mutexClavesTomadas);
 				g_claveTomada = list_any_satisfy(
 						dictionary_get(g_clavesTomadas, g_nombreESIactual),
 						(void*) condicionDeTomada);
+				pthread_mutex_unlock(&mutexClavesTomadas);
+				log_debug(g_logger, "tomada %d: ", g_claveTomada);
 			}
 			if (g_claveTomada)
 				enviarRespuesta(g_socketCoordinador, SET_OK);
@@ -249,16 +257,20 @@ void procesarPaqueteCoordinador(t_paquete* unPaquete, int* socketCliente) {
 			g_claveTomada = 0;
 			g_claveGET = recibirStore(unPaquete);
 			if (dictionary_has_key(g_clavesTomadas, g_nombreESIactual)) {
+				pthread_mutex_lock(&mutexClavesTomadas);
 				g_claveTomada = list_any_satisfy(
 						dictionary_get(g_clavesTomadas, g_nombreESIactual),
 						(void*) condicionDeTomada);
+				pthread_mutex_unlock(&mutexClavesTomadas);
 			}
 			if (g_claveTomada) {
 				if (dictionary_has_key(g_bloq, g_claveGET))
 					desbloquearESI(g_claveGET);
+				pthread_mutex_lock(&mutexBloqueo);
 				aux = dictionary_get(g_clavesTomadas, g_nombreESIactual);
 				list_remove_and_destroy_by_condition(aux,
 						(void*) condicionDeTomada, (void*) free);
+				pthread_mutex_unlock(&mutexBloqueo);
 				pthread_mutex_lock(&mutexLog);
 				log_trace(g_logger, "%s ha liberado la clave %s exitosamente",
 						g_nombreESIactual, g_claveGET);
