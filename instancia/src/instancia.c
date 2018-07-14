@@ -266,8 +266,11 @@ void procesarStore(t_paquete * unPaquete, int client_socket) {
 void procesarCompactacion(t_paquete * unPaquete, int client_socket) {
 	log_trace(logInstancia, "Me llego pedido de compactacion");
 	compactar();
+	log_trace(logInstancia, "compactado");
 	enviarCompactacion(client_socket);
+	log_trace(logInstancia, "enviado aviso de termine compactacion");
 	mostrarBitmap();
+	log_trace(logInstancia, "mostre bitmap");
 }
 
 void procesarSolicitudValor(t_paquete * unPaquete, int client_socket) {

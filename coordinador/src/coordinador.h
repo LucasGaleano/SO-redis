@@ -44,6 +44,7 @@ sem_t g_mutex_respuesta_set;
 sem_t g_mutex_respuesta_store;
 sem_t g_peticion;
 bool g_respuesta;
+int instanciasCompactadas;
 
 
 /*------------------------FUNCIONES-------------------------*/
@@ -60,7 +61,8 @@ void procesarNombreInstancia(t_paquete* unPaquete,int socketCliente);
 void procesarRespuesta(t_paquete* unPaquete,int socketCliente);
 void* procesarClienteDesconectado(int cliente_fd);
 void procesarClaveEliminada(t_paquete* unPaquete, int cliente_fd);
-void procesarAvisoDesconexion(t_paquete* UnPaquete, int cliente_fd);
+void procesarCompactar(t_paquete* paquete, int cliente_fd);
+void procesarStatus(t_paquete* paquete,int cliente_fd);
 void compactarTodasLasInstancias(t_list* tablaDeInstancias, t_list* conexiones);
 void logSeguro(char* logLevel,sem_t a,char* format,...);
 void armarConfigCoordinador(t_configuraciones *configuracion, t_config *config);

@@ -409,7 +409,7 @@ int recibirRespuesta(t_paquete* unPaquete) {
 	return deserializarNumero(unPaquete->buffer);
 }
 
-char * recibirSolicitusStatus(t_paquete * unPaquete){
+char * recibirSolicitudStatus(t_paquete * unPaquete){
 	return deserializarMensaje(unPaquete->buffer);
 }
 

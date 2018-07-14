@@ -587,15 +587,20 @@ void sacarClave(char* nombreESI, char* clave) {
 
 /*------------------------------Auxiliares-Status------------------------------*/
 void mostrarPorConsola(t_respuestaStatus* respuestaStatus) {
-	if (respuestaStatus->valor == NULL)
+	if (strcmp(respuestaStatus->valor, "") == 0)
 		puts("No posee valor.");
 	else
 		printf("Valor: %s\n", respuestaStatus->valor);
 
-	printf("Instancia actual en donde esta clave: %s\n",
-			respuestaStatus->nomInstanciaActual);
-	printf("Instancia en donde se guardaria clave: %s\n",
-			respuestaStatus->nomIntanciaPosible);
+	if (strcmp(respuestaStatus->nomInstanciaActual, "") == 0)
+		puts("No se encuentra en ninguna instancia.");
+	else
+		printf("Instancia actual en donde esta clave: %s\n",
+				respuestaStatus->nomInstanciaActual);
+
+		printf("Instancia en donde se guardaria clave: %s\n",
+				respuestaStatus->nomIntanciaPosible);
+
 }
 
 /*------------------------------Auxiliares-Deadlock------------------------------*/
@@ -640,7 +645,7 @@ void crearIndiceEspera(t_infoBloqueo* esiBloqueado) {
 void creoElementosEnPosibleDeadlock(t_dictionary* diccionario,
 		void (*creoIndiceMatriz)(void*)) {
 	void _creoElementoEnPosibleDeadlock(char* elemento, t_list* lista) {
-		if(!list_is_empty(lista)){
+		if (!list_is_empty(lista)) {
 			list_iterate(lista, (void*) creoIndiceMatriz);
 			indice(elemento, diccionario);
 		}
@@ -661,7 +666,7 @@ void asignarEnMatrizEspera(t_infoBloqueo* infoESIBloqueado) {
 
 void asignoMatriz(t_dictionary* diccionario, void (*asignarTipoMatriz)(void*)) {
 	void _asignarMatriz(char* elemento, t_list* lista) {
-		if(!list_is_empty(lista)){
+		if (!list_is_empty(lista)) {
 			free(g_elemento);
 			g_elemento = strdup(elemento);
 			list_iterate(lista, (void*) asignarTipoMatriz);
