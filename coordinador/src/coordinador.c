@@ -155,7 +155,7 @@ void procesarPaquete(t_paquete* paquete, int cliente_fd) {
 		break;
 
 	default:
-		printf("codigo no reconocido\n");
+		printf("codigo no reconocido: %d\n",paquete->codigoOperacion);
 		break;
 	}
 

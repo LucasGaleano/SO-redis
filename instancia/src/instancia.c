@@ -201,7 +201,7 @@ void procesarSetDefinitivo(t_paquete * unPaquete, int client_socket) {
 	aumentarTiempoReferenciadoMenosAClave(claveValor->clave);
 
 	if (respuesta == CANTIDAD_INDEX_LIBRES_INEXISTENTES) {
-		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo");
+		log_warning(logInstancia, "Ejecuto algoritmo de reemplazo: %s", algoritmoReemplazo);
 
 		if (string_equals_ignore_case(algoritmoReemplazo, "CIRC")) {
 			algoritmoReemplazoCircular(claveValor->clave, claveValor->valor);

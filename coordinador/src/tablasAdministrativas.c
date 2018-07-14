@@ -58,15 +58,15 @@ void mostrarInstancia(t_instancia * instancia) {
 }
 
 void bloquearInstancia(t_instancia* instancia){
-	printf("bloquear %s\n", instancia->nombre);
+	//printf("bloquear %s\n", instancia->nombre);
 	sem_wait(&instancia->instanciaMutex);
-	printf("bloqueada %s\n", instancia->nombre);
+	//printf("bloqueada %s\n", instancia->nombre);
 }
 
 void desbloquearInstancia(t_instancia* instancia){
-	printf("desbloquear %s\n", instancia->nombre);
+	//printf("desbloquear %s\n", instancia->nombre);
 	sem_post(&instancia->instanciaMutex);
-	printf("desbloqueada %s\n", instancia->nombre);
+	//printf("desbloqueada %s\n", instancia->nombre);
 }
 
 void bloquearTodasLasInstancias(t_list* tablaDeInstancias){
@@ -376,14 +376,14 @@ void destruirDiccionarioClaves(t_list* diccionarioClaves){
 }
 
 void bloquearPeticion(sem_t *mutexPeticion){
-	printf("bloquear peticion\n");
+	//printf("bloquear peticion\n");
 	sem_wait(mutexPeticion);
-	printf("bloqueado peticion\n");
+	//printf("bloqueado peticion\n");
 }
 
 
 void desbloquearPeticion(sem_t *mutexPeticion){
-	printf("desbloquear peticion\n");
+	//printf("desbloquear peticion\n");
 	sem_post(mutexPeticion);
-	printf("desbloqueado peticion\n\n\n");
+	//printf("desbloqueado peticion\n\n\n");
 }

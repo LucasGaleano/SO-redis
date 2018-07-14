@@ -280,6 +280,7 @@ void enviarSolicitudStatus(int server_socket, char * clave) {
 
 	unPaquete->codigoOperacion = SOLICITAR_STATUS;
 
+
 	serializarMensaje(unPaquete, clave);
 
 	enviarPaquetes(server_socket, unPaquete);
